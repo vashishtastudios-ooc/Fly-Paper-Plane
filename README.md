@@ -147,7 +147,15 @@ A gentle belly touch on a flat surface makes the plane slide instead of crumple.
 - **Into something:** a normal crash.
 - **Off an edge:** the plane is flying again.
 - **Stops before the target:** "Touched down short", without the crumple.
-- **Steep or nose-first hits** still crash, and water still splashes.
+- **Steep or nose-first hits** still crash.
+
+## Water: skip, skim, splash
+
+How the river reacts to a touch (all tunable in the Water group on `Plane.gd`):
+
+- **Skip:** a fast, flat touch (over 8 m/s and under 15°) bounces the plane back up like a stone. It keeps 70% of its speed, gets a small upward pop and a spray, and "Skip!" shows. Another skip is possible once the plane climbs about 1 m clear of the water.
+- **Skim:** a slower gentle touch, or a second dip without climbing away, skims on the belly with a small wake. Water is grabby (`skim_friction`), so this lasts about 1–1.5 m. Skimming onto the bank becomes a normal slide. Otherwise the plane stops "Soaked!" and settles into the water, without the crumple or shake.
+- **Splash:** a steep or nose-first touch is a crash, "Splash! Into the river".
 
 ## Collisions (what counts as a hit)
 

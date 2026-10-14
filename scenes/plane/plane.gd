@@ -12,8 +12,9 @@ signal gust_used
 signal barrel_roll_done
 signal landed(info: Dictionary)
 signal crashed(message: String, kind: String)
+signal skipped
 
-enum Mode { IDLE, FLYING, SLIDING, LANDED, CRASHED }
+enum Mode { IDLE, FLYING, SLIDING, SKIMMING, LANDED, CRASHED }
 
 @export_group("Pitch and roll")
 @export var stall_speed := 4.6
@@ -66,6 +67,16 @@ enum Mode { IDLE, FLYING, SLIDING, LANDED, CRASHED }
 ## How quickly the plane settles once it is on the target.
 @export var pad_friction := 3.2
 
+@export_group("Water")
+## A belly touch on the water faster than this and flatter than skip_max_angle skips like a stone.
+@export var skip_min_speed := 8.0
+@export var skip_max_angle := 15.0
+## Speed kept after a skip, and the little upward pop it gives.
+@export var skip_speed_keep := 0.7
+@export var skip_pop := 1.6
+## Water is grabby: a skim stops after roughly speed / friction metres (about 1-1.5 m).
+@export var skim_friction := 5.0
+
 
 ## Minimal flight state, also used for the touchdown predictor.
 class FlightState:
@@ -116,6 +127,9 @@ var _touch_impact := 0.0
 var _touch_speed := 0.0
 var _land_info := {}
 var _landed_sent := false
+## A skip is available again once the plane has climbed ~1 m clear of the water.
+var _skip_armed := true
+var _spray: GPUParticles3D
 var _visual: Node3D
 var _trail_l := PackedVector3Array()
 var _trail_r := PackedVector3Array()
@@ -191,6 +205,9 @@ func launch(pos: Vector3, yaw: float) -> void:
 func reset() -> void:
 	mode = Mode.IDLE
 	visible = false
+	_skip_armed = true
+	if _spray:
+		_spray.emitting = false
 	_trail_fx.emitting = false
 	_trail_l.clear()
 	_trail_r.clear()
@@ -281,6 +298,8 @@ func _physics_process(dt: float) -> void:
 			_fly(dt)
 		Mode.SLIDING:
 			_slide(dt)
+		Mode.SKIMMING:
+			_skim(dt)
 		Mode.LANDED:
 			_skid(dt)
 		Mode.CRASHED:
@@ -300,6 +319,8 @@ func _fly(dt: float) -> void:
 	lift = step_state(state, in_x, in_y, dt)
 	flight_time += dt
 	agl = state.pos.y - _surface_under(state.pos)
+	if agl > 1.0:
+		_skip_armed = true
 	gusts = minf(gust_max, gusts + dt / gust_refill_time)
 
 	var now_stalled := state.v < stall_speed
@@ -395,7 +416,7 @@ func _check_collisions(prev: Vector3, prev_vy: float) -> void:
 	# Ground and water.
 	var ground := Terrain.ground_height(pos.x, pos.z)
 	if ground < Terrain.WATER_Y and pos.y - collision_radius * 0.5 < Terrain.WATER_Y:
-		_crash("Splash! Into the river", "water", Vector3(pos.x, Terrain.WATER_Y + 0.05, pos.z))
+		_touch_water(pos)
 		return
 	if pos.y - collision_radius < ground:
 		if _can_slide(_ground_normal(pos.x, pos.z)):
@@ -573,12 +594,92 @@ func _slide(dt: float) -> void:
 		_crash("Touched down short" if near else "Landed off target", "stopped", state.pos)
 
 
+# --- Water: skip, skim, splash ----------------------------------------------------------
+
+func _touch_water(pos: Vector3) -> void:
+	var vel := velocity()
+	var into := -vel.normalized().y if vel.length() > 0.01 else 0.0
+	var surface := Vector3(pos.x, Terrain.WATER_Y, pos.z)
+	if state.pitch < -0.5 or into > sin(deg_to_rad(25.0)):
+		_crash("Splash! Into the river", "water", surface + Vector3(0, 0.05, 0))
+		return
+	if _skip_armed and state.v > skip_min_speed and into < sin(deg_to_rad(skip_max_angle)):
+		# Skip like a stone: bounce back up, a little slower.
+		_skip_armed = false
+		state.pos = surface + Vector3(0, collision_radius * 0.6, 0)
+		state.vy = 0.0
+		state.v *= skip_speed_keep
+		state.flap_v += skip_pop
+		state.pitch = maxf(state.pitch, 0.04)
+		_apply_transform()
+		_spray_burst(surface, 18)
+		Audio.play("splash", -12.0, 1.5)
+		skipped.emit()
+		return
+	# Too slow (or already skipped without climbing away): skim a short way, then soak.
+	mode = Mode.SKIMMING
+	_skid_t = 0.0
+	state.pos = surface + Vector3(0, 0.02, 0)
+	state.vy = 0.0
+	state.flap_v = 0.0
+	_apply_transform()
+	_spray.global_position = state.pos
+	_spray.emitting = true
+	Audio.play("splash", -10.0, 1.3)
+
+
+func _skim(dt: float) -> void:
+	_skid_t += dt
+	state.v *= exp(-skim_friction * dt)
+	state.pitch = _damp(state.pitch, 0.02, 8.0, dt)
+	state.roll = _damp(state.roll, 0.0, 6.0, dt)
+	var fwd := Vector3(-sin(state.yaw), 0.0, -cos(state.yaw))
+	var step := fwd * state.v * dt
+	var space := get_world_3d().direct_space_state
+	_query.transform = Transform3D(Basis(), state.pos + Vector3(0, 0.24, 0))
+	_query.motion = step
+	_query.collision_mask = 1
+	var res := space.cast_motion(_query)
+	_query.collision_mask = 1 | 2
+	if res.size() == 2 and res[1] < 1.0:
+		_spray.emitting = false
+		_crash(_message_for("wall", state.pos), "wall", state.pos)
+		return
+	var next := state.pos + step
+	if Terrain.ground_height(next.x, next.z) > Terrain.WATER_Y:
+		# Skimmed onto the bank: carry on as a normal slide.
+		_spray.emitting = false
+		state.pos = Vector3(next.x, Terrain.ground_height(next.x, next.z) + 0.03, next.z)
+		mode = Mode.SLIDING
+		_apply_transform()
+		return
+	state.pos = Vector3(next.x, Terrain.WATER_Y + 0.02, next.z)
+	_spray.global_position = state.pos
+	_spray.amount_ratio = clampf(state.v / 6.0, 0.2, 1.0)
+	_apply_transform()
+	if state.v < 0.5 or _skid_t > 1.2:
+		_spray.emitting = false
+		_crash("Soaked!", "soaked", state.pos)
+		# The wet paper settles into the water.
+		var tw := create_tween().set_parallel(true).set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
+		tw.tween_property(self, "position:y", Terrain.WATER_Y - 0.06, 1.4).set_trans(Tween.TRANS_SINE)
+		tw.tween_property(_visual, "rotation:x", -0.25, 1.4)
+
+
+func _spray_burst(at: Vector3, count: int) -> void:
+	_spray.global_position = at
+	_spray.restart()
+	_spray.emitting = true
+	_spray.amount_ratio = clampf(count / 30.0, 0.2, 1.0)
+	get_tree().create_timer(0.15).timeout.connect(func(): if mode != Mode.SKIMMING: _spray.emitting = false)
+
+
 func _crash(message: String, kind: String, at: Vector3, touch: Variant = null) -> void:
 	mode = Mode.CRASHED
 	_trail_fx.emitting = false
 	state.pos = at
 	position = at
-	if kind != "stopped":
+	if kind != "stopped" and kind != "soaked":
 		_play_crash_fx(kind)
 		_play_bonk(touch if touch != null else at)
 	crashed.emit(message, kind)
@@ -649,6 +750,36 @@ func _build_effects() -> void:
 	_scraps.draw_pass_1 = sq
 	add_child(_scraps)
 
+	_spray = GPUParticles3D.new()
+	_spray.name = "WaterSpray"
+	_spray.top_level = true
+	_spray.local_coords = false
+	_spray.emitting = false
+	_spray.amount = 30
+	_spray.lifetime = 0.6
+	_spray.visibility_aabb = AABB(Vector3(-5, -3, -5), Vector3(10, 6, 10))
+	var wm := ParticleProcessMaterial.new()
+	wm.direction = Vector3(0, 1, 0)
+	wm.spread = 55.0
+	wm.initial_velocity_min = 0.8
+	wm.initial_velocity_max = 2.2
+	wm.gravity = Vector3(0, -6.0, 0)
+	wm.scale_min = 0.5
+	wm.scale_max = 1.2
+	var wg := Gradient.new()
+	wg.set_color(0, Color(0.95, 0.98, 1.0, 0.85))
+	wg.set_color(1, Color(0.9, 0.96, 1.0, 0.0))
+	var wgt := GradientTexture1D.new()
+	wgt.gradient = wg
+	wm.color_ramp = wgt
+	_spray.process_material = wm
+	var wq := QuadMesh.new()
+	wq.size = Vector2(0.14, 0.14)
+	wq.material = Mats.soft_alpha(Color(1, 1, 1, 1), TexGen.get_tex("soft_dot"))
+	_spray.draw_pass_1 = wq
+	_spray.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_spray)
+
 	_bonk = MeshInstance3D.new()
 	_bonk.name = "ContactBurst"
 	var bq := QuadMesh.new()
@@ -700,7 +831,7 @@ func _play_landing_fx(at: Vector3) -> void:
 	_shock.visible = true
 	var mat := _shock.material_override as StandardMaterial3D
 	mat.albedo_color.a = 0.9
-	var tw := create_tween().set_parallel(true)
+	var tw := create_tween().set_parallel(true).set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
 	tw.tween_property(_shock, "scale", Vector3(7.0, 1.0, 7.0), 1.1).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tw.tween_property(mat, "albedo_color:a", 0.0, 1.1)
 	tw.chain().tween_callback(func(): _shock.visible = false)
@@ -714,7 +845,7 @@ func _play_crash_fx(kind: String) -> void:
 		Audio.play("splash", -2.0)
 	else:
 		Audio.play("crumple", 0.0)
-	var tw := create_tween().set_parallel(true)
+	var tw := create_tween().set_parallel(true).set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
 	tw.tween_property(_visual, "scale", Vector3(0.55, 0.32, 0.42), 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(_visual, "rotation", _visual.rotation + Vector3(1.2, 2.6, 0.8), 0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 

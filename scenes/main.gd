@@ -72,6 +72,7 @@ func _wire() -> void:
 	plane.rising_air.connect(func(): hud.banner("Rising air", UIKit.GOLD, 1.2))
 	plane.barrel_roll_done.connect(func(): hud.float_text(plane.state.pos, "+50"))
 	plane.landed.connect(_on_landed)
+	plane.skipped.connect(func(): hud.banner("Skip!", Color("#bfe3ff"), 0.9))
 	plane.crashed.connect(_on_crashed)
 	plane.gust_used.connect(func(): Settings.vibrate(20))
 	plane.entered_thermal.connect(func(): _tip("thermal", "Rising air! Circle inside it to climb"))
@@ -222,7 +223,7 @@ func _on_crashed(message: String, _kind: String) -> void:
 	Game.set_state(Game.State.CRASHED)
 	_pending = {"kind": "crash", "message": message, "stars": level.stars_collected,
 		"stars_total": level.stars_total(), "time": plane.flight_time}
-	if _kind != "stopped":
+	if _kind != "stopped" and _kind != "soaked":
 		cam.shake(0.9)
 		Settings.vibrate(120)
 	cam.orbit_center = plane.state.pos
