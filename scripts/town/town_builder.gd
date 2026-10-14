@@ -19,6 +19,7 @@ const BOUNDS_X := Terrain.BOUNDS_X
 
 const HOUSE_SCENE := preload("res://props/house.tscn")
 const SCHOOL_SCENE := preload("res://props/school.tscn")
+const OPEN_HOUSE_SCENE := preload("res://props/open_house.tscn")
 const BACKPACK_SCENE := preload("res://props/backpack_mat.tscn")
 const SHOP_SCENE := preload("res://props/shop.tscn")
 const CIVIC_SCENE := preload("res://props/civic_building.tscn")
@@ -97,6 +98,8 @@ func build() -> void:
 	_grass()
 	_sun_effects()
 	_ambient_life()
+	# Built last so the shared random sequence (and the rest of the town) stays unchanged.
+	_rowan_row()
 	batcher.finalize()
 	_on_quality(Settings.quality)
 	is_built = true
@@ -805,6 +808,136 @@ func _market() -> void:
 		c.position = c_dat[0]
 		c.rotation.y = c_dat[2]
 		add_child(c)
+
+
+# --- Rowan Row ---------------------------------------------------------------------------
+
+## A row of houses with their windows thrown open, behind the east side of Market Street
+## (flight 6), and the gardens between them.
+func _rowan_row() -> void:
+	var houses := [
+		["attic", Vector3(31, 0, -345.5), 11.0, 9.0, "#f2d58f", Mats.ROOF_TERRACOTTA, "#2f6f8f"],
+		["bedroom", Vector3(29, 0, -367), 11.0, 10.0, "#a9c9db", Mats.ROOF_SLATE, "#c8423b"],
+		["stairwell", Vector3(32, 0, -389), 11.0, 14.0, "#e6c3da", Mats.ROOF_TERRACOTTA, "#3f7d4f"],
+		["greenhouse", Vector3(31.5, 0, -402), 4.2, 6.0, "#f4f0e6", Mats.ROOF_SLATE, "#3f7d4f"],
+		["cottage", Vector3(31, 0, -414.5), 11.0, 13.0, "#b9d6a8", Mats.ROOF_SLATE, "#e0a13a"],
+	]
+	for i in houses.size():
+		var d: Array = houses[i]
+		var h: Node3D = OPEN_HOUSE_SCENE.instantiate()
+		h.batcher = batcher
+		h.name = "RowanRow_%d" % (i + 1)
+		h.layout = d[0]
+		h.position = d[1]
+		h.width = d[2]
+		h.depth = d[3]
+		h.wall_color = Color(d[4])
+		h.roof_color = d[5]
+		h.door_color = Color(d[6])
+		h.shutter_color = Color(Mats.SHUTTER_COLORS[(i * 2 + 1) % Mats.SHUTTER_COLORS.size()])
+		h.seed_value = 70 + i
+		add_child(h)
+
+	var b := MeshBuilder.new()
+	var solid := Mats.get_mat("solid")
+	var paving := Mats.get_mat("paving")
+	var wood := Mats.get_mat("wood")
+	var metal := Mats.get_mat("metal")
+	var r := RandomNumberGenerator.new()
+	r.seed = 4417
+	# Picket fences down both sides and across the far end.
+	var z0 := -337.0
+	var z1 := -425.0
+	for fx in [22.5, 40.0]:
+		var z := z0
+		while z > z1:
+			batcher.add("picket", Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(fx, 0, z)))
+			z -= 0.17
+		for ry in [0.3, 0.7]:
+			b.box_mm(solid, Vector3(fx - 0.03, ry, z1), Vector3(fx + 0.03, ry + 0.08, z0), Mats.TRIM)
+		_static_box("fence", Vector3(fx, 0.5, (z0 + z1) * 0.5), Vector3(0.2, 1.0, z0 - z1))
+	var x := 22.6
+	while x < 40.0:
+		batcher.add("picket", Transform3D(Basis(), Vector3(x, 0, z1)))
+		x += 0.17
+	_static_box("fence", Vector3(31.25, 0.5, z1), Vector3(17.5, 1.0, 0.2))
+	# Gardens: stepping stones, flower borders and bushes.
+	var gardens := [[-337.5, -341.0], [-350.0, -362.0], [-372.0, -382.0], [-396.0, -408.0], [-421.0, -424.5]]
+	for g in gardens:
+		var ga: float = g[0]
+		var gb: float = g[1]
+		var z := ga - 0.6
+		while z > gb + 0.4:
+			var sx := 30.6 + sin(z * 0.7) * 0.3 + r.randf_range(-0.1, 0.1)
+			b.cylinder(paving, Transform3D(Basis(), Vector3(sx, 0.0, z)), 0.32, 0.32, 0.04, 10, Color("#e8e1d3"))
+			z -= 0.85
+		for side in [[22.8, 23.4], [38.6, 39.7]]:
+			for k in int((ga - gb) * 3.0):
+				var p := Vector3(r.randf_range(side[0], side[1]), 0, r.randf_range(gb + 0.3, ga - 0.3))
+				batcher.add("flower", Transform3D(Basis(Vector3.UP, r.randf() * TAU).scaled(Vector3.ONE * r.randf_range(1.1, 1.6)), p), Mats.pick(r, Mats.FLOWER_COLORS))
+			var s := r.randf_range(0.8, 1.15)
+			batcher.add("bush", Transform3D(Basis().scaled(Vector3(s, s * 0.9, s)), Vector3((side[0] + side[1]) * 0.5, 0, gb + 1.2)), Color("#5f8f45").lerp(Color("#7aa65a"), r.randf()))
+	for t in [[Vector3(25.0, 0, -355.5), 0.85], [Vector3(38.3, 0, -372.0), 0.9], [Vector3(25.2, 0, -403.0), 0.8], [Vector3(38.2, 0, -401.0), 0.85]]:
+		_try_tree(t[0], t[1], true)
+	# Trampoline in the first garden.
+	var tp := Vector3(35.0, 0, -356.0)
+	for k in 6:
+		var a := TAU * k / 6.0
+		b.tube(metal, PackedVector3Array([tp + Vector3(cos(a) * 1.35, 0, sin(a) * 1.35), tp + Vector3(cos(a) * 1.35, 0.75, sin(a) * 1.35)]), 0.04, 5, Color("#5b6270"))
+	b.cylinder(solid, Transform3D(Basis(), tp + Vector3(0, 0.72, 0)), 1.45, 1.45, 0.08, 20, Color("#2f6f8f"))
+	b.cylinder(solid, Transform3D(Basis(), tp + Vector3(0, 0.73, 0)), 1.15, 1.15, 0.08, 20, Color("#2a2522"))
+	_static_cyl("fence", tp, 1.45, 0.8)
+	# Sun-warmed patio with a table, chairs and a parasol (the rising air in the second garden).
+	b.box_mm(paving, Vector3(28.0, 0.0, -380.0), Vector3(34.0, 0.05, -375.0), Color("#efe2c4"), 4)
+	var tc := Vector3(35.6, 0, -379.4)
+	b.cylinder(metal, Transform3D(Basis(), tc), 0.04, 0.04, 0.72, 6, Color("#3a3a3a"))
+	b.cylinder(solid, Transform3D(Basis(), tc + Vector3(0, 0.72, 0)), 0.55, 0.55, 0.04, 14, Color("#fbf8f0"))
+	b.cylinder(metal, Transform3D(Basis(), tc), 0.025, 0.025, 2.3, 5, Color("#d8d8d8"))
+	b.cylinder(Mats.get_mat("cloth"), Transform3D(Basis(), tc + Vector3(0, 1.9, 0)), 1.3, 0.05, 0.45, 12, Color("#e8546a"))
+	for a in [0.4, 2.6]:
+		var cp := tc + Vector3(cos(a) * 0.9, 0, sin(a) * 0.9)
+		b.box_mm(solid, cp + Vector3(-0.2, 0.42, -0.2), cp + Vector3(0.2, 0.46, 0.2), Color("#fbf8f0"))
+		b.box_mm(solid, cp + Vector3(-0.2, 0.0, -0.2), cp + Vector3(-0.17, 0.42, 0.2), Color("#fbf8f0"))
+		b.box_mm(solid, cp + Vector3(0.17, 0.0, -0.2), cp + Vector3(0.2, 0.42, 0.2), Color("#fbf8f0"))
+	_static_cyl("post", tc, 0.6, 2.4)
+	# Third garden: vegetable bed, wheelbarrow, a gnome and a bird bath.
+	b.box_mm(wood, Vector3(23.6, 0, -407.2), Vector3(26.4, 0.3, -405.2), Color("#8a6a52"))
+	b.box_mm(solid, Vector3(23.7, 0.3, -407.1), Vector3(26.3, 0.33, -405.3), Color("#6b4a32"))
+	for k in 8:
+		b.sphere(Mats.get_mat("foliage"), Vector3(23.95 + (k % 4) * 0.65, 0.45, -406.7 + (k / 4) * 0.95), Vector3(0.22, 0.16, 0.22), 3, 6, Color("#6f9e4c"))
+	var gn := Vector3(28.2, 0, -398.2)
+	b.cylinder(solid, Transform3D(Basis(), gn), 0.11, 0.12, 0.22, 8, Color("#2f6f8f"))
+	b.sphere(solid, gn + Vector3(0, 0.3, 0), Vector3(0.09, 0.09, 0.09), 3, 6, Color("#f1c9a5"))
+	b.sphere(solid, gn + Vector3(0, 0.26, -0.05), Vector3(0.08, 0.07, 0.05), 3, 6, Color("#fbf8f0"))
+	b.cylinder(solid, Transform3D(Basis(), gn + Vector3(0, 0.36, 0)), 0.1, 0.0, 0.26, 8, Color("#c8423b"))
+	var bb := Vector3(37.6, 0, -398.0)
+	b.cylinder(Mats.get_mat("stone"), Transform3D(Basis(), bb), 0.15, 0.1, 0.8, 10, Color("#d6cdbd"))
+	b.cylinder(Mats.get_mat("stone"), Transform3D(Basis(), bb + Vector3(0, 0.8, 0)), 0.2, 0.45, 0.15, 14, Color("#d6cdbd"))
+	b.cylinder(Mats.get_mat("glass"), Transform3D(Basis(), bb + Vector3(0, 0.9, 0)), 0.38, 0.38, 0.03, 14, Color("#9cc3dd"))
+	_static_cyl("post", bb, 0.45, 1.0)
+	var wb := Vector3(26.8, 0, -400.0)
+	b.box(Mats.get_mat("metal"), Transform3D(Basis(Vector3.RIGHT, 0.2), wb + Vector3(0, 0.45, 0)), Vector3(0.6, 0.3, 0.9), Color("#3f7d4f"))
+	b.cylinder(solid, Transform3D(Basis(Vector3.BACK, PI * 0.5), wb + Vector3(0.05, 0.18, -0.5)), 0.17, 0.17, 0.1, 10, Color("#2a2522"))
+	for s in [-1.0, 1.0]:
+		b.tube(wood, PackedVector3Array([wb + Vector3(s * 0.25, 0.35, -0.3), wb + Vector3(s * 0.3, 0.5, 0.85)]), 0.025, 4, Color("#8a6a52"))
+	add_child(b.build_instance("RowanRowGardens", true))
+	var sign_post := Vector3(23.4, 0, -338.3)
+	_static_cyl("post", sign_post, 0.1, 1.9)
+	var sb := MeshBuilder.new()
+	sb.cylinder(wood, Transform3D(Basis(), sign_post), 0.06, 0.06, 1.9, 6, Color("#8a6a52"))
+	sb.box_mm(wood, sign_post + Vector3(-0.05, 1.35, -0.7), sign_post + Vector3(0.05, 1.8, 0.7), Color("#c9a27e"))
+	add_child(sb.build_instance("RowanRowSign", true))
+	var label := Label3D.new()
+	label.text = "Rowan Row"
+	label.font = UIKit.display_font()
+	label.font_size = 72
+	label.pixel_size = 0.006
+	label.modulate = Color("#3a2c28")
+	label.outline_size = 0
+	label.shaded = false
+	label.position = sign_post + Vector3(-0.06, 1.58, 0)
+	label.rotation.y = -PI * 0.5
+	add_child(label)
 
 
 # --- Town Square ------------------------------------------------------------------------

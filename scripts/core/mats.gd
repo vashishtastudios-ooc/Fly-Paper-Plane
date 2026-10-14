@@ -43,6 +43,14 @@ static func get_mat(kind: String) -> Material:
 			g.metallic = 0.3
 			g.metallic_specular = 0.8
 			m = g
+		"glass_clear":
+			# See-through panes (the Rowan Row greenhouse).
+			var gc := _plain(0.08)
+			gc.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			gc.cull_mode = BaseMaterial3D.CULL_DISABLED
+			gc.metallic_specular = 0.9
+			gc.albedo_color = Color(1, 1, 1, 0.28)
+			m = gc
 		"foliage":
 			# Trees, bushes and flowers sway and rustle in the wind.
 			m = _shader("res://shaders/foliage.gdshader", {"sway": 0.09, "rustle": 0.022})

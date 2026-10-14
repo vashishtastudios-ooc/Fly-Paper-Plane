@@ -386,6 +386,11 @@ func _message_for(kind: String, at: Vector3) -> String:
 		"water": return "Splash! Into the river"
 		"fan": return "Whacked by the ceiling fan"
 		"glass": return "Bonk! The window was closed"
+		"greenhouse": return "Bonk! Into the greenhouse glass"
+		"lamp": return "Clonk! Into the hanging lamp"
+		"furniture": return "Bumped into the furniture"
+		"banister": return "Clipped the banister"
+		"ceiling": return "Bonk! Into the ceiling"
 	if level and level.horizontal_distance_to_pad(at) < short_landing_distance + level.pad_radius() and at.y < level.pad_top() + 2.0:
 		return "Touched down short"
 	return "Crash landing"

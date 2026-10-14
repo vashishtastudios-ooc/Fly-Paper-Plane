@@ -1,0 +1,65 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 31, 8, -343, 0, 0, 0, 0, 0, 0, 31, 7.75, -350, 0, 0, 0, 0, 0, 0, 30.1, 6.5, -356, 0, 0, 0, 0, 0, 0, 29.2, 5.3, -362, 0, 0, 0, 0, 0, 0, 29, 5, -367, 0, 0, 0, 0, 0, 0, 29.5, 5.1, -372, 0, 0, 0, 0, 0, 0, 30.8, 5, -377, 0, 0, 0, 0, 0, 0, 32, 5.25, -382, 0, 0, 0, 0, 0, 0, 32, 4.9, -388.6, 0, 0, 0, 0, 0, 0, 32, 3.1, -392.2, 0, 0, 0, 0, 0, 0, 32, 1.65, -396, 0, 0, 0, 0, 0, 0, 31.6, 1.45, -399, 0, 0, 0, 0, 0, 0, 31.5, 1.5, -402, 0, 0, 0, 0, 0, 0, 31.3, 1.5, -405, 0, 0, 0, 0, 0, 0, 31, 1.35, -408, 0, 0, 0, 0, 0, 0, 31, 0.95, -413.9, 0, 0, 0, 0, 0, 0, 31, 0.45, -417.1),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 17
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Open House Day"
+short_goal = "Fly through open windows and doors, room to room, and land on the cat's rug."
+goal_text = "It's spring-cleaning day on Rowan Row and every window is thrown open! Launch from the attic bedroom and out the gable window, into the bedroom next door and through to the study. Cross the garden over the washing, then glide along the landing, over the banister and down the stairwell, out through the french doors. Weave through the greenhouse, slip in the cottage's back door and settle on the cat's rug by the fire. Mind the closed windows and the hanging lamps. Follow the dotted line and fly through the gold rings to find the way."
+platform_kind = "attic"
+platform_position = Vector3(31, 6.8, -342.3)
+platform_yaw = 0.0
+aim_point = Vector3(31, 0, -380)
+route = SubResource("Curve3D_route")
+gate_radius = 0.95
+pad_position = Vector3(31, 0.43, -417.1)
+pad_radius = 1.7
+pad_name = "The cat's rug"
+par_time = 9.5
+thermals = [{
+"x": 29.0,
+"z": -363.5,
+"radius": 1.6,
+"strength": 2.4,
+"top": 5.6,
+"style": "golden",
+"base": 3.6,
+"ceiling": 6.6
+}, {
+"x": 31.0,
+"z": -377.5,
+"radius": 3.0,
+"strength": 2.2,
+"top": 6.5,
+"style": "golden"
+}, {
+"x": 31.5,
+"z": -402.0,
+"radius": 1.9,
+"strength": 2.0,
+"top": 2.2,
+"style": "golden",
+"ceiling": 2.3
+}]
+bonus_stars = PackedVector3Array(26.35, 5.1, -364.3, 34.3, 3, -392.5)
+has_bonus_ring = true
+bonus_ring_position = Vector3(26.35, 5.1, -367)
+bonus_ring_axis = Vector3(0, 0, -1)
+bonus_ring_radius = 0.5
+bonus_ring_points = 300
+bonus_ring_message = "Through the secret hatch! +300"
+hazard_lines = [{
+"a": Vector3(25, 4.4, -376.5),
+"b": Vector3(37.5, 4.4, -376.5),
+"sag": 0.5,
+"kind": "washing",
+"posts": true
+}]

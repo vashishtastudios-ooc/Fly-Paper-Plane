@@ -82,6 +82,7 @@ Other places to tune:
 | 3 | Up to the Clock Tower | Bakery roof on Market Street | Clock tower balcony |
 | 4 | Classroom Window Escape | A desk in the upstairs classroom of Linden Primary | A friend's backpack at the bus stop on Linden Lane |
 | 5 | Lantern Night | The clock tower balcony, at dusk | The lantern festival on the old bridge |
+| 6 | Open House Day | An attic bedroom on Rowan Row | The cat's rug by the cottage fireplace |
 
 **Classroom Window Escape:** warm air rises off the radiator, and the spinning ceiling fan or a closed window crashes the plane. After the window you cross the schoolyard and glide about 130 m down Linden Lane, under bunting and through two pockets of rising air, to the bus stop. Rings inside the classroom are smaller (`small_gate_box`).
 
@@ -91,6 +92,14 @@ Other places to tune:
 - Lantern strings across the street are hazards.
 - The festival decor (`decor = "lantern_festival"`) adds floating river lanterns and lantern posts along the bridge.
 - `time_of_day = "dusk"` switches the lighting through `TownBuilder.set_time_of_day()`.
+
+**Open House Day:** a flight through the houses of Rowan Row, a garden street behind the east side of Market Street (`TownBuilder._rowan_row()`). It takes about 7 s along the line.
+- Out the attic's gable window, in through the bedroom's open window, through the doorway into the study and out the back.
+- Over the washing line, along the stairwell house's landing, over the banister and down the stairwell, out through the french doors.
+- Through the greenhouse, in at the cottage's back door, through the kitchen archway onto the round rug.
+- Closed windows, greenhouse glass, hanging lamps, furniture and the banister crash the plane. Warm air rises off the bedroom radiator, the patio and the greenhouse.
+- The secret line: line up left from the attic, go through the bedroom's left window and the small hatch beside the door (the bonus ring, +300), then out the study's left window and in at the stairwell house's left window.
+- Houses are `props/open_house.tscn` with `layout` set to `attic`, `bedroom`, `stairwell`, `greenhouse` or `cottage`.
 
 Each level is a `LevelData` resource in `levels/level_N.tres`. You can edit them in the inspector. Each one holds:
 
@@ -102,7 +111,7 @@ Each level is a `LevelData` resource in `levels/level_N.tres`. You can edit them
 
 A thermal can also set `base` (start height, for example a classroom floor) and `ceiling` (where the visual column stops).
 
-To add a level, create `levels/level_6.tres` and add its path to `LEVEL_PATHS` in `autoload/game.gd`.
+To add a level, create `levels/level_7.tres` and add its path to `LEVEL_PATHS` in `autoload/game.gd`.
 
 ## Look and atmosphere
 
@@ -129,7 +138,7 @@ To add a level, create `levels/level_6.tres` and add its path to `LEVEL_PATHS` i
 
 ## Hangar (plane customization)
 
-The Hangar lets players change the plane's paper, wingtip trail and wing sticker. These are looks only, so flight behavior and level balance never change. Items unlock from the total number of ribbons earned across all flights (up to 15):
+The Hangar lets players change the plane's paper, wingtip trail and wing sticker. These are looks only, so flight behavior and level balance never change. Items unlock from the total number of ribbons earned across all flights (up to 18):
 
 - **Papers:** Notebook (free), Graph paper (2), Red origami (4), Newspaper (6), Old map (8), Sky blue card (10), Polka dot (12)
 - **Trails:** Classic white (free), Rainbow ribbon (3), Gold sparkles (5), Confetti (7), Comet glow (9)
@@ -165,7 +174,8 @@ autoload/        Settings (platform, input map, safe area), Game (state, levels,
 scenes/main.*    Main flow: loading, menu, intro, throw, flight, result, pause
 scenes/town/     town.tscn -> scripts/town/town_builder.gd (fixed seed 20261013)
 props/           One scene per prop: house, shop, civic building, clock tower, bridge, fountain,
-                 bandstand, jetty, picnic blanket, cafe table, car, school, backpack mat
+                 bandstand, jetty, picnic blanket, cafe table, car, school, backpack mat,
+                 open house (walk-through houses of Rowan Row)
 scenes/plane/    Plane scene, flight model, procedural paper dart
 scenes/kid/      The kid who throws the plane
 scenes/gameplay/ Thermal, Star, Gate (ring), LandingPad, HazardLine (bunting / washing / rope)

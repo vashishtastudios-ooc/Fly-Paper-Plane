@@ -99,14 +99,17 @@ func _layout() -> void:
 	_sheet.size = sheet_size
 	_sheet.position = (s - sheet_size) * 0.5
 	var n := _cards.size()
-	var cols := 1 if portrait else (n if n <= 3 else (2 if n == 4 else 3))
+	var cols := (1 if n <= 4 else 2) if portrait else (n if n <= 3 else (2 if n == 4 else 3))
 	_cards_box.columns = cols
 	var rows := int(ceil(float(n) / cols))
 	var scale_f := clampf(sheet_size.x / 900.0, 0.6, 1.1) if not portrait else clampf(sheet_size.x / 560.0, 0.7, 1.1)
 	_title.add_theme_font_size_override("font_size", int((84 if rows < 2 or portrait else 64) * scale_f))
 	_subtitle.add_theme_font_size_override("font_size", int(20 * scale_f))
+	var compact := portrait and cols > 1
 	for c in _cards:
-		c.custom_minimum_size = Vector2(0, 124 * scale_f) if portrait else Vector2((sheet_size.x - 150) / cols, (250.0 / rows) * scale_f)
+		(c.find_child("Name", true, false) as Label).add_theme_font_size_override("font_size", int((22 if compact else 30) * (scale_f if compact else 1.0)))
+		(c.find_child("Goal", true, false) as Label).add_theme_font_size_override("font_size", 14 if compact else 16)
+		c.custom_minimum_size = Vector2(0, (124 if cols == 1 else 168) * scale_f) if portrait else Vector2((sheet_size.x - 150) / cols, (250.0 / rows) * scale_f)
 		c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		c.size_flags_vertical = Control.SIZE_EXPAND_FILL
 

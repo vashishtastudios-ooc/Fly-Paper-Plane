@@ -306,7 +306,8 @@ func process_flight(prev: Vector3, pos: Vector3) -> void:
 		break
 	if changed:
 		_refresh_gates()
-	if bonus_gate and not bonus_taken and _seg_point_dist(bonus_gate.global_position, prev, pos) < BONUS_PASS_RADIUS:
+	if bonus_gate and not bonus_taken and _seg_point_dist(bonus_gate.global_position, prev, pos) < BONUS_PASS_RADIUS \
+			and (pos - bonus_gate.global_position).dot(bonus_gate.axis) > -0.05:
 		bonus_taken = true
 		bonus_points += data.bonus_ring_points
 		bonus_gate.set_look(Gate.Look.PASSED)
