@@ -1,0 +1,306 @@
+extends Node
+## Main game flow: loading, menu, intro, throw, flight, landing/crash and results.
+
+@onready var town: TownBuilder = $Town
+@onready var level: LevelRuntime = $Level
+@onready var plane: PaperPlane = $Plane
+@onready var kid: Node3D = $Kid
+@onready var menu_plane: Node3D = $MenuPlane
+@onready var cam: ChaseCamera = $Camera
+@onready var hud: CanvasLayer = $HUD
+@onready var touch: CanvasLayer = $TouchControls
+@onready var menu: CanvasLayer = $Menu
+@onready var intro: CanvasLayer = $LevelIntro
+@onready var result: CanvasLayer = $Result
+@onready var pause_ui: CanvasLayer = $Pause
+
+var _loading: CanvasLayer
+var _menu_t := 0.0
+var _end_timer := -1.0
+var _pending := {}
+var _last_flight_time := 0.0
+
+
+func _ready() -> void:
+	_show_loading()
+	_wire()
+	cam.plane = plane
+	cam.menu_target = menu_plane
+	if menu_plane.get_child_count() == 0:
+		var mi := MeshInstance3D.new()
+		mi.name = "Model"
+		mi.mesh = PaperPlaneMesh.get_mesh()
+		menu_plane.add_child(mi)
+	plane.level = level
+	kid.visible = false
+	hud.visible = false
+	# Let the loading card render before the heavy town build.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	town.build()
+	_loading.queue_free()
+	go_menu()
+
+
+func _show_loading() -> void:
+	_loading = CanvasLayer.new()
+	_loading.layer = 50
+	var bg := ColorRect.new()
+	bg.color = UIKit.PAPER
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_loading.add_child(bg)
+	var l := UIKit.label("Folding the plane...", UIKit.display_font(), 54, UIKit.INK)
+	l.set_anchors_preset(Control.PRESET_FULL_RECT)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_loading.add_child(l)
+	add_child(_loading)
+
+
+func _wire() -> void:
+	plane.stall_entered.connect(func(): hud.banner("Stall! Nose down", Color("#ffb3a1"), 1.2))
+	plane.rising_air.connect(func(): hud.banner("Rising air", UIKit.GOLD, 1.2))
+	plane.barrel_roll_done.connect(func(): hud.float_text(plane.state.pos, "+50"))
+	plane.landed.connect(_on_landed)
+	plane.crashed.connect(_on_crashed)
+	level.star_collected.connect(func(p: Vector3):
+		Audio.play("star", -2.0)
+		plane.add_star_gust()
+		hud.float_text(p, "+100"))
+	level.ring_passed.connect(func(p: Vector3):
+		Audio.play("ring", -3.0)
+		hud.float_text(p, "+25", Color.WHITE))
+	level.bonus_ring_passed.connect(func(p: Vector3, _pts: int, msg: String):
+		Audio.play("bonus", 0.0)
+		hud.banner(msg, UIKit.GOLD, 1.8)
+		hud.float_text(p, "+%d" % _pts))
+	kid.released.connect(_on_released)
+	touch.gust_pressed.connect(func(): plane.use_gust())
+	touch.roll_pressed.connect(func(d: float): plane.barrel_roll(d))
+	touch.pause_pressed.connect(pause_game)
+	menu.level_chosen.connect(start_level)
+	intro.throw_pressed.connect(throw_plane)
+	intro.flights_pressed.connect(go_menu)
+	result.next_pressed.connect(func(): start_level(mini(Game.current_level + 1, Game.levels.size() - 1)))
+	result.retry_pressed.connect(func(): start_level(Game.current_level))
+	result.flights_pressed.connect(go_menu)
+	pause_ui.resume_pressed.connect(resume_game)
+	pause_ui.restart_pressed.connect(func():
+		resume_game()
+		start_level(Game.current_level))
+	pause_ui.flights_pressed.connect(func():
+		resume_game()
+		go_menu())
+
+
+# --- Flow --------------------------------------------------------------------------------
+
+func go_menu() -> void:
+	get_tree().paused = false
+	_end_timer = -1.0
+	Game.set_state(Game.State.MENU)
+	intro.close()
+	result.close()
+	pause_ui.close()
+	hud.visible = false
+	touch.close()
+	plane.reset()
+	level.hide_guides()
+	kid.visible = false
+	menu_plane.visible = true
+	_menu_t = 0.0
+	_update_menu_plane(0.0)
+	cam.set_mode(ChaseCamera.Mode.MENU, true)
+	menu.open()
+	Audio.set_wind(0.0, false)
+	Audio.play_music()
+
+
+func start_level(index: int) -> void:
+	if not Game.is_unlocked(index):
+		return
+	get_tree().paused = false
+	_end_timer = -1.0
+	Game.current_level = index
+	var data := Game.level()
+	level.build(data, town)
+	town.clear_trees_for_level(data)
+	hud.reset()
+	plane.reset()
+	menu_plane.visible = false
+	kid.visible = true
+	kid.global_position = data.platform_position
+	kid.rotation = Vector3(0, data.start_yaw(), 0)
+	kid.reset()
+	kid.reset_physics_interpolation()
+	cam.intro_center = data.platform_position
+	cam.intro_yaw = data.platform_yaw
+	cam.set_mode(ChaseCamera.Mode.INTRO, true)
+	menu.close()
+	result.close()
+	pause_ui.close()
+	hud.visible = false
+	touch.close()
+	intro.open(index, data)
+	Audio.set_wind(0.0, false)
+	Game.set_state(Game.State.INTRO)
+
+
+func throw_plane() -> void:
+	if Game.state != Game.State.INTRO:
+		return
+	intro.close()
+	get_viewport().gui_release_focus()
+	Game.set_state(Game.State.THROWING)
+	kid.throw()
+
+
+func _on_released(hand: Vector3) -> void:
+	var data := Game.level()
+	plane.launch(hand, data.start_yaw())
+	Audio.play("throw", -2.0)
+	Game.set_state(Game.State.FLYING)
+	cam.set_mode(ChaseCamera.Mode.FOLLOW)
+	hud.visible = true
+	if Settings.touch_ui:
+		touch.open()
+
+
+func _on_landed(info: Dictionary) -> void:
+	Game.set_state(Game.State.LANDED)
+	var data := Game.level()
+	var stats := {
+		"dist": info.dist,
+		"radius": data.pad_radius,
+		"vertical_impact": info.vertical_impact,
+		"speed": info.speed,
+		"stars": level.stars_collected,
+		"stars_total": level.stars_total(),
+		"time": plane.flight_time,
+		"par": data.par_time,
+		"rings": level.rings_passed,
+		"rolls": plane.rolls_done,
+		"bonus": level.bonus_points,
+	}
+	var score := Game.compute_landing_score(stats)
+	var is_best := Game.record_landing(Game.current_level, score.total, score.ribbons)
+	_pending = {"kind": "land", "score": score, "stats": stats, "best": is_best}
+	cam.orbit_center = info.position
+	cam.set_mode(ChaseCamera.Mode.ORBIT)
+	hud.banner(score.headline, UIKit.GOLD, 1.6)
+	level.hide_guides()
+	touch.close()
+	Audio.set_wind(0.0, false)
+	_end_timer = 2.2
+
+
+func _on_crashed(message: String, _kind: String) -> void:
+	Game.set_state(Game.State.CRASHED)
+	_pending = {"kind": "crash", "message": message, "stars": level.stars_collected,
+		"stars_total": level.stars_total(), "time": plane.flight_time}
+	cam.shake(0.9)
+	cam.orbit_center = plane.state.pos
+	cam.set_mode(ChaseCamera.Mode.ORBIT)
+	hud.banner(message, Color("#ffb3a1"), 1.3)
+	level.hide_guides()
+	touch.close()
+	Audio.set_wind(0.0, false)
+	_end_timer = 1.6
+
+
+func _show_result() -> void:
+	Game.set_state(Game.State.RESULT)
+	hud.visible = false
+	if _pending.kind == "land":
+		result.show_landing(_pending.score, _pending.stats, _pending.best, Game.has_next_level())
+	else:
+		result.show_crash(_pending.message, _pending.stars, _pending.stars_total, _pending.time)
+
+
+func pause_game() -> void:
+	if Game.state in [Game.State.FLYING, Game.State.THROWING, Game.State.INTRO]:
+		get_tree().paused = true
+		pause_ui.open()
+
+
+func resume_game() -> void:
+	pause_ui.close()
+	get_tree().paused = false
+
+
+# --- Per frame ---------------------------------------------------------------------------
+
+func _process(delta: float) -> void:
+	match Game.state:
+		Game.State.MENU:
+			_update_menu_plane(delta)
+		Game.State.FLYING:
+			var x := Input.get_axis("turn_left", "turn_right")
+			var y := Input.get_axis("dive", "climb")
+			if touch.visible:
+				x += touch.stick.x
+				y += -touch.stick.y
+				touch.gust_charge = plane.gusts
+			plane.set_controls(clampf(x, -1.0, 1.0), clampf(y, -1.0, 1.0))
+			hud.update_flight(plane, level, cam, plane.flight_time, delta)
+			level.update_guides(plane)
+			Audio.set_wind(plane.state.v, true)
+		Game.State.LANDED, Game.State.CRASHED:
+			hud.update_flight(plane, level, cam, plane.flight_time, delta)
+			if _end_timer > 0.0:
+				_end_timer -= delta
+				if _end_timer <= 0.0:
+					_show_result()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("pause"):
+		if Game.state == Game.State.RESULT:
+			go_menu()
+		else:
+			pause_game()
+		get_viewport().set_input_as_handled()
+		return
+	match Game.state:
+		Game.State.INTRO:
+			if event.is_action_pressed("throw"):
+				throw_plane()
+				get_viewport().set_input_as_handled()
+		Game.State.FLYING:
+			if event.is_action_pressed("gust"):
+				plane.use_gust()
+			elif event.is_action_pressed("roll_left"):
+				plane.barrel_roll(-1.0)
+			elif event.is_action_pressed("roll_right"):
+				plane.barrel_roll(1.0)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		match Game.state:
+			Game.State.MENU:
+				get_tree().quit()
+			Game.State.FLYING, Game.State.THROWING:
+				pause_game()
+			_:
+				go_menu()
+	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT and Game.state == Game.State.FLYING and Settings.is_mobile:
+		pause_game()
+
+
+## Decorative plane looping over Linden Lane behind the menu.
+func _update_menu_plane(delta: float) -> void:
+	_menu_t += delta
+	var w := 0.11
+	var t := _menu_t * w
+	var p := _menu_path(t)
+	var p2 := _menu_path(t + 0.02)
+	var dir := (p2 - p).normalized()
+	var turn := _menu_path(t + 0.04) - 2.0 * p2 + p
+	var bank := clampf(-dir.cross(turn).y * 18.0, -0.8, 0.8)
+	menu_plane.global_position = p
+	menu_plane.basis = Basis.looking_at(dir, Vector3.UP) * Basis(Vector3(0, 0, 1), bank)
+
+
+func _menu_path(t: float) -> Vector3:
+	return Vector3(13.0 * sin(t), 11.5 + 2.0 * sin(2.0 * t), -105.0 + 72.0 * cos(t))

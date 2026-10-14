@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 5, 8.37, -348, 0, 0, 0, 0, 0, 0, 4, 10, -370, 0, 0, 0, 0, 0, 0, -2, 12, -405, 0, 0, 0, 0, 0, 0, 2, 13, -440, 0, 0, 0, 0, 0, 0, -1, 14, -480, 0, 0, 0, 0, 0, 0, -9, 16, -515, 0, 0, 0, 0, 0, 0, -6, 19, -545, 0, 0, 0, 0, 0, 0, 6, 21, -566, 0, 0, 0, 0, 0, 0, 2, 17.5, -588, 0, 0, 0, 0, 0, 0, 0, 14.6, -597),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 10
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Up to the Clock Tower"
+short_goal = "Ride the rising air up Market Street to the clock tower balcony."
+goal_text = "Launch from the bakery roof and climb up Market Street by circling in each column of rising air. The fountain in the square sends up a strong updraft. Arrive high and settle gently onto the stone balcony of the clock tower. Follow the dotted line and fly through the gold rings to find the way."
+platform_kind = "roof"
+platform_position = Vector3(10.2, 7.17, -340)
+platform_yaw = 1.5708
+aim_point = Vector3(5, 0, -348)
+route = SubResource("Curve3D_route")
+pad_position = Vector3(0, 14.05, -598.4)
+pad_radius = 1.9
+pad_name = "Clock tower balcony"
+par_time = 48
+thermals = [{
+"x": 4,
+"z": -374,
+"radius": 7.5,
+"strength": 4,
+"top": 16,
+"style": "golden"
+}, {
+"x": -3,
+"z": -418,
+"radius": 7.5,
+"strength": 4,
+"top": 17,
+"style": "golden"
+}, {
+"x": 3,
+"z": -458,
+"radius": 7.5,
+"strength": 4.2,
+"top": 18,
+"style": "golden"
+}, {
+"x": -13,
+"z": -532,
+"radius": 7,
+"strength": 5,
+"top": 21,
+"style": "golden"
+}, {
+"x": 8,
+"z": -565,
+"radius": 9,
+"strength": 5.2,
+"top": 25,
+"style": "golden"
+}]
+bonus_stars = PackedVector3Array(-13, 20, -532, 8, 24, -565)
+hazard_lines = []

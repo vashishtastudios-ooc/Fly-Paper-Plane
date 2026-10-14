@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -16.8, 4.7, -269, 0, 0, 0, 0, 0, 0, -19, 3.2, -281, 0, 0, 0, 0, 0, 0, -22, 1, -292, 0, 0, 0, 0, 0, 0, -18, -0.4, -299.3, 0, 0, 0, 0, 0, 0, -9, -0.6, -300, 0, 0, 0, 0, 0, 0, 0, -0.6, -300, 0, 0, 0, 0, 0, 0, 7, -0.4, -300.5, 0, 0, 0, 0, 0, 0, 14, -0.2, -303, 0, 0, 0, 0, 0, 0, 21, -0.2, -307, 0, 0, 0, 0, 0, 0, 25.5, -0.3, -309.5),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 10
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Under the Old Bridge"
+short_goal = "Skim under the stone bridge and land on the fishing jetty."
+goal_text = "Throw from the little balcony at the end of Linden Lane, drop down to the river and thread the plane under the old stone arch, then land softly on the fishing jetty. The golden ring under the arch is worth 500. Water sinks the air, so keep your speed up. Follow the dotted line and fly through the gold rings to find the way."
+platform_kind = "balcony"
+platform_position = Vector3(-16.3, 3.3, -268.6)
+platform_yaw = -1.5708
+aim_point = Vector3(-21, 0, -292)
+route = SubResource("Curve3D_route")
+pad_position = Vector3(25.75, -0.62, -309.5)
+pad_radius = 2.2
+pad_name = "Fishing jetty"
+par_time = 20
+thermals = [{
+"x": 30,
+"z": -322,
+"radius": 6,
+"strength": 2.2,
+"top": 6,
+"style": "golden"
+}]
+bonus_stars = PackedVector3Array()
+has_bonus_ring = true
+bonus_ring_position = Vector3(0, -0.45, -300)
+bonus_ring_axis = Vector3(1, 0, 0)
+bonus_ring_radius = 1
+bonus_ring_points = 500
+bonus_ring_message = "Under the bridge! +500"
+hazard_lines = [{
+"a": Vector3(-25, 5.2, -284),
+"b": Vector3(-12, 5.2, -284),
+"sag": 0.6,
+"kind": "bunting",
+"posts": true
+}, {
+"a": Vector3(13, 1.5, -291),
+"b": Vector3(13, 1.5, -309),
+"sag": 0.4,
+"kind": "line",
+"posts": true
+}]
