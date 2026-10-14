@@ -13,7 +13,7 @@ const BOUNDS_Z_MIN := -650.0
 ## Stone-walled ponds cut into the ground: [Rect2(x, z, size x, size z), water level, name].
 ## Edges sit on the 4 m terrain grid so the terrain mesh can leave a clean hole for them.
 const PONDS := [
-	[Rect2(-42, -434, 20, 80), -0.45, "the millpond"],
+	[Rect2(-42, -402, 20, 48), -0.45, "the millpond"],
 	[Rect2(-14, 18, 12, 12), -0.4, "the school pond"],
 ]
 const POND_BED := -1.3

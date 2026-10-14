@@ -1113,7 +1113,7 @@ func _ponds() -> void:
 				b.sphere(Mats.get_mat("solid"), Vector3(px, level + 0.07, pz), Vector3(0.08, 0.06, 0.08), 3, 6, Color("#f5b8c8"))
 	add_child(b.build_instance("Ponds", false))
 	# Footbridges: over the middle of the millpond, and across the school pond.
-	for fb in [[Vector3(-32, 0, -424), 22.0, 2.0, 1.3], [Vector3(-8, 0, 24), 15.0, 1.4, 0.9]]:
+	for fb in [[Vector3(-32, 0, -392), 22.0, 2.0, 1.3], [Vector3(-8, 0, 24), 15.0, 1.4, 0.9]]:
 		var bridge: Node3D = FOOTBRIDGE_SCENE.instantiate()
 		bridge.batcher = batcher
 		bridge.span = fb[1]

@@ -90,12 +90,12 @@ Other places to tune:
 |---|---|---|---|
 | 1 | 1.7 m | 2.8 m | Gentle glide over the lane |
 | 2 | 1.7 m | 2.2 m | Low over the river, under the arch |
-| 3 | 1.5 m (1.1 in the archway) | 1.8 m | A 3.4 m archway, a long glide down the millpond under a footbridge, three climbs by circling |
+| 3 | 1.5 m (1.1 in the archway) | 1.8 m | A 3.4 m archway, low down the millpond under a footbridge, one climb by circling |
 | 4 | 1.4 m (0.85 indoors) | 1.5 m | Classroom, then low over the school pond under its footbridge |
 | 5 | 1.3 m (1.0 under the arch) | 1.7 m | Dusk, lantern strings to go over and under, under the old bridge low over the river, onto a small raft |
 | 6 | 0.95 m | 1.7 m | Room to room through windows and doors |
 
-**Up to the Clock Tower:** from the bakery roof, through the Mill Lane archway (a covered passage through the west row of shops, `props/archway`). Circle up in the warm air behind the shops, then glide the length of the millpond, under the bunting and the wooden footbridge (`props/footbridge`). Water sinks the air, so this is a long descending glide that has to arrive under the bridge low but not wet. Rising air just past the pond lifts you again. Then into the square, circling up over the fountain and on to the tower balcony.
+**Up to the Clock Tower:** from the bakery roof, through the Mill Lane archway (a covered passage through the west row of shops, `props/archway`). Turn right onto the millpond through a strong updraft in the bend, then make a short low glide down the water and under the wooden footbridge (`props/footbridge`). Circle once in the rising air past the pond, then fly straight through the updrafts behind the shops, over the fountain and by the tower to the balcony.
 
 **Classroom Window Escape:** warm air rises off the radiator, and the spinning ceiling fan or a closed window crashes the plane. After the window you dive into the schoolyard, skim the wildlife pond under the bunting and its little footbridge, and leave through the yard gate. Rising air over the lane lifts you back up, and you glide about 130 m down Linden Lane to the bus stop. Rings inside the classroom are smaller (`small_gate_box`).
 
@@ -279,7 +279,7 @@ Include each font's `OFL.txt` alongside it. If a file is missing, `scripts/ui/ui
 - A test autopilot that steers along the dotted line and settles onto each pad lands all six levels with the flight constants unchanged:
   - Level 1: about 10 s, 0.5 m from the center
   - Level 2: about 7.3 s, including the +500 bridge ring
-  - Level 3: about 67 s, through Mill Lane, down the millpond and circling three times
+  - Level 3: about 34 s, through Mill Lane, under the millpond footbridge and one circle
   - Level 4: about 12 s, from the classroom under the pond bridge to the bus stop
   - Level 5: about 35 s, from the clock tower under the old bridge to the raft
   - Level 6: about 7 s, room to room
