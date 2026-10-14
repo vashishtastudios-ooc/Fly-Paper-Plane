@@ -58,6 +58,9 @@ var world_env: WorldEnvironment
 var _route_keepouts: Array = []  # [Vector3 a, Vector3 b] segments from every level route
 var _pad_keepouts: Array = []
 var _clouds: Array[MeshInstance3D] = []
+var _sky_mat: ProceduralSkyMaterial
+## "golden" (default) or "dusk" (Lantern Night).
+var time_of_day := "golden"
 var is_built := false
 
 
@@ -164,6 +167,7 @@ func _set_tree_visible(t: Dictionary, v: bool) -> void:
 func _environment() -> void:
 	var env := Environment.new()
 	var sky_mat := ProceduralSkyMaterial.new()
+	_sky_mat = sky_mat
 	sky_mat.sky_top_color = Color("#6699dd")
 	sky_mat.sky_horizon_color = Color("#f5d1ab")
 	sky_mat.sky_curve = 0.12
@@ -407,11 +411,40 @@ func _lane_houses() -> void:
 	school.batcher = batcher
 	school.position = Vector3(0, 0, 48.0)
 	add_child(school)
+	# The friend waits at the bus stop down the lane with an open backpack (classroom level target).
 	var mat: Node3D = BACKPACK_SCENE.instantiate()
 	mat.batcher = batcher
-	mat.position = Vector3(-10.0, 0.0, 17.5)
-	mat.rotation.y = 0.35
+	mat.position = Vector3(12.5, 0.0, -78.0)
+	mat.rotation.y = 0.2
 	add_child(mat)
+	_bus_stop(Vector3(7.0, 0.15, -83.0))
+
+
+## Small bus shelter on the sidewalk, facing the lane (-X).
+func _bus_stop(p: Vector3) -> void:
+	var b := MeshBuilder.new()
+	var metal := Mats.get_mat("metal")
+	var green := Color("#2f5560")
+	for dz in [-1.6, 1.6]:
+		for dx in [-0.55, 0.55]:
+			b.cylinder(metal, Transform3D(Basis(), p + Vector3(dx, 0, dz)), 0.05, 0.05, 2.4, 6, green)
+	b.box_mm(metal, p + Vector3(-0.8, 2.4, -1.8), p + Vector3(0.8, 2.52, 1.8), green)
+	b.box_mm(Mats.get_mat("glass"), p + Vector3(0.5, 0.3, -1.6), p + Vector3(0.56, 2.3, 1.6), Color("#a9c9db"))
+	b.box_mm(Mats.get_mat("wood"), p + Vector3(0.0, 0.45, -1.2), p + Vector3(0.45, 0.5, 1.2), Color("#b07a4f"))
+	b.cylinder(metal, Transform3D(Basis(), p + Vector3(-0.9, 0, 2.2)), 0.04, 0.04, 2.6, 6, Color("#9aa3a8"))
+	b.cylinder(metal, Transform3D(Basis(Vector3.BACK, PI * 0.5), p + Vector3(-0.88, 2.55, 2.2)), 0.28, 0.28, 0.04, 16, Color("#e8b03a"), true)
+	add_child(b.build_instance("BusStop", true))
+	var sign_label := Label3D.new()
+	sign_label.text = "BUS"
+	sign_label.font = UIKit.ui_font()
+	sign_label.font_size = 64
+	sign_label.pixel_size = 0.005
+	sign_label.modulate = Color("#24324f")
+	sign_label.position = p + Vector3(-0.93, 2.55, 2.2)
+	sign_label.rotation.y = -PI * 0.5
+	add_child(sign_label)
+	_static_box("wall", p + Vector3(0, 1.26, 0), Vector3(1.6, 2.52, 3.6))
+	_static_cyl("post", p + Vector3(-0.9, 0, 2.2), 0.3, 2.85)
 
 
 func _add_tree(p: Vector3, scale: float, autumn := false, conifer := false, collide := true) -> void:
@@ -994,3 +1027,41 @@ func _ambient_life() -> void:
 		add_child(c)
 	var air := AIR_SCENE.instantiate()
 	add_child(air)
+
+
+# --- Time of day ---------------------------------------------------------------------------------
+
+## Switches the whole town between golden hour and dusk (lit windows, deeper sky, low sun).
+func set_time_of_day(mode: String) -> void:
+	if mode == time_of_day or world_env == null:
+		return
+	time_of_day = mode
+	var dusk := mode == "dusk"
+	var env := world_env.environment
+	_sky_mat.sky_top_color = Color("#27325f") if dusk else Color("#6699dd")
+	_sky_mat.sky_horizon_color = Color("#f0906a") if dusk else Color("#f5d1ab")
+	_sky_mat.ground_horizon_color = _sky_mat.sky_horizon_color
+	_sky_mat.ground_bottom_color = Color("#4a3442") if dusk else Color("#b98d6a")
+	_sky_mat.sky_energy_multiplier = 0.9 if dusk else 1.0
+	sun.light_color = Color("#ff9466") if dusk else Color("#ffd3a1")
+	sun.light_energy = 0.7 if dusk else 2.1
+	var to_light := Vector3(0.66, 0.1, -0.74) if dusk else Vector3(0.62, 0.36, -0.7)
+	sun.look_at_from_position(Vector3.ZERO, -to_light.normalized(), Vector3.UP)
+	env.ambient_light_energy = 0.55 if dusk else 0.9
+	env.fog_light_color = Color("#8e6a86") if dusk else Color("#f5d2ac")
+	env.fog_depth_end = 330.0 if dusk else 430.0
+	env.tonemap_exposure = 1.08 if dusk else 0.92
+	env.glow_intensity = 0.95 if dusk else 0.55
+	env.glow_hdr_threshold = 0.85 if dusk else 1.0
+	env.adjustment_saturation = 1.12 if dusk else 1.06
+	# Every window and street lamp glows warmly at dusk.
+	var lit := Mats.get_mat("window_lit") as StandardMaterial3D
+	lit.emission = Color(1.0, 0.68, 0.36) if dusk else Color(1.0, 0.72, 0.42)
+	lit.emission_energy_multiplier = 2.4 if dusk else 0.35
+	var water := Mats.get_mat("water") as ShaderMaterial
+	water.set_shader_parameter("sky_color", Color(0.78, 0.5, 0.52) if dusk else Color(0.96, 0.82, 0.68))
+	water.set_shader_parameter("deep_color", Color(0.12, 0.22, 0.33) if dusk else Color(0.24, 0.47, 0.55))
+	for c in _clouds:
+		var m := (c.mesh as QuadMesh).material as StandardMaterial3D
+		var a := m.albedo_color.a
+		m.albedo_color = Color(0.95, 0.66, 0.68, a) if dusk else Color(1.0, 0.95, 0.9, a)

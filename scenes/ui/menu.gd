@@ -99,7 +99,7 @@ func _layout() -> void:
 	_sheet.size = sheet_size
 	_sheet.position = (s - sheet_size) * 0.5
 	var n := _cards.size()
-	var cols := 1 if portrait else (n if n <= 3 else 2)
+	var cols := 1 if portrait else (n if n <= 3 else (2 if n == 4 else 3))
 	_cards_box.columns = cols
 	var rows := int(ceil(float(n) / cols))
 	var scale_f := clampf(sheet_size.x / 900.0, 0.6, 1.1) if not portrait else clampf(sheet_size.x / 560.0, 0.7, 1.1)

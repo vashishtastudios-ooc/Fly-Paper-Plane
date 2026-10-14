@@ -57,6 +57,8 @@ func _ready() -> void:
 func build(level_data: LevelData, town_builder: TownBuilder) -> void:
 	data = level_data
 	town = town_builder
+	if town:
+		town.set_time_of_day(data.time_of_day)
 	if _content:
 		_content.queue_free()
 	_content = Node3D.new()
@@ -88,7 +90,7 @@ func build(level_data: LevelData, town_builder: TownBuilder) -> void:
 		t.radius = th.radius
 		t.strength = th.strength
 		t.top = th.top
-		t.style = th.get("style", "golden")
+		t.style = th.get("style", "lantern" if data.time_of_day == "dusk" else "golden")
 		t.source_height = th.get("source", 0.0)
 		t.ceiling = th.get("ceiling", INF)
 		t.position = Vector3(th.x, th.get("base", Terrain.ground_height(th.x, th.z)), th.z)
@@ -107,7 +109,8 @@ func build(level_data: LevelData, town_builder: TownBuilder) -> void:
 		# The golden bonus ring replaces route rings right next to it (e.g. under the arch).
 		if not (data.has_bonus_ring and gp.distance_to(data.bonus_ring_position) < 7.5):
 			var g: Gate = GATE_SCENE.instantiate()
-			g.ring_radius = data.gate_radius
+			g.ring_radius = data.small_gate_radius if data.small_gate_box.has_point(gp) else data.gate_radius
+			g.lantern = data.gate_style == "lantern"
 			g.axis = _tangent(off_g)
 			g.position = gp
 			_content.add_child(g)
@@ -140,6 +143,10 @@ func build(level_data: LevelData, town_builder: TownBuilder) -> void:
 		_content.add_child(h)
 		hazards.append(h)
 
+	if data.decor != "":
+		var decor_path := "res://scenes/gameplay/%s.tscn" % data.decor
+		if ResourceLoader.exists(decor_path):
+			_content.add_child((load(decor_path) as PackedScene).instantiate())
 	_build_dots()
 	reset_progress()
 

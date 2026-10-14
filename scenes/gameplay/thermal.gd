@@ -6,7 +6,7 @@ extends Node3D
 @export var radius := 8.0
 @export var strength := 3.4
 @export var top := 15.0
-## "golden" or "smoke"
+## "golden", "smoke" or "lantern" (Lantern Night: warm air carrying sky lanterns)
 @export var style := "golden"
 ## Height where the smoke starts (chimney top).
 @export var source_height := 0.0
@@ -45,6 +45,9 @@ func _ready() -> void:
 	sm.set_shader_parameter("intensity", 0.15 if style == "golden" else 0.05)
 	if style == "smoke":
 		sm.set_shader_parameter("tint", Color(0.9, 0.85, 0.8))
+	elif style == "lantern":
+		sm.set_shader_parameter("tint", Color(1.0, 0.6, 0.3))
+		sm.set_shader_parameter("intensity", 0.13)
 	col.material_override = sm
 	col.position = Vector3(0, h * 0.5, 0)
 	col.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -112,11 +115,60 @@ func _ready() -> void:
 		gt2.gradient = g2
 		pm.color_ramp = gt2
 		q.size = Vector2(0.24, 0.24)
-		q.material = Mats.additive(Color(1, 0.9, 0.6), TexGen.get_tex("star_glint"), true)
+		var glint := Color(1, 0.7, 0.4) if style == "lantern" else Color(1, 0.9, 0.6)
+		q.material = Mats.additive(glint, TexGen.get_tex("star_glint"), true)
 	p.process_material = pm
 	p.draw_pass_1 = q
 	add_child(p)
-	_build_swirl(h)
+	if style == "lantern":
+		_build_sky_lanterns(h)
+	else:
+		_build_swirl(h)
+
+
+## Glowing paper sky lanterns drifting up the column.
+func _build_sky_lanterns(h: float) -> void:
+	var p := GPUParticles3D.new()
+	p.name = "SkyLanterns"
+	p.amount = 5 if Settings.is_mobile else 9
+	p.lifetime = clampf(h / 1.1, 4.0, 16.0)
+	p.preprocess = p.lifetime
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	p.visibility_aabb = AABB(Vector3(-radius - 4, -2, -radius - 4), Vector3(radius * 2 + 8, h + 8, radius * 2 + 8))
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
+	pm.emission_ring_axis = Vector3.UP
+	pm.emission_ring_radius = radius * 0.55
+	pm.emission_ring_inner_radius = 0.0
+	pm.emission_ring_height = 0.2
+	pm.direction = Vector3.UP
+	pm.spread = 6.0
+	pm.initial_velocity_min = 0.9
+	pm.initial_velocity_max = 1.3
+	pm.gravity = Vector3(0.12, 0.0, 0.0)
+	pm.scale_min = 0.8
+	pm.scale_max = 1.3
+	var sc := Curve.new()
+	sc.add_point(Vector2(0.0, 0.0))
+	sc.add_point(Vector2(0.08, 1.0))
+	sc.add_point(Vector2(0.85, 1.0))
+	sc.add_point(Vector2(1.0, 0.0))
+	var sct := CurveTexture.new()
+	sct.curve = sc
+	pm.scale_curve = sct
+	p.process_material = pm
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.12
+	cm.bottom_radius = 0.16
+	cm.height = 0.3
+	cm.radial_segments = 8
+	cm.rings = 1
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = Color(1.7, 0.85, 0.3)
+	cm.material = m
+	p.draw_pass_1 = cm
+	add_child(p)
 
 
 # --- Swirl of leaves spiralling up the column ---------------------------------------------

@@ -19,11 +19,12 @@
 > • Follow the dotted line and fly through the gold rings
 > • Settle down softly on the target for a Feather landing
 >
-> FOUR HANDCRAFTED FLIGHTS
+> FIVE HANDCRAFTED FLIGHTS
 > • **Window to the Picnic:** from an upstairs balcony to a picnic blanket in the park
 > • **Under the Old Bridge:** skim the river and thread the plane under a stone arch
 > • **Up to the Clock Tower:** ride the updrafts up Market Street to a tiny balcony
-> • **Classroom Window Escape:** launch from your desk, dodge the ceiling fan and slip out the window
+> • **Classroom Window Escape:** launch from your desk, dodge the ceiling fan, slip out the window and glide to the bus stop
+> • **Lantern Night:** at dusk, glide from the clock tower through hoops of paper lanterns to the festival on the bridge
 >
 > MAKE IT YOURS
 > Earn ribbons for soft, accurate landings and unlock new papers (graph paper, red origami, old map, newspaper and more), trails (rainbow ribbon, gold sparkles, confetti, comet glow) and wing stickers.

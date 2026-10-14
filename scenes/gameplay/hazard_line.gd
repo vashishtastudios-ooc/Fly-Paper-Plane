@@ -9,7 +9,7 @@ const HIT_DISTANCE := 0.3
 @export var a := Vector3.ZERO
 @export var b := Vector3(10, 0, 0)
 @export var sag := 1.0
-## "bunting", "washing" or "line".
+## "bunting", "washing", "line" or "lanterns".
 @export var kind := "bunting"
 @export var with_posts := true
 @export var seed_value := 1
@@ -36,6 +36,7 @@ func point_at(t: float) -> Vector3:
 func message() -> String:
 	match kind:
 		"washing": return "Tangled in the washing"
+		"lanterns": return "Tangled in the lantern string"
 		"bunting": return "Tangled in the bunting"
 	return "Snagged on a line"
 
@@ -122,6 +123,36 @@ func _build_visual() -> void:
 				# Clothes peg.
 				mb.box(Mats.get_mat("wood"), Transform3D(Basis(), p + Vector3(0, -0.02, 0)), Vector3(0.03, 0.09, 0.03), Color("#c9a27e"))
 				k += 1
+		"lanterns":
+			var n3 := int(length / 1.1)
+			var lm := MultiMesh.new()
+			lm.transform_format = MultiMesh.TRANSFORM_3D
+			lm.use_colors = true
+			var sphere := SphereMesh.new()
+			sphere.radius = 0.15
+			sphere.height = 0.36
+			sphere.radial_segments = 10
+			sphere.rings = 5
+			var glow := StandardMaterial3D.new()
+			glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			glow.vertex_color_use_as_albedo = true
+			glow.vertex_color_is_srgb = true
+			glow.albedo_color = Color(1.4, 1.4, 1.4)
+			sphere.material = glow
+			lm.mesh = sphere
+			lm.instance_count = n3
+			var lcols := [Color("#ff8a3d"), Color("#ffcf5a"), Color("#ff5f5f"), Color("#ffb347")]
+			for i in n3:
+				var p := point_at((i + 0.5) / n3) + Vector3(0, -0.24, 0)
+				lm.set_instance_transform(i, Transform3D(Basis(), p))
+				lm.set_instance_color(i, lcols[i % lcols.size()])
+				mb.box(Mats.get_mat("rope"), Transform3D(Basis(), p + Vector3(0, 0.15, 0)), Vector3(0.012, 0.12, 0.012), Color("#4a3426"))
+			var lanterns := MultiMeshInstance3D.new()
+			lanterns.name = "Lanterns"
+			lanterns.multimesh = lm
+			lanterns.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			lanterns.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+			add_child(lanterns)
 		"line":
 			var n2 := int(length / 1.5)
 			for i in n2:

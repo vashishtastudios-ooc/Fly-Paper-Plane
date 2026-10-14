@@ -15,6 +15,7 @@ const LEVEL_PATHS := [
 	"res://levels/level_2.tres",
 	"res://levels/level_3.tres",
 	"res://levels/level_4.tres",
+	"res://levels/level_5.tres",
 ]
 
 var state: int = State.LOADING

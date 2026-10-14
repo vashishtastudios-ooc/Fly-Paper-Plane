@@ -80,9 +80,17 @@ Other places to tune:
 | 1 | Window to the Picnic | Upstairs balcony on Linden Lane | Picnic blanket in the park |
 | 2 | Under the Old Bridge | Corner balcony by the river | Fishing jetty |
 | 3 | Up to the Clock Tower | Bakery roof on Market Street | Clock tower balcony |
-| 4 | Classroom Window Escape | A desk in the upstairs classroom of Linden Primary | A friend's backpack in the schoolyard |
+| 4 | Classroom Window Escape | A desk in the upstairs classroom of Linden Primary | A friend's backpack at the bus stop on Linden Lane |
+| 5 | Lantern Night | The clock tower balcony, at dusk | The lantern festival on the old bridge |
 
-In the classroom level, warm air rises off the radiator. Hitting the spinning ceiling fan or a closed window crashes the plane. Bunting is strung across the room and across the yard.
+**Classroom Window Escape:** warm air rises off the radiator, and the spinning ceiling fan or a closed window crashes the plane. After the window you cross the schoolyard and glide about 130 m down Linden Lane, under bunting and through two pockets of rising air, to the bus stop. Rings inside the classroom are smaller (`small_gate_box`).
+
+**Lantern Night:** the same town at dusk. The sky deepens, the sun sits low and every window and street lamp glows. You glide about 300 m down Market Street.
+- Rings are hoops of paper lanterns (`gate_style = "lantern"`).
+- Rising air comes from the lanterns and carries glowing sky lanterns upward (thermal style `lantern`).
+- Lantern strings across the street are hazards.
+- The festival decor (`decor = "lantern_festival"`) adds floating river lanterns and lantern posts along the bridge.
+- `time_of_day = "dusk"` switches the lighting through `TownBuilder.set_time_of_day()`.
 
 Each level is a `LevelData` resource in `levels/level_N.tres`. You can edit them in the inspector. Each one holds:
 
@@ -94,11 +102,11 @@ Each level is a `LevelData` resource in `levels/level_N.tres`. You can edit them
 
 A thermal can also set `base` (start height, for example a classroom floor) and `ceiling` (where the visual column stops).
 
-To add a level, create `levels/level_5.tres` and add its path to `LEVEL_PATHS` in `autoload/game.gd`.
+To add a level, create `levels/level_6.tres` and add its path to `LEVEL_PATHS` in `autoload/game.gd`.
 
 ## Hangar (plane customization)
 
-The Hangar lets players change the plane's paper, wingtip trail and wing sticker. These are looks only, so flight behavior and level balance never change. Items unlock from the total number of ribbons earned across all flights (up to 12):
+The Hangar lets players change the plane's paper, wingtip trail and wing sticker. These are looks only, so flight behavior and level balance never change. Items unlock from the total number of ribbons earned across all flights (up to 15):
 
 - **Papers:** Notebook (free), Graph paper (2), Red origami (4), Newspaper (6), Old map (8), Sky blue card (10), Polka dot (12)
 - **Trails:** Classic white (free), Rainbow ribbon (3), Gold sparkles (5), Confetti (7), Comet glow (9)
@@ -178,5 +186,6 @@ Include each font's `OFL.txt` alongside it. If a file is missing, `scripts/ui/ui
   - Level 1: about 10 s, 0.5 m from the center
   - Level 2: about 7.3 s, including the +500 bridge ring
   - Level 3: about 32 s
-  - Level 4: about 4 s, out the window and onto the backpack
+  - Level 4: about 15 s, from the classroom to the bus stop
+  - Level 5: about 32 s, from the clock tower to the bridge
 - Screenshots were checked in landscape and portrait, for every flight and for the Hangar, Settings and Credits screens.

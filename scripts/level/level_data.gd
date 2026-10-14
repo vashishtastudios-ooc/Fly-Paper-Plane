@@ -20,8 +20,19 @@ extends Resource
 ## Waypoints of the intended flight line (handles are smoothed at runtime).
 @export var route: Curve3D
 
-## Radius of the gold route rings (smaller for indoor levels).
+## Radius of the gold route rings.
 @export var gate_radius := 1.7
+## Rings inside this box use small_gate_radius (e.g. inside a classroom).
+@export var small_gate_box := AABB()
+@export var small_gate_radius := 1.0
+## "gold" rings or "lantern" hoops of paper lanterns.
+@export var gate_style := "gold"
+
+@export_group("Mood")
+## "golden" (golden hour) or "dusk" (Lantern Night).
+@export var time_of_day := "golden"
+## Optional extra scene under res://scenes/gameplay/ (e.g. "lantern_festival").
+@export var decor := ""
 
 @export_group("Landing pad")
 @export var pad_position := Vector3.ZERO

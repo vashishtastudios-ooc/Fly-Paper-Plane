@@ -121,6 +121,7 @@ func go_menu() -> void:
 	level.hide_guides()
 	kid.visible = false
 	menu_plane.visible = true
+	town.set_time_of_day("golden")
 	_menu_t = 0.0
 	_update_menu_plane(0.0)
 	cam.set_mode(ChaseCamera.Mode.MENU, true)
