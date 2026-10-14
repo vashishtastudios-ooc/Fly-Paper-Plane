@@ -100,10 +100,15 @@ The UI uses Caveat Brush (handwriting), Newsreader (serif body) and Barlow Conde
 
 Include each font's `OFL.txt` alongside it. If a file is missing, `scripts/ui/ui_kit.gd` falls back to similar system fonts, such as Segoe Print, Georgia and Arial Narrow, or casual, serif and sans-serif-condensed on Android.
 
+## Landing and rising air
+
+- **Touchdown rule:** the plane touches down only when it reaches the pad surface: within 0.3 m above the pad top and within the pad radius + 0.4 m. You can glide over the pad and settle near the center for a better accuracy score. The threshold is `TOUCHDOWN_HEIGHT` in `scripts/level/level_runtime.gd`.
+- **Thermals:** each column shows a golden shimmer, bright rising sparkles and a swirl of leaves spiralling upward. Flying into one plays a soft whoosh and gently lifts the camera.
+
 ## Verified
 
 - All scripts and scenes load without errors in a headless check.
-- A test autopilot that steers along the dotted line and descends toward each pad lands all three levels with the flight constants unchanged:
-  - Level 1: about 10 s
+- A test autopilot that steers along the dotted line and settles onto each pad lands all three levels with the flight constants unchanged:
+  - Level 1: about 10 s, 0.5 m from the center
   - Level 2: about 7.3 s, including the +500 bridge ring
   - Level 3: about 32 s

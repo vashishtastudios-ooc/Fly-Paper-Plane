@@ -7,6 +7,7 @@ extends Node3D
 signal launched
 signal stall_entered
 signal rising_air
+signal entered_thermal
 signal gust_used
 signal barrel_roll_done
 signal landed(info: Dictionary)
@@ -93,6 +94,8 @@ var flight_time := 0.0
 var autopilot: Callable  # Optional: returns Vector2(in_x, in_y) (used by tests).
 
 var _rising_cooldown := 0.0
+var _thermal_cooldown := 0.0
+var _was_inside := false
 var _was_rising := false
 var _roll_t := -1.0
 var _roll_dir := 1.0
@@ -150,6 +153,8 @@ func launch(pos: Vector3, yaw: float) -> void:
 	_roll_t = -1.0
 	_was_rising = false
 	_rising_cooldown = 0.0
+	_was_inside = false
+	_thermal_cooldown = 0.0
 	_visual.scale = Vector3.ONE
 	_visual.rotation = Vector3.ZERO
 	_trail_l.clear()
@@ -280,6 +285,13 @@ func _fly(dt: float) -> void:
 	stalled = now_stalled
 
 	_rising_cooldown -= dt
+	_thermal_cooldown -= dt
+	var inside := lift > 0.4
+	if inside and not _was_inside and _thermal_cooldown <= 0.0:
+		entered_thermal.emit()
+		Audio.play("updraft", -5.0)
+		_thermal_cooldown = 1.5
+	_was_inside = inside
 	var rising := lift > rising_air_threshold
 	if rising and not _was_rising and _rising_cooldown <= 0.0:
 		rising_air.emit()

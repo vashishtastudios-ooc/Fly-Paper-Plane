@@ -40,7 +40,7 @@ func _ready() -> void:
 	var sm := ShaderMaterial.new()
 	sm.shader = load("res://shaders/thermal.gdshader")
 	sm.set_shader_parameter("height", h)
-	sm.set_shader_parameter("intensity", 0.09 if style == "golden" else 0.04)
+	sm.set_shader_parameter("intensity", 0.15 if style == "golden" else 0.05)
 	if style == "smoke":
 		sm.set_shader_parameter("tint", Color(0.9, 0.85, 0.8))
 	col.material_override = sm
@@ -88,7 +88,7 @@ func _ready() -> void:
 		var mat := Mats.soft_alpha(Color(1, 1, 1, 1), TexGen.get_tex("cloud"), true, false)
 		q.material = mat
 	else:
-		p.amount = 24 if Settings.is_mobile else 48
+		p.amount = 36 if Settings.is_mobile else 72
 		p.lifetime = clampf(h / 2.2, 2.0, 9.0)
 		p.preprocess = p.lifetime
 		pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
@@ -99,17 +99,84 @@ func _ready() -> void:
 		pm.initial_velocity_min = 1.8
 		pm.initial_velocity_max = 2.6
 		pm.gravity = Vector3.ZERO
-		pm.scale_min = 0.5
-		pm.scale_max = 1.0
+		pm.scale_min = 0.7
+		pm.scale_max = 1.4
 		var g2 := Gradient.new()
-		g2.set_color(0, Color(1, 0.85, 0.5, 0.0))
-		g2.add_point(0.2, Color(1, 0.85, 0.5, 0.9))
+		g2.set_color(0, Color(1, 0.82, 0.42, 0.0))
+		g2.add_point(0.15, Color(1, 0.86, 0.48, 1.0))
+		g2.add_point(0.75, Color(1, 0.86, 0.48, 0.8))
 		g2.set_color(g2.get_point_count() - 1, Color(1, 0.85, 0.5, 0.0))
 		var gt2 := GradientTexture1D.new()
 		gt2.gradient = g2
 		pm.color_ramp = gt2
-		q.size = Vector2(0.18, 0.18)
-		q.material = Mats.additive(Color(1, 0.88, 0.55), TexGen.get_tex("star_glint"), true)
+		q.size = Vector2(0.24, 0.24)
+		q.material = Mats.additive(Color(1, 0.9, 0.6), TexGen.get_tex("star_glint"), true)
 	p.process_material = pm
 	p.draw_pass_1 = q
 	add_child(p)
+	_build_swirl(h)
+
+
+# --- Swirl of leaves spiralling up the column ---------------------------------------------
+
+var _swirl: MultiMeshInstance3D
+var _leaves: Array = []  # Each: [angle, height, radius_frac, climb_speed, spin_speed, spin]
+var _height := 1.0
+
+
+func _build_swirl(h: float) -> void:
+	_height = h
+	var count := 10 if Settings.is_mobile else 18
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(absf(global_position.x * 31.0 + global_position.z * 7.0)) + 1
+	var q := QuadMesh.new()
+	q.size = Vector2(0.24, 0.3)
+	var lm := StandardMaterial3D.new()
+	lm.albedo_texture = TexGen.get_tex("leaf")
+	lm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	lm.alpha_scissor_threshold = 0.5
+	lm.vertex_color_use_as_albedo = true
+	lm.vertex_color_is_srgb = true
+	lm.cull_mode = BaseMaterial3D.CULL_DISABLED
+	lm.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER
+	lm.distance_fade_min_distance = 1.5
+	lm.distance_fade_max_distance = 4.0
+	q.material = lm
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	mm.mesh = q
+	mm.instance_count = count
+	var cols := ["#e8873a", "#f2c14e", "#d9662f", "#f0a541", "#c9572e", "#9fbf5a"]
+	for i in count:
+		_leaves.append([rng.randf() * TAU, rng.randf() * h, rng.randf_range(0.35, 0.8),
+			rng.randf_range(1.4, 2.4), rng.randf_range(-6.0, 6.0), rng.randf() * TAU])
+		mm.set_instance_color(i, Color(cols[i % cols.size()]))
+	_swirl = MultiMeshInstance3D.new()
+	_swirl.name = "LeafSwirl"
+	_swirl.multimesh = mm
+	_swirl.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_swirl.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	_swirl.visibility_range_end = 160.0
+	_swirl.custom_aabb = AABB(Vector3(-radius, 0, -radius), Vector3(radius * 2.0, h + 2.0, radius * 2.0))
+	add_child(_swirl)
+
+
+func _process(delta: float) -> void:
+	if _swirl == null or not _swirl.is_visible_in_tree():
+		return
+	var mm := _swirl.multimesh
+	for i in _leaves.size():
+		var l: Array = _leaves[i]
+		var r: float = radius * l[2] * (0.55 + 0.45 * l[1] / _height)
+		l[0] += delta * l[3] * 1.6 / maxf(r, 1.0)
+		l[1] += delta * l[3]
+		l[5] += delta * l[4]
+		if l[1] > _height:
+			l[1] = 0.0
+		var a: float = l[0]
+		var pos := Vector3(cos(a) * r, l[1], sin(a) * r)
+		# Leaves fade in at the bottom and out near the top by shrinking.
+		var k := clampf(l[1] / 1.5, 0.0, 1.0) * clampf((_height - l[1]) / 2.0, 0.0, 1.0)
+		var basis := Basis(Vector3.UP, -a).rotated(Vector3(cos(a), 0, sin(a)), l[5]).scaled(Vector3.ONE * maxf(k, 0.001))
+		mm.set_instance_transform(i, Transform3D(basis, pos))

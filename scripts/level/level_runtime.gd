@@ -335,11 +335,17 @@ func pad_surface_under(p: Vector3) -> float:
 	return -INF
 
 
+## Height above the pad surface at which the plane counts as touching down.
+const TOUCHDOWN_HEIGHT := 0.3
+
+
+## True when the plane has actually reached the pad surface (within TOUCHDOWN_HEIGHT),
+## so it can glide over the pad and settle near the center.
 func is_landing(_prev: Vector3, pos: Vector3) -> bool:
 	if horizontal_distance_to_pad(pos) >= data.pad_radius + 0.4:
 		return false
 	var dy := pos.y - pad_top()
-	return dy >= -0.3 and dy <= 1.1
+	return dy >= -0.3 and dy <= TOUCHDOWN_HEIGHT
 
 
 func pad_contact_point(pos: Vector3) -> Vector3:

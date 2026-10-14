@@ -129,6 +129,7 @@ func _synth_sfx() -> void:
 	var out := {}
 	out["throw"] = _wav(_whoosh(rng, 0.55, 0.05, 0.45, 0.9))
 	out["gust"] = _wav(_whoosh(rng, 0.7, 0.08, 0.6, 0.8))
+	out["updraft"] = _wav(_whoosh(rng, 1.1, 0.03, 0.22, 0.6))
 	out["star"] = _wav(_mix([_bell([1318.5, 1975.5], 0.7, 5.0, 0.35), _delay(_bell([1975.5, 2637.0], 0.6, 6.0, 0.25), 0.07)]))
 	out["ring"] = _wav(_mix([
 		_bell([784.0, 1568.0], 0.5, 6.0, 0.3),

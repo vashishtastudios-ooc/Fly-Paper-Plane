@@ -26,6 +26,7 @@ var orbit_center := Vector3.ZERO
 var _time := 0.0
 var _since_launch := 10.0
 var _shake := 0.0
+var _lift_s := 0.0
 var _orbit_angle := 0.0
 var _look := Vector3.ZERO
 var _rng := RandomNumberGenerator.new()
@@ -112,13 +113,15 @@ func _update(delta: float, snap: bool) -> void:
 				var dir := Vector3(-sin(s.yaw), 0.0, -cos(s.yaw))
 				var right := dir.cross(Vector3.UP)
 				var dive := maxf(0.0, -s.pitch) * 2.2
-				desired = p - dir * back + Vector3.UP * (up + dive) - right * (s.roll * 0.8)
+				# Gentle upward float while riding rising air.
+				_lift_s = lerpf(_lift_s, clampf(plane.lift / 4.0, 0.0, 1.0), 1.0 - exp(-1.5 * delta))
+				desired = p - dir * back + Vector3.UP * (up + dive + _lift_s * 0.75) - right * (s.roll * 0.8)
 				var vel := plane.velocity()
 				var vdir := vel.normalized() if vel.length() > 0.1 else dir
-				look = p + vdir * look_ahead
+				look = p + vdir * look_ahead + Vector3.UP * _lift_s * 0.4
 				rate = launch_smooth_rate if _since_launch < launch_smooth_time else smooth_rate
 				cam_roll = s.roll * roll_follow
-				target_fov += clampf((s.v - 9.0) / 12.0, 0.0, 1.0) * speed_fov
+				target_fov += clampf((s.v - 9.0) / 12.0, 0.0, 1.0) * speed_fov + _lift_s * 2.5
 				desired = _clamp_to_world(desired, p)
 		Mode.ORBIT:
 			_orbit_angle += delta * 0.32
