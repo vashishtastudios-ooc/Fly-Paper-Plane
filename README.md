@@ -137,6 +137,18 @@ To add a level, create `levels/level_7.tres` and add its path to `LEVEL_PATHS` i
   - Medium and High enable everything
   - SSR runs only on desktop High
 
+## Sliding landings
+
+A gentle belly touch on a flat surface makes the plane slide instead of crumple. This covers the ground, floors, balconies, flat roofs and the bridge deck: anything flatter than about 32°, met at under 25° (`slide_max_angle`), as long as the plane isn't diving nose-first.
+
+- **Slide length:** about the touchdown speed divided by 2 m/s (`slide_friction`). Touching down at 9 m/s slides about 4 m.
+- **Onto the target:** it's a landing. Once on the target it settles faster (`pad_friction`).
+- **Scoring:** accuracy is measured where the plane comes to rest. Softness uses the first touch, so landing short and sliding to the center scores the same as landing there directly.
+- **Into something:** a normal crash.
+- **Off an edge:** the plane is flying again.
+- **Stops before the target:** "Touched down short", without the crumple.
+- **Steep or nose-first hits** still crash, and water still splashes.
+
 ## Collisions (what counts as a hit)
 
 The rule: you only crash when the plane visibly touches something.

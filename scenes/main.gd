@@ -222,8 +222,9 @@ func _on_crashed(message: String, _kind: String) -> void:
 	Game.set_state(Game.State.CRASHED)
 	_pending = {"kind": "crash", "message": message, "stars": level.stars_collected,
 		"stars_total": level.stars_total(), "time": plane.flight_time}
-	cam.shake(0.9)
-	Settings.vibrate(120)
+	if _kind != "stopped":
+		cam.shake(0.9)
+		Settings.vibrate(120)
 	cam.orbit_center = plane.state.pos
 	cam.set_mode(ChaseCamera.Mode.ORBIT)
 	hud.banner(message, Color("#ffb3a1"), 1.3)

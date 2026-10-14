@@ -13,7 +13,7 @@ signal barrel_roll_done
 signal landed(info: Dictionary)
 signal crashed(message: String, kind: String)
 
-enum Mode { IDLE, FLYING, LANDED, CRASHED }
+enum Mode { IDLE, FLYING, SLIDING, LANDED, CRASHED }
 
 @export_group("Pitch and roll")
 @export var stall_speed := 4.6
@@ -54,6 +54,17 @@ enum Mode { IDLE, FLYING, LANDED, CRASHED }
 @export_group("Collision")
 @export var collision_radius := 0.2
 @export var short_landing_distance := 12.0
+
+@export_group("Sliding")
+## A belly touch on a flat surface becomes a slide instead of a crash when the plane meets it
+## at less than this angle (degrees) and isn't diving nose-first.
+@export var slide_max_angle := 25.0
+## Surfaces flatter than this (normal.y) can be slid on: ground, floors, balconies, flat roofs.
+@export var slide_min_flatness := 0.85
+## How quickly a slide on a floor slows down (about speed / friction metres of slide).
+@export var slide_friction := 2.0
+## How quickly the plane settles once it is on the target.
+@export var pad_friction := 3.2
 
 
 ## Minimal flight state, also used for the touchdown predictor.
@@ -100,6 +111,11 @@ var _was_rising := false
 var _roll_t := -1.0
 var _roll_dir := 1.0
 var _skid_t := 0.0
+## First-touch values for a landing (a slide-in keeps the softness of its first touch).
+var _touch_impact := 0.0
+var _touch_speed := 0.0
+var _land_info := {}
+var _landed_sent := false
 var _visual: Node3D
 var _trail_l := PackedVector3Array()
 var _trail_r := PackedVector3Array()
@@ -263,6 +279,8 @@ func _physics_process(dt: float) -> void:
 	match mode:
 		Mode.FLYING:
 			_fly(dt)
+		Mode.SLIDING:
+			_slide(dt)
 		Mode.LANDED:
 			_skid(dt)
 		Mode.CRASHED:
@@ -362,6 +380,9 @@ func _check_collisions(prev: Vector3, prev_vy: float) -> void:
 		if collider and collider.has_meta("kind"):
 			kind = collider.get_meta("kind")
 		var touch: Vector3 = info.get("point", contact)
+		if _can_slide(info.get("normal", Vector3.ZERO)):
+			_start_slide(Vector3(safe.x, touch.y, safe.z))
+			return
 		_crash(_message_for(kind, safe), kind, safe, touch)
 		return
 	# Hazard lines (bunting, washing, lanterns): only the visible rope and hanging items.
@@ -377,6 +398,9 @@ func _check_collisions(prev: Vector3, prev_vy: float) -> void:
 		_crash("Splash! Into the river", "water", Vector3(pos.x, Terrain.WATER_Y + 0.05, pos.z))
 		return
 	if pos.y - collision_radius < ground:
+		if _can_slide(_ground_normal(pos.x, pos.z)):
+			_start_slide(Vector3(pos.x, ground, pos.z))
+			return
 		var near: bool = level != null and level.horizontal_distance_to_pad(pos) < short_landing_distance + level.pad_radius()
 		_crash("Touched down short" if near else "Crash landing", "ground", Vector3(pos.x, ground + 0.05, pos.z))
 
@@ -400,40 +424,153 @@ func _message_for(kind: String, at: Vector3) -> String:
 
 
 func _land(contact: Vector3) -> void:
-	var info := {
-		"position": contact,
-		"vertical_impact": maxf(0.0, -state.vy),
-		"speed": state.v,
-		"dist": level.horizontal_distance_to_pad(contact) if level else 0.0,
+	# A slide-in keeps the softness of its first touch; a direct landing uses this moment.
+	var sliding_in := mode == Mode.SLIDING
+	_land_info = {
+		"vertical_impact": _touch_impact if sliding_in else maxf(0.0, -state.vy),
+		"speed": _touch_speed if sliding_in else state.v,
 	}
 	mode = Mode.LANDED
+	_landed_sent = false
 	_trail_fx.emitting = false
 	state.pos = contact
 	state.vy = 0.0
 	_skid_t = 0.0
 	_apply_transform()
 	_play_landing_fx(contact)
+
+
+## Called once the plane has stopped on the pad: the landing is scored where it rests.
+func _finish_landing() -> void:
+	if _landed_sent:
+		return
+	_landed_sent = true
+	var info := _land_info.duplicate()
+	info["position"] = state.pos
+	info["dist"] = level.horizontal_distance_to_pad(state.pos) if level else 0.0
 	landed.emit(info)
 
 
 func _skid(dt: float) -> void:
 	_skid_t += dt
-	state.v *= exp(-3.2 * dt)
+	state.v *= exp(-pad_friction * dt)
+	if state.v < 0.3 or _skid_t > 3.0:
+		_finish_landing()
 	state.pitch = _damp(state.pitch, 0.0, 6.0, dt)
 	state.roll = _damp(state.roll, 0.0, 6.0, dt)
 	var fwd := Vector3(-sin(state.yaw), 0.0, -cos(state.yaw))
 	var step := fwd * state.v * dt * 0.6
 	if step.length() > 0.0005:
 		var space := get_world_3d().direct_space_state
-		_query.transform = Transform3D(Basis(), state.pos + Vector3(0, 0.15, 0))
+		_query.transform = Transform3D(Basis(), state.pos + Vector3(0, 0.26, 0))
 		_query.motion = step
 		_query.collision_mask = 1
 		var res := space.cast_motion(_query)
 		_query.collision_mask = 1 | 2
 		var next := state.pos + step * (res[0] if res.size() == 2 else 1.0)
-		if level == null or level.horizontal_distance_to_pad(next) < level.pad_radius() + 0.3:
+		# Stay on the target: move freely inside it, and always allow moving toward the center
+		# (a slide-in arrives right at the edge).
+		if level == null:
 			state.pos = next
+		else:
+			var d_next: float = level.horizontal_distance_to_pad(next)
+			if d_next < level.pad_radius() + 0.3 or d_next < level.horizontal_distance_to_pad(state.pos):
+				state.pos = next
 	_apply_transform()
+
+
+# --- Sliding -----------------------------------------------------------------------------
+
+## True when the plane meets a surface with this normal gently enough to slide on it.
+func _can_slide(normal: Vector3) -> bool:
+	if normal.y < slide_min_flatness or state.pitch < -0.5:
+		return false
+	var vel := velocity()
+	if vel.length() < 0.01:
+		return true
+	var into := -vel.normalized().dot(normal)
+	return into < sin(deg_to_rad(slide_max_angle))
+
+
+func _ground_normal(x: float, z: float) -> Vector3:
+	var hx := Terrain.ground_height(x + 0.5, z) - Terrain.ground_height(x - 0.5, z)
+	var hz := Terrain.ground_height(x, z + 0.5) - Terrain.ground_height(x, z - 0.5)
+	return Vector3(-hx, 1.0, -hz).normalized()
+
+
+func _start_slide(at: Vector3) -> void:
+	_touch_impact = maxf(0.0, -state.vy)
+	_touch_speed = state.v
+	mode = Mode.SLIDING
+	_skid_t = 0.0
+	state.pos = at + Vector3(0, 0.03, 0)
+	state.vy = 0.0
+	state.flap_v = 0.0
+	_apply_transform()
+	Audio.play("roll", -8.0, 1.6)
+	# Touching down right on the target is a normal landing.
+	if level and level.is_landing(state.pos, state.pos):
+		_land(level.pad_contact_point(state.pos))
+
+
+## Height of the floor under a point (ground, or any flat collider), or -INF when there is none.
+func _floor_below(p: Vector3) -> Dictionary:
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.create(p + Vector3(0, 0.6, 0), p + Vector3(0, -1.2, 0), 1 | 2)
+	var hit := space.intersect_ray(q)
+	var ground := Terrain.ground_height(p.x, p.z)
+	if hit.is_empty() or hit.position.y < ground:
+		return {"y": ground, "pad": false, "water": ground < Terrain.WATER_Y, "flat": _ground_normal(p.x, p.z).y >= slide_min_flatness}
+	var col: Object = hit.collider
+	var is_pad: bool = col is CollisionObject3D and (col as CollisionObject3D).collision_layer & 2
+	return {"y": hit.position.y, "pad": is_pad, "water": false, "flat": hit.normal.y >= slide_min_flatness}
+
+
+func _slide(dt: float) -> void:
+	_skid_t += dt
+	state.v *= exp(-slide_friction * dt)
+	state.pitch = _damp(state.pitch, 0.0, 8.0, dt)
+	state.roll = _damp(state.roll, 0.0, 6.0, dt)
+	var fwd := Vector3(-sin(state.yaw), 0.0, -cos(state.yaw))
+	var step := fwd * state.v * dt
+	# Something in the way ahead (checked just above the floor): bonk.
+	var space := get_world_3d().direct_space_state
+	_query.transform = Transform3D(Basis(), state.pos + Vector3(0, 0.24, 0))
+	_query.motion = step
+	_query.collision_mask = 1
+	var res := space.cast_motion(_query)
+	_query.collision_mask = 1 | 2
+	if res.size() == 2 and res[1] < 1.0:
+		_query.transform = Transform3D(Basis(), state.pos + Vector3(0, 0.24, 0) + step * res[1])
+		_query.motion = Vector3.ZERO
+		var info := space.get_rest_info(_query)
+		var kind := "wall"
+		var col: Object = instance_from_id(info.collider_id) if info.has("collider_id") else null
+		if col and col.has_meta("kind"):
+			kind = col.get_meta("kind")
+		_crash(_message_for(kind, state.pos), kind, state.pos, info.get("point", state.pos))
+		return
+	var next := state.pos + step
+	var below := _floor_below(next)
+	if below.water:
+		_crash("Splash! Into the river", "water", Vector3(next.x, Terrain.WATER_Y + 0.05, next.z))
+		return
+	if next.y - below.y > 0.35 or not below.flat:
+		# Slid off an edge: it's flying again (falling).
+		state.pos = next
+		state.pitch = -0.2
+		mode = Mode.FLYING
+		_apply_transform()
+		return
+	state.pos = Vector3(next.x, below.y + 0.03, next.z)
+	_apply_transform()
+	if level and (below.pad or level.is_landing(state.pos, state.pos)):
+		_land(level.pad_contact_point(state.pos))
+		return
+	if state.v < 0.3 or _skid_t > 4.0:
+		# Came to rest off the target: no crumple, just short.
+		var near: bool = level != null and level.horizontal_distance_to_pad(state.pos) < short_landing_distance + level.pad_radius()
+		_crash("Touched down short" if near else "Landed off target", "stopped", state.pos)
 
 
 func _crash(message: String, kind: String, at: Vector3, touch: Variant = null) -> void:
@@ -441,8 +578,9 @@ func _crash(message: String, kind: String, at: Vector3, touch: Variant = null) -
 	_trail_fx.emitting = false
 	state.pos = at
 	position = at
-	_play_crash_fx(kind)
-	_play_bonk(touch if touch != null else at)
+	if kind != "stopped":
+		_play_crash_fx(kind)
+		_play_bonk(touch if touch != null else at)
 	crashed.emit(message, kind)
 
 
