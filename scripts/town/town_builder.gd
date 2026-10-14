@@ -470,7 +470,11 @@ func _bus_stop(p: Vector3) -> void:
 	sign_label.position = p + Vector3(-0.93, 2.55, 2.2)
 	sign_label.rotation.y = -PI * 0.5
 	add_child(sign_label)
-	_static_box("wall", p + Vector3(0, 1.26, 0), Vector3(1.6, 2.52, 3.6))
+	_static_box("wall", p + Vector3(0, 2.46, 0), Vector3(1.6, 0.12, 3.6))
+	_static_box("glass", p + Vector3(0.53, 1.3, 0), Vector3(0.06, 2.0, 3.2))
+	_static_box("post", p + Vector3(0.22, 0.24, 0), Vector3(0.45, 0.5, 2.4))
+	for dz in [-1.6, 1.6]:
+		_static_box("post", p + Vector3(-0.55, 1.2, dz), Vector3(0.1, 2.4, 0.1))
 	_static_cyl("post", p + Vector3(-0.9, 0, 2.2), 0.3, 2.85)
 
 
@@ -490,7 +494,7 @@ func _add_tree(p: Vector3, scale: float, autumn := false, conifer := false, coll
 	body.position = p
 	var trunk_cs := CollisionShape3D.new()
 	var cyl := CylinderShape3D.new()
-	cyl.radius = 0.2 * scale
+	cyl.radius = 0.15 * scale
 	cyl.height = trunk_h
 	trunk_cs.shape = cyl
 	trunk_cs.position = Vector3(0, trunk_h * 0.5, 0)
@@ -535,7 +539,7 @@ func _lane_details() -> void:
 		var sx := -1.0 if k % 2 == 0 else 1.0
 		var p := Vector3(sx * 7.6, 0.15, z)
 		batcher.add("lamp", Transform3D(Basis(), p))
-		_static_cyl("post", p, 0.15, 3.9)
+		_lamp_collider(p)
 		z -= 16.0
 		k += 1
 	# Front-yard and back-yard trees.
@@ -557,6 +561,12 @@ func _lane_details() -> void:
 		c.position = Vector3(sx * 3.9, 0.02, car_z[i])
 		c.rotation.y = 0.0 if sx > 0 else PI
 		add_child(c)
+
+
+## Street lamp: slim pole and the lantern head on top.
+func _lamp_collider(base: Vector3) -> void:
+	_static_cyl("post", base, 0.07, 3.45)
+	_static_cyl("post", base + Vector3(0, 3.45, 0), 0.22, 0.65)
 
 
 func _static_cyl(kind: String, base: Vector3, radius: float, height: float) -> void:
@@ -645,12 +655,12 @@ func _park() -> void:
 		var p: Vector3 = bdat[0]
 		var yaw: float = bdat[1]
 		batcher.add("bench", Transform3D(Basis(Vector3.UP, yaw), p))
-		_static_box("post", p + Vector3(0, 0.5, 0), Vector3(1.8, 1.0, 0.6), yaw)
+		_static_box("post", p + Vector3(0, 0.45, -0.05), Vector3(1.7, 0.9, 0.5), yaw)
 	# Lamps along the path.
 	for i in range(0, pts.size(), 9):
 		var lp: Vector3 = pts[i] + Vector3(1.6, 0, 0)
 		batcher.add("lamp", Transform3D(Basis(), lp))
-		_static_cyl("post", lp, 0.15, 3.9)
+		_lamp_collider(lp)
 	# Park trees, many in autumn colors.
 	var placed := 0
 	var tries := 0
@@ -798,7 +808,7 @@ func _market() -> void:
 		for sx in [-1.0, 1.0]:
 			var p := Vector3(sx * 5.6, 0.15, z)
 			batcher.add("lamp", Transform3D(Basis(), p))
-			_static_cyl("post", p, 0.15, 3.9)
+			_lamp_collider(p)
 		z -= 20.0
 	# Two parked cars.
 	for c_dat in [[Vector3(3.9, 0.02, -420), "#cbbbe8", 0.0], [Vector3(-3.9, 0.02, -446), "#f2d58f", PI]]:
@@ -886,7 +896,7 @@ func _rowan_row() -> void:
 		b.tube(metal, PackedVector3Array([tp + Vector3(cos(a) * 1.35, 0, sin(a) * 1.35), tp + Vector3(cos(a) * 1.35, 0.75, sin(a) * 1.35)]), 0.04, 5, Color("#5b6270"))
 	b.cylinder(solid, Transform3D(Basis(), tp + Vector3(0, 0.72, 0)), 1.45, 1.45, 0.08, 20, Color("#2f6f8f"))
 	b.cylinder(solid, Transform3D(Basis(), tp + Vector3(0, 0.73, 0)), 1.15, 1.15, 0.08, 20, Color("#2a2522"))
-	_static_cyl("fence", tp, 1.45, 0.8)
+	_static_cyl("fence", tp + Vector3(0, 0.72, 0), 1.45, 0.08)
 	# Sun-warmed patio with a table, chairs and a parasol (the rising air in the second garden).
 	b.box_mm(paving, Vector3(28.0, 0.0, -380.0), Vector3(34.0, 0.05, -375.0), Color("#efe2c4"), 4)
 	var tc := Vector3(35.6, 0, -379.4)
@@ -1009,7 +1019,7 @@ func _square() -> void:
 		var a := TAU * i / 5.0 + 0.3
 		var p := Vector3(-13 + sin(a) * 7.2, 0.03, -532 + cos(a) * 7.2)
 		batcher.add("bench", Transform3D(Basis(Vector3.UP, a + PI), p))
-		_static_box("post", p + Vector3(0, 0.5, 0), Vector3(1.8, 1.0, 0.6), a + PI)
+		_static_box("post", p + Vector3(0, 0.45, -0.05), Vector3(1.7, 0.9, 0.5), a + PI)
 	for p in [Vector3(-18, 0, -484), Vector3(18, 0, -484), Vector3(-18, 0, -596), Vector3(18, 0, -596), Vector3(-19, 0, -548), Vector3(19, 0, -505), Vector3(-19, 0, -520)]:
 		_try_tree(p, rng.randf_range(0.95, 1.15), rng.randf() < 0.4)
 	for i in 10:
@@ -1018,7 +1028,7 @@ func _square() -> void:
 		if absf(p.x) < 8.0:
 			continue
 		batcher.add("lamp", Transform3D(Basis(), p))
-		_static_cyl("post", p, 0.15, 3.9)
+		_lamp_collider(p)
 	for i in 14:
 		batcher.add("cobble_post", Transform3D(Basis(), Vector3(-8.8 if i % 2 == 0 else 8.8, 0.03, -478 - (i / 2) * 3.0)))
 
@@ -1055,7 +1065,7 @@ func _background() -> void:
 				var yaw := rng.randf_range(-0.15, 0.15) + (PI * 0.5 if side < 0 else -PI * 0.5)
 				var xf := Transform3D(Basis(Vector3.UP, yaw), Vector3(x, gy, z))
 				var wc := Color(Mats.PALETTE_HOUSES[rng.randi() % Mats.PALETTE_HOUSES.size()])
-				b.box(paint, xf * Transform3D(Basis(), Vector3(0, hgt * 0.5, 0)), Vector3(w, hgt, d), wc, 63 - 8)
+				b.box(paint, xf * Transform3D(Basis(), Vector3(0, hgt * 0.5, 0)), Vector3(d, hgt, w), wc, 63 - 8)
 				var rc := Mats.ROOF_SLATE if rng.randf() < 0.5 else Mats.ROOF_TERRACOTTA
 				b.gable_roof(shingle, xf * Transform3D(Basis(), Vector3(0, hgt, 0)), d, w, d * 0.36, 0.3, 0.15, rc)
 				b.gable_wall(paint, xf * Transform3D(Basis(), Vector3(0, hgt, 0)), d, d * 0.36, w * 0.5, 1.0, wc)
@@ -1066,10 +1076,18 @@ func _background() -> void:
 						b.box(Mats.get_mat("window_lit"), xf * Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(-face_x if side > 0 else face_x, wy, wx)), Vector3(0.9, 1.2, 0.05), Color("#3d5a78"))
 				var cs := CollisionShape3D.new()
 				var bs := BoxShape3D.new()
-				bs.size = Vector3(w, hgt + d * 0.36, d)
+				bs.size = Vector3(d, hgt, w)
 				cs.shape = bs
-				cs.transform = xf * Transform3D(Basis(), Vector3(0, (hgt + d * 0.36) * 0.5, 0))
+				cs.transform = xf * Transform3D(Basis(), Vector3(0, hgt * 0.5, 0))
 				body.add_child(cs)
+				var rs := CollisionShape3D.new()
+				var prism := ConvexPolygonShape3D.new()
+				var rr := d * 0.36
+				prism.points = PackedVector3Array([Vector3(-d * 0.5, 0, -w * 0.5), Vector3(d * 0.5, 0, -w * 0.5), Vector3(-d * 0.5, 0, w * 0.5),
+					Vector3(d * 0.5, 0, w * 0.5), Vector3(0, rr, -w * 0.5), Vector3(0, rr, w * 0.5)])
+				rs.shape = prism
+				rs.transform = xf * Transform3D(Basis(), Vector3(0, hgt, 0))
+				body.add_child(rs)
 				# A tree or two beside each house.
 				if rng.randf() < 0.8:
 					var tp := Vector3(x + rng.randf_range(-6.0, 6.0), 0, z + rng.randf_range(-9.0, 9.0))

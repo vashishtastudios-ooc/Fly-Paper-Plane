@@ -39,9 +39,13 @@ func _build(b: MeshBuilder) -> void:
 
 
 func _build_colliders() -> void:
-	add_cylinder("post", Vector3.ZERO, 0.5, 0.8)
-	add_cylinder("post", Vector3(0, 0.8, 0), 0.08, 1.4)
-	add_cylinder("post", Vector3(0, 2.05, 0), 1.45, 0.5)
+	add_cylinder("post", Vector3(0, 0.72, 0), 0.48, 0.04)
+	add_cylinder("post", Vector3.ZERO, 0.04, 2.55)
+	var pts := PackedVector3Array([Vector3(0, 2.55, 0)])
+	for i in 10:
+		var a := TAU * i / 10.0
+		pts.append(Vector3(sin(a) * 1.4, 2.1, cos(a) * 1.4))
+	add_convex("post", pts)
 
 
 func _draw_distance() -> float:

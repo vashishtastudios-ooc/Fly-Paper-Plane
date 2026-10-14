@@ -117,4 +117,10 @@ func _after_build() -> void:
 func _build_colliders() -> void:
 	var rh := roof_height()
 	add_box("wall", Vector3(0, (rh + 0.55) * 0.5, -depth * 0.5), Vector3(width, rh + 0.55, depth))
-	add_box("wall", Vector3(0, ground_height - 1.6, 0.9), Vector3(width - 0.6, 0.9, 1.8))
+	var top_y := ground_height - 1.15
+	var low_y := ground_height - 2.05
+	var a := Vector3(0, top_y, 0.15)
+	var c := Vector3(0, low_y, 1.7)
+	var slope := c - a
+	var basis := Basis(Vector3.RIGHT, -atan2(slope.y, slope.z))
+	add_box_xf("wall", Transform3D(basis, (a + c) * 0.5), Vector3(width - 0.6, 0.06, slope.length()))

@@ -113,6 +113,7 @@ var _trail_fx: GPUParticles3D
 var _sparkles: GPUParticles3D
 var _scraps: GPUParticles3D
 var _shock: MeshInstance3D
+var _bonk: MeshInstance3D
 
 
 func _ready() -> void:
@@ -360,13 +361,15 @@ func _check_collisions(prev: Vector3, prev_vy: float) -> void:
 		var kind := "wall"
 		if collider and collider.has_meta("kind"):
 			kind = collider.get_meta("kind")
-		_crash(_message_for(kind, safe), kind, safe)
+		var touch: Vector3 = info.get("point", contact)
+		_crash(_message_for(kind, safe), kind, safe, touch)
 		return
-	# Hazard lines (bunting, washing).
+	# Hazard lines (bunting, washing, lanterns): only the visible rope and hanging items.
 	if level:
-		var line_msg: String = level.hazard_hit(pos)
-		if line_msg != "":
-			_crash(line_msg, "line", pos)
+		var line_hit: Dictionary = level.hazard_hit(prev, pos)
+		if not line_hit.is_empty():
+			var tp: Vector3 = line_hit.point
+			_crash(line_hit.message, "line", Geometry3D.get_closest_point_to_segment(tp, prev, pos), tp)
 			return
 	# Ground and water.
 	var ground := Terrain.ground_height(pos.x, pos.z)
@@ -433,12 +436,13 @@ func _skid(dt: float) -> void:
 	_apply_transform()
 
 
-func _crash(message: String, kind: String, at: Vector3) -> void:
+func _crash(message: String, kind: String, at: Vector3, touch: Variant = null) -> void:
 	mode = Mode.CRASHED
 	_trail_fx.emitting = false
 	state.pos = at
 	position = at
 	_play_crash_fx(kind)
+	_play_bonk(touch if touch != null else at)
 	crashed.emit(message, kind)
 
 
@@ -507,6 +511,21 @@ func _build_effects() -> void:
 	_scraps.draw_pass_1 = sq
 	add_child(_scraps)
 
+	_bonk = MeshInstance3D.new()
+	_bonk.name = "ContactBurst"
+	var bq := QuadMesh.new()
+	bq.size = Vector2(0.9, 0.9)
+	_bonk.mesh = bq
+	var bm := Mats.additive(Color(1.0, 0.95, 0.8, 1.0), TexGen.get_tex("star_glint"))
+	bm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	bm.no_depth_test = true
+	bm.render_priority = 10
+	_bonk.material_override = bm
+	_bonk.top_level = true
+	_bonk.visible = false
+	_bonk.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_bonk)
+
 	_shock = MeshInstance3D.new()
 	_shock.name = "Shockwave"
 	var torus := TorusMesh.new()
@@ -520,6 +539,19 @@ func _build_effects() -> void:
 	_shock.visible = false
 	_shock.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_shock)
+
+
+## A quick flash exactly where the plane touched something.
+func _play_bonk(at: Vector3) -> void:
+	_bonk.global_position = at
+	_bonk.visible = true
+	_bonk.scale = Vector3.ONE * 0.2
+	var mat := _bonk.material_override as StandardMaterial3D
+	mat.albedo_color.a = 1.0
+	var tw := create_tween()
+	tw.tween_property(_bonk, "scale", Vector3.ONE * 1.4, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.45)
+	tw.tween_callback(func(): _bonk.visible = false)
 
 
 func _play_landing_fx(at: Vector3) -> void:

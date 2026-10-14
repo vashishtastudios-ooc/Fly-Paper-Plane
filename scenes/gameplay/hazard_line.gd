@@ -1,10 +1,16 @@
 class_name HazardLine
 extends Node3D
-## A sagging line strung between two points: bunting, washing or a plain rope line.
-## The plane crashes when it comes within 0.3 m of any sampled segment.
+## A sagging line strung between two points: bunting, washing, lanterns or a plain rope line.
+## Collision matches what you see: the thin rope plus each hanging pennant, shirt, sheet or
+## lantern. Passing just above the rope is safe; flying into a flag tangles the plane.
 
-const SEGMENTS := 16
-const HIT_DISTANCE := 0.3
+const SEGMENTS := 24
+## Rope radius plus a little of the plane's body.
+const ROPE_REACH := 0.08
+## The paper plane's body: ~0.09 m below its center and ~0.06 m above (a little inside the drawn
+## keel and winglets, so only a clear touch counts).
+const BODY_BELOW := 0.09
+const BODY_ABOVE := 0.06
 
 @export var a := Vector3.ZERO
 @export var b := Vector3(10, 0, 0)
@@ -15,6 +21,9 @@ const HIT_DISTANCE := 0.3
 @export var seed_value := 1
 
 var samples := PackedVector3Array()
+## Collision for hanging items: triangles [a, b, c] and spheres [center, radius].
+var tris: Array = []
+var spheres: Array = []
 var _aabb := AABB()
 
 
@@ -22,11 +31,18 @@ func _ready() -> void:
 	samples.clear()
 	for i in SEGMENTS + 1:
 		samples.append(point_at(float(i) / SEGMENTS))
+	tris.clear()
+	spheres.clear()
+	_build_visual()
 	_aabb = AABB(samples[0], Vector3.ZERO)
 	for p in samples:
 		_aabb = _aabb.expand(p)
-	_aabb = _aabb.grow(HIT_DISTANCE + 0.1)
-	_build_visual()
+	for t in tris:
+		for v in t:
+			_aabb = _aabb.expand(v)
+	for sp in spheres:
+		_aabb = _aabb.expand(sp[0] - Vector3(0, sp[1], 0))
+	_aabb = _aabb.grow(0.5)
 
 
 func point_at(t: float) -> Vector3:
@@ -41,22 +57,35 @@ func message() -> String:
 	return "Snagged on a line"
 
 
-## Distance from a world point to the line (polyline of SEGMENTS pieces).
-func distance_to(p: Vector3) -> float:
-	if not _aabb.grow(1.0).has_point(p):
-		return INF
-	var best := INF
+## Checks the plane's movement this tick (prev -> pos) against the visible line and its
+## hanging items. Returns the contact point, or null when nothing was touched.
+func hit_point(prev: Vector3, pos: Vector3) -> Variant:
+	var sweep := AABB(prev, Vector3.ZERO).expand(pos).grow(0.3)
+	if not _aabb.intersects(sweep):
+		return null
+	# The rope: the plane's body is a short vertical sliver around its center.
 	for i in samples.size() - 1:
-		var s0 := samples[i]
-		var s1 := samples[i + 1]
-		var ab := s1 - s0
-		var t := clampf((p - s0).dot(ab) / maxf(ab.length_squared(), 1e-6), 0.0, 1.0)
-		best = minf(best, p.distance_to(s0 + ab * t))
-	return best
-
-
-func hits(p: Vector3) -> bool:
-	return distance_to(p) < HIT_DISTANCE
+		var cp := Geometry3D.get_closest_points_between_segments(prev, pos, samples[i], samples[i + 1])
+		var on_path: Vector3 = cp[0]
+		var on_rope: Vector3 = cp[1]
+		var dy := on_rope.y - on_path.y
+		var dh := Vector2(on_rope.x - on_path.x, on_rope.z - on_path.z).length()
+		if dh < ROPE_REACH and dy > -BODY_BELOW and dy < BODY_ABOVE:
+			return on_rope
+	# Pennants, shirts and sheets: the path (and the keel just below it) crossing the cloth.
+	var keel := Vector3(0, -BODY_BELOW * 0.7, 0)
+	for t in tris:
+		for off: Vector3 in [Vector3.ZERO, keel]:
+			var hit = Geometry3D.segment_intersects_triangle(prev + off, pos + off, t[0], t[1], t[2])
+			if hit != null:
+				return hit
+	# Lanterns and rope tags.
+	for sp in spheres:
+		var c: Vector3 = sp[0]
+		var q := Geometry3D.get_closest_point_to_segment(c, prev, pos)
+		if q.distance_to(c) < sp[1] + 0.05:
+			return c + (q - c).normalized() * float(sp[1])
+	return null
 
 
 func _build_visual() -> void:
@@ -88,6 +117,7 @@ func _build_visual() -> void:
 				var up := side.cross(dir).normalized()
 				mm.set_instance_transform(i, Transform3D(Basis(dir, up, side), p))
 				mm.set_instance_color(i, Color(cols[i % cols.size()]))
+				tris.append([p - dir * 0.16, p - up * 0.4, p + dir * 0.16])
 			var flags := MultiMeshInstance3D.new()
 			flags.name = "Flags"
 			flags.multimesh = mm
@@ -111,6 +141,8 @@ func _build_visual() -> void:
 					# Bedsheet.
 					var w := dir * 0.55
 					mb.quad(cloth, p - w + Vector3(0, -0.85, 0), p + w + Vector3(0, -0.85, 0), p + w, p - w, c)
+					tris.append([p - w, p + w, p + w + Vector3(0, -0.85, 0)])
+					tris.append([p - w, p + w + Vector3(0, -0.85, 0), p - w + Vector3(0, -0.85, 0)])
 					x += 1.4
 				else:
 					# Shirt shape.
@@ -119,6 +151,8 @@ func _build_visual() -> void:
 						p - r * 0.18 + Vector3(0, -0.58, 0), p + r * 0.18 + Vector3(0, -0.58, 0), p + r * 0.18 + Vector3(0, -0.18, 0),
 						p + r * 0.28 + Vector3(0, -0.16, 0), p + r * 0.28])
 					mb.poly(cloth, pts, c)
+					for j in range(1, pts.size() - 1):
+						tris.append([pts[0], pts[j], pts[j + 1]])
 					x += 0.85
 				# Clothes peg.
 				mb.box(Mats.get_mat("wood"), Transform3D(Basis(), p + Vector3(0, -0.02, 0)), Vector3(0.03, 0.09, 0.03), Color("#c9a27e"))
@@ -146,6 +180,7 @@ func _build_visual() -> void:
 				var p := point_at((i + 0.5) / n3) + Vector3(0, -0.24, 0)
 				lm.set_instance_transform(i, Transform3D(Basis(), p))
 				lm.set_instance_color(i, lcols[i % lcols.size()])
+				spheres.append([p, 0.16])
 				mb.box(Mats.get_mat("rope"), Transform3D(Basis(), p + Vector3(0, 0.15, 0)), Vector3(0.012, 0.12, 0.012), Color("#4a3426"))
 			var lanterns := MultiMeshInstance3D.new()
 			lanterns.name = "Lanterns"
@@ -159,6 +194,7 @@ func _build_visual() -> void:
 				var p := point_at((i + 0.5) / n2)
 				var c := Color("#c8423b") if i % 2 == 0 else Color("#fbf8f0")
 				mb.box(Mats.get_mat("solid"), Transform3D(Basis(), p + Vector3(0, -0.08, 0)), Vector3(0.1, 0.16, 0.1), c)
+				spheres.append([p + Vector3(0, -0.08, 0), 0.07])
 	if with_posts:
 		for end in [a, b]:
 			var ground := Terrain.ground_height(end.x, end.z)
@@ -178,7 +214,7 @@ func _build_visual() -> void:
 			body.set_meta("kind", "post")
 			var cs := CollisionShape3D.new()
 			var cyl := CylinderShape3D.new()
-			cyl.radius = 0.1
+			cyl.radius = 0.065
 			cyl.height = h
 			cs.shape = cyl
 			body.position = Vector3(end.x, ground + h * 0.5, end.z)

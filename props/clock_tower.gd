@@ -100,7 +100,9 @@ func _balcony(b: MeshBuilder, sc: Color) -> void:
 
 func _build_colliders() -> void:
 	var hs := size * 0.5
-	add_box("wall", Vector3(0, (height + 0.2) * 0.5, 0), Vector3(size + 0.2, height + 0.2, size + 0.2))
+	add_box("wall", Vector3(0, 0.8, 0), Vector3(size + 0.6, 1.6, size + 0.6))
+	add_box("wall", Vector3(0, height * 0.5, 0), Vector3(size + 0.1, height, size + 0.1))
+	add_box("wall", Vector3(0, height - 0.15, 0), Vector3(size + 0.8, 0.7, size + 0.8))
 	add_convex("wall", PackedVector3Array([
 		Vector3(-hs - 0.3, height + 0.2, -hs - 0.3), Vector3(hs + 0.3, height + 0.2, -hs - 0.3),
 		Vector3(-hs - 0.3, height + 0.2, hs + 0.3), Vector3(hs + 0.3, height + 0.2, hs + 0.3),
@@ -108,7 +110,7 @@ func _build_colliders() -> void:
 	]))
 	# Balcony slab sits just under the landing pad collider.
 	var z_out := balcony_center_z + 1.8
-	add_box("wall", Vector3(0, balcony_top - 0.3, (hs + z_out) * 0.5), Vector3(5.2, 0.4, z_out - hs))
+	add_box("wall", Vector3(0, balcony_top - 0.225, (hs + z_out) * 0.5), Vector3(5.2, 0.25, z_out - hs))
 
 
 func _draw_distance() -> float:

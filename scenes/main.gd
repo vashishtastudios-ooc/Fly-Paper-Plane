@@ -23,6 +23,7 @@ var _end_timer := -1.0
 var _pending := {}
 var _last_flight_time := 0.0
 var _slow_cooldown := 0.0
+var collision_debug: CollisionDebug
 
 
 func _ready() -> void:
@@ -42,6 +43,10 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	town.build()
+	collision_debug = CollisionDebug.new()
+	collision_debug.name = "CollisionDebug"
+	collision_debug.plane = plane
+	add_child(collision_debug)
 	_apply_cosmetics()
 	_loading.queue_free()
 	go_menu()
@@ -156,6 +161,8 @@ func start_level(index: int) -> void:
 	hud.visible = false
 	touch.close()
 	intro.open(index, data)
+	if collision_debug and collision_debug.visible:
+		collision_debug.rebuild.call_deferred()
 	Audio.set_wind(0.0, false)
 	Game.set_state(Game.State.INTRO)
 
@@ -275,6 +282,11 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# F3: show collision shapes (testing builds only).
+	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).keycode == KEY_F3 			and (OS.is_debug_build() or Game.UNLOCK_ALL_FOR_TESTING):
+		collision_debug.toggle()
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("pause"):
 		if Game.state == Game.State.RESULT:
 			go_menu()

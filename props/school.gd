@@ -352,20 +352,40 @@ func _build_colliders() -> void:
 		if not w[2]:
 			add_box("glass", Vector3((w[0] + w[1]) * 0.5, (SILL_Y + HEAD_Y) * 0.5, 0.15), Vector3(w[1] - w[0], HEAD_Y - SILL_Y, 0.3))
 	for p: Vector3 in _desk_positions():
-		add_box("desk", p + Vector3(0, 0.4, 0), Vector3(0.75, 0.8, 1.05))
+		add_box("desk", p + Vector3(0, 0.375, 0), Vector3(0.7, 0.75, 1.0))
 	add_box("desk", Vector3(6.2, FLOOR_Y + 0.42, 7.0), Vector3(1.1, 0.84, 2.1))
 	add_box("desk", Vector3(-5.5, FLOOR_Y + 0.8, ROOM_Z1 - 0.37), Vector3(2.4, 1.6, 0.4))
-	add_cylinder("fan", FAN_POS + Vector3(0, -0.2, 0), 1.15, 0.35)
+	add_cylinder("fan", FAN_POS + Vector3(0, -0.2, 0), 1.07, 0.16)
+	add_cylinder("fan", FAN_POS + Vector3(0, -0.04, 0), 0.04, CEILING_Y - FAN_POS.y + 0.04)
 	# Schoolyard.
-	add_cylinder("post", Vector3(8.0, 0, -12.0), 0.12, 8.6)
-	add_box("post", Vector3(8.9, 7.7, -12.0), Vector3(1.8, 1.2, 0.2))
-	add_box("post", Vector3(13.0, 1.35, -23.0), Vector3(4.6, 2.7, 1.9))
-	add_cylinder("post", Vector3(-16.0, 0, -8.0), 0.12, 4.1)
-	add_box("post", Vector3(-16.0, 3.55, -7.8), Vector3(1.8, 1.1, 0.4))
-	add_box("post", Vector3(14.0, 1.0, -12.0), Vector3(3.2, 2.0, 2.2))
+	add_cylinder("post", Vector3(8.0, 0, -12.0), 0.07, 8.6)
+	add_box("post", Vector3(8.9, 7.6, -11.92), Vector3(1.75, 1.2, 0.1))
+	# Swing set frame: top bar and the four legs.
+	var sw := Vector3(13.0, 0, -23.0)
+	add_box("post", sw + Vector3(0, 2.6, 0), Vector3(4.5, 0.12, 0.12))
+	for sx in [-2.2, 2.2]:
+		for sz in [-0.9, 0.9]:
+			var foot: Vector3 = sw + Vector3(sx, 0, sz)
+			var top: Vector3 = sw + Vector3(sx, 2.6, 0)
+			var mid := (foot + top) * 0.5
+			var leg := top - foot
+			add_box_xf("post", Transform3D(Basis(Vector3.RIGHT, atan2(leg.z, leg.y)), mid), Vector3(0.1, leg.length(), 0.1))
+	add_cylinder("post", Vector3(-16.0, 0, -8.0), 0.08, 4.1)
+	add_box("post", Vector3(-16.0, 3.55, -7.82), Vector3(1.8, 1.1, 0.08))
+	# Climbing frame: the bars themselves, with the gaps between them left open.
+	var cf := Vector3(14.0, 0, -12.0)
+	for gx in 4:
+		for gz in 3:
+			add_cylinder("post", cf + Vector3(-1.5 + gx, 0, -1.0 + gz), 0.04, 2.0)
+	for gy in 3:
+		var y := 0.6 + gy * 0.7
+		for gz in 3:
+			add_box("post", cf + Vector3(0, y, -1.0 + gz), Vector3(3.0, 0.07, 0.07))
+		for gx in 4:
+			add_box("post", cf + Vector3(-1.5 + gx, y, 0), Vector3(0.07, 0.07, 2.0))
 	for seg in _fence_segments():
 		var a: Vector3 = seg[0]
 		var c2: Vector3 = seg[1]
 		var mid := (a + c2) * 0.5 + Vector3(0, 0.5, 0)
-		var size := Vector3(maxf(absf(c2.x - a.x), 0.2), 1.0, maxf(absf(c2.z - a.z), 0.2))
-		add_box("fence", mid, size)
+		var size := Vector3(maxf(absf(c2.x - a.x), 0.08), 0.95, maxf(absf(c2.z - a.z), 0.08))
+		add_box("fence", mid - Vector3(0, 0.025, 0), size)

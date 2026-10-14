@@ -33,7 +33,8 @@ func _build(b: MeshBuilder) -> void:
 
 
 func _build_colliders() -> void:
-	add_box("car", Vector3(0, 0.8, 0), Vector3(1.9, 1.6, 4.3))
+	add_box("car", Vector3(0, 0.63, 0), Vector3(1.7, 0.66, 4.2))
+	add_box("car", Vector3(0, 1.28, -0.2), Vector3(1.4, 0.64, 1.4))
 
 
 func _draw_distance() -> float:

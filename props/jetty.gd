@@ -32,7 +32,7 @@ func _build_colliders() -> void:
 	add_box("post", Vector3(0, -0.25, 0), Vector3(half_width * 2.0, 0.3, half_length * 2.0))
 	for sx in [-1.0, 1.0]:
 		for sz in [-1.0, 1.0]:
-			add_cylinder("post", Vector3(sx * half_width, -post_depth, sz * (half_length - 0.2)), 0.15, post_depth + 0.75)
+			add_cylinder("post", Vector3(sx * half_width, -post_depth, sz * (half_length - 0.2)), 0.13, post_depth + 0.75)
 
 
 func _draw_distance() -> float:

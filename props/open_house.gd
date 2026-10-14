@@ -633,10 +633,18 @@ func _roof(b: MeshBuilder, eave: float, rise: float) -> void:
 		var basis := Basis(Vector3.RIGHT, s * PI * 0.5)
 		b.cylinder(_m("window_lit"), Transform3D(basis, Vector3(0, eave + rise * 0.4, s * (hd + 0.01))), 0.32, 0.32, 0.05, 10, Color("#3d5a78"))
 		b.cylinder(_m("solid"), Transform3D(basis, Vector3(0, eave + rise * 0.4, s * hd)), 0.4, 0.4, 0.04, 10, Mats.TRIM)
-	var o := 0.4
+	# Collision: the space between the gables plus the two roof slabs exactly as drawn.
 	add_convex("wall", PackedVector3Array([
-		Vector3(-hw - o, eave, -hd - o), Vector3(hw + o, eave, -hd - o), Vector3(-hw - o, eave, hd + o), Vector3(hw + o, eave, hd + o),
-		Vector3(0, eave + rise + 0.2, -hd - o), Vector3(0, eave + rise + 0.2, hd + o)]))
+		Vector3(-hw, eave, -hd), Vector3(hw, eave, -hd), Vector3(-hw, eave, hd), Vector3(hw, eave, hd),
+		Vector3(0, eave + rise, -hd), Vector3(0, eave + rise, hd)]))
+	var o := 0.4
+	var thick := 0.18
+	var half := hw + o
+	var angle := atan2(rise, hw)
+	for s in [-1.0, 1.0]:
+		var mid := Vector3(s * half * 0.5, eave + rise - half * 0.5 * tan(angle), 0.0)
+		var rb := Basis(Vector3.FORWARD, s * angle)
+		add_box_xf("wall", Transform3D(rb, mid + rb * Vector3(0, thick * 0.5, 0)), Vector3(half / cos(angle), thick, depth + o * 2.0))
 
 
 ## Roof over the attic, lined with boards inside; the slopes are the attic's colliders.
@@ -832,7 +840,8 @@ func _pendant(b: MeshBuilder, at: Vector3, ceiling: float, col: Color, collide :
 	b.cylinder(_m("solid"), Transform3D(Basis(), at - Vector3(0, 0.12, 0)), 0.3, 0.07, 0.28, 12, col)
 	b.sphere(_m("glow"), at - Vector3(0, 0.1, 0), Vector3(0.08, 0.08, 0.08), 3, 6, Color("#fff1c9"))
 	if collide:
-		add_sphere("lamp", at, 0.32)
+		# The shade only (a short cone), not a ball around it.
+		add_cylinder("lamp", at - Vector3(0, 0.12, 0), 0.29, 0.28)
 
 
 func _chandelier(b: MeshBuilder, at: Vector3, ceiling: float) -> void:
@@ -846,7 +855,8 @@ func _chandelier(b: MeshBuilder, at: Vector3, ceiling: float) -> void:
 		b.tube(metal, PackedVector3Array([at + Vector3(0, -0.06, 0), at + Vector3(cos(a) * 0.3, -0.12, sin(a) * 0.3), tip]), 0.015, 4, gold)
 		b.cylinder(_m("solid"), Transform3D(Basis(), tip), 0.025, 0.025, 0.12, 6, Color("#fbf8f0"))
 		b.sphere(_m("glow"), tip + Vector3(0, 0.17, 0), Vector3(0.03, 0.05, 0.03), 3, 5, Color("#ffd27a"))
-	add_sphere("lamp", at, 0.55)
+	# The ring of arms and candles, not a ball around the whole fitting.
+	add_cylinder("lamp", at - Vector3(0, 0.14, 0), 0.47, 0.42)
 
 
 func _desk_lamp(b: MeshBuilder, at: Vector3) -> void:

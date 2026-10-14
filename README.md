@@ -137,6 +137,31 @@ To add a level, create `levels/level_7.tres` and add its path to `LEVEL_PATHS` i
   - Medium and High enable everything
   - SSR runs only on desktop High
 
+## Collisions (what counts as a hit)
+
+The rule: you only crash when the plane visibly touches something.
+
+- **Plane:** a 0.2 m ball at its center (`collision_radius` in `plane.gd`), swept along its path every tick so it can't skip through thin walls.
+- **Strings** (bunting, washing, lanterns, rope lines) are only what you see:
+  - **The thin rope:** about 9 cm below the plane's center up to 6 cm above it counts as touching. Passing 10 cm above the rope is safe.
+  - **Hanging items:** each pennant, shirt, sheet and lantern by its own shape. Flying into a flag tangles you, and the gaps between flags are really gaps.
+- **Buildings and props:** every collision shape is the same size as what's drawn or slightly smaller, never bigger. This covers:
+  - roof slabs with their eaves
+  - porch posts and roofs, with the open space under them flyable
+  - awnings as thin canvas
+  - lamps as a pole and head
+  - swings and the climbing frame as bars
+  - the bus shelter with an open front
+  - pendant lamps and the chandelier by their actual shapes
+- **On a crash,** a bright burst appears at the exact point of contact.
+- **Collision view:** press **F3** (or Settings > Testing in test builds) to draw every collision shape:
+  - orange: walls and props
+  - green: landing pads
+  - red: strings and their hanging items
+  - white: the plane's ball
+
+  This helps when checking a new map.
+
 ## Hangar (plane customization)
 
 The Hangar lets players change the plane's paper, wingtip trail and wing sticker. These are looks only, so flight behavior and level balance never change. Items unlock from the total number of ribbons earned across all flights (up to 18):

@@ -68,9 +68,9 @@ func _build_colliders() -> void:
 	var top := deck_height + post_height
 	for i in 8:
 		var c := _corner(i, radius - 0.2)
-		add_cylinder("wall", c + Vector3(0, deck_height, 0), 0.15, post_height)
+		add_cylinder("wall", c + Vector3(0, deck_height, 0), 0.1, post_height)
 	var pts := PackedVector3Array()
 	for i in 8:
-		pts.append(_corner(i, radius + 0.6) + Vector3(0, top - 0.1, 0))
-	pts.append(Vector3(0, top + 2.4, 0))
+		pts.append(_corner(i, radius + 0.45) + Vector3(0, top + 0.05, 0))
+	pts.append(Vector3(0, top + 2.3, 0))
 	add_convex("wall", pts)

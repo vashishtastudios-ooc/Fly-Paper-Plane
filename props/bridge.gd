@@ -137,8 +137,8 @@ func _build_colliders() -> void:
 		var top := maxf(deck_top(za), deck_top(zb))
 		var bottom: float
 		if absf(za) < arch_half_width and absf(zb) < arch_half_width:
-			# Lower end of the slice: keeps the opening fully flyable.
-			bottom = minf(arch_y(za), arch_y(zb))
+			# Higher end of the slice, so the collider never reaches below the drawn arch.
+			bottom = maxf(arch_y(za), arch_y(zb))
 		elif absf(mid) < arch_half_width:
 			bottom = bed_y + 0.3
 		else:

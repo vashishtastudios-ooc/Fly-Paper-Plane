@@ -66,6 +66,13 @@ func _ready() -> void:
 		if on:
 			Game.reset_tips()))
 
+	if OS.is_debug_build() or Game.UNLOCK_ALL_FOR_TESTING:
+		v.add_child(_section("Testing"))
+		v.add_child(_check_row("Show collision shapes (F3)", false, func(on: bool):
+			var dbg := get_tree().root.find_child("CollisionDebug", true, false)
+			if dbg:
+				dbg.set_shown(on)))
+
 	_done = UIKit.paper_button("Done", true, 28)
 	_done.pressed.connect(func():
 		close()

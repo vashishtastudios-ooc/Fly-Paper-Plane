@@ -362,15 +362,17 @@ func pad_contact_point(pos: Vector3) -> Vector3:
 	return Vector3(pos.x, pad_top() + 0.03, pos.z)
 
 
-func hazard_hit(p: Vector3) -> String:
-	for h in hazards:
-		if h.hits(p):
-			return h.message()
+## Checks the plane's movement against level and town hazard lines.
+## Returns {"message", "point"} on contact, or an empty dictionary.
+func hazard_hit(prev: Vector3, pos: Vector3) -> Dictionary:
+	var lines: Array = hazards.duplicate()
 	if town:
-		for h2 in town.hazard_lines:
-			if h2.hits(p):
-				return h2.message()
-	return ""
+		lines.append_array(town.hazard_lines)
+	for h in lines:
+		var pt = h.hit_point(prev, pos)
+		if pt != null:
+			return {"message": h.message(), "point": pt}
+	return {}
 
 
 # --- Wayfinding ------------------------------------------------------------------------------

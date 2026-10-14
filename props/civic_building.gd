@@ -152,8 +152,34 @@ func _after_build() -> void:
 
 
 func _build_colliders() -> void:
-	add_box("wall", Vector3(0, _height * 0.5 + 1.0, -depth * 0.5), Vector3(width, _height + 2.0, depth))
-	if style == "library":
-		add_box("wall", Vector3(0, _height * 0.5, 1.8), Vector3(8.4, _height, 3.6))
-	elif style == "hotel":
-		add_box("wall", Vector3(0, 3.2, 1.3), Vector3(3.8, 0.3, 2.6))
+	var hw := width * 0.5
+	add_box("wall", Vector3(0, _height * 0.5, -depth * 0.5), Vector3(width, _height, depth))
+	match style:
+		"library":
+			_roof_pyramid(Vector2(width + 0.6, depth + 0.6), 2.4)
+			var pw := 8.0
+			var pd := 3.2
+			for i in 6:
+				var x := lerpf(-pw * 0.5 + 0.4, pw * 0.5 - 0.4, i / 5.0)
+				add_cylinder("wall", Vector3(x, 0.8, pd - 0.3), 0.28, _height - 2.2)
+			add_box("wall", Vector3(0, _height - 0.75, pd * 0.5 + 0.1), Vector3(pw, 1.1, pd + 0.2))
+			add_box("wall", Vector3(0, 0.4, (pd + 1.2) * 0.5), Vector3(pw + 1.2, 0.8, pd + 1.2))
+		"market_hall":
+			_roof_pyramid(Vector2(width + 0.5, depth + 0.5), 4.5)
+			add_box("wall", Vector3(0, _height + 4.1, -depth * 0.5), Vector3(2.4, 2.2, 2.4))
+		"hotel":
+			var m := 1.2
+			var rh := 2.8
+			add_convex("wall", PackedVector3Array([
+				Vector3(-hw - 0.2, _height, 0.2), Vector3(hw + 0.2, _height, 0.2), Vector3(-hw - 0.2, _height, -depth - 0.2), Vector3(hw + 0.2, _height, -depth - 0.2),
+				Vector3(-hw + m, _height + rh, -m), Vector3(hw - m, _height + rh, -m), Vector3(-hw + m, _height + rh, -depth + m), Vector3(hw - m, _height + rh, -depth + m)]))
+			add_box("wall", Vector3(0, 3.2, 1.3), Vector3(3.6, 0.2, 2.6))
+
+
+func _roof_pyramid(base: Vector2, rise: float) -> void:
+	var h := _height
+	var zc := -depth * 0.5
+	add_convex("wall", PackedVector3Array([
+		Vector3(-base.x * 0.5, h, zc - base.y * 0.5), Vector3(base.x * 0.5, h, zc - base.y * 0.5),
+		Vector3(-base.x * 0.5, h, zc + base.y * 0.5), Vector3(base.x * 0.5, h, zc + base.y * 0.5),
+		Vector3(0, h + rise, zc)]))

@@ -239,16 +239,36 @@ func _build_colliders() -> void:
 	var rise := depth * 0.36
 	var hw := width * 0.5
 	add_box("wall", Vector3(0, wh * 0.5, -depth * 0.5), Vector3(width, wh, depth))
-	var o := 0.45
+	# Attic between the gable walls, plus the two roof slabs exactly as drawn (with eaves).
 	add_convex("wall", PackedVector3Array([
-		Vector3(-hw - o, wh, 0.0 + o), Vector3(hw + o, wh, o), Vector3(-hw - o, wh, -depth - o), Vector3(hw + o, wh, -depth - o),
-		Vector3(-hw - o, wh + rise, -depth * 0.5), Vector3(hw + o, wh + rise, -depth * 0.5),
+		Vector3(-hw, wh, 0.0), Vector3(hw, wh, 0.0), Vector3(-hw, wh, -depth), Vector3(hw, wh, -depth),
+		Vector3(-hw, wh + rise, -depth * 0.5), Vector3(hw, wh + rise, -depth * 0.5),
 	]))
+	var o := 0.45
+	var thick := 0.18
+	var half := depth * 0.5 + o
+	var angle := atan2(rise, depth * 0.5)
+	var roof_xf := Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(0, wh, -depth * 0.5))
+	for side in [-1.0, 1.0]:
+		var mid := Vector3(side * half * 0.5, rise - half * 0.5 * tan(angle), 0.0)
+		var rb := Basis(Vector3.FORWARD, side * angle)
+		add_box_xf("wall", roof_xf * Transform3D(rb, mid + rb * Vector3(0, thick * 0.5, 0)), Vector3(half / cos(angle), thick, width + o * 2.0))
 	if has_chimney:
-		var top := wh + rise + 1.14
-		add_box("wall", Vector3(chimney_pos.x, (wh + top) * 0.5, chimney_pos.y), Vector3(1.0, top - wh, 1.0))
+		var top := wh + rise + 1.0
+		add_box("wall", Vector3(chimney_pos.x, (wh - 0.5 + top) * 0.5, chimney_pos.y), Vector3(0.9, top - wh + 0.5, 0.9))
+		add_box("wall", Vector3(chimney_pos.x, top + 0.07, chimney_pos.y), Vector3(1.1, 0.14, 1.1))
 	if has_porch:
-		add_box("wall", Vector3(porch_offset, (plinth + 3.2) * 0.5, 1.2), Vector3(4.8, plinth + 3.2, 2.6))
+		var dx := porch_offset
+		var pw := 2.3
+		var pd := 2.4
+		add_box("wall", Vector3(dx, plinth * 0.5, pd * 0.5), Vector3(pw * 2.0, plinth, pd))
+		for px in [dx - pw + 0.12, dx + pw - 0.12]:
+			add_box("post", Vector3(px, plinth + 1.4, pd - 0.16), Vector3(0.16, 2.8, 0.16))
+		add_box_xf("wall", Transform3D(Basis(Vector3.RIGHT, 0.22), Vector3(dx, plinth + 3.05, pd * 0.5 - 0.05)), Vector3(pw * 2.0 + 0.4, 0.12, pd + 0.6))
+		for sd in [-1.0, 1.0]:
+			var x0: float = dx + sd * 0.75
+			var x1: float = dx + sd * (pw - 0.1)
+			add_box("fence", Vector3((x0 + x1) * 0.5, plinth + 0.45, pd - 0.14), Vector3(absf(x1 - x0), 0.9, 0.06))
 	if balcony_height > 0.0:
 		# Slab, plus a slightly lowered railing so the throw clears it.
 		add_box("wall", Vector3(balcony_offset, balcony_height - 0.1, 0.8), Vector3(2.8, 0.2, 1.6))
@@ -256,5 +276,7 @@ func _build_colliders() -> void:
 	if fence_style != "none":
 		var fz := yard_depth - 0.45
 		for seg in _fence_segments():
-			add_box("fence", Vector3((seg.x + seg.y) * 0.5, 0.5, fz), Vector3(seg.y - seg.x, 1.0, 0.2))
-	add_box("post", Vector3(porch_offset + 1.6, 0.75, curb_distance - 0.45), Vector3(0.3, 1.2, 0.5))
+			add_box("fence", Vector3((seg.x + seg.y) * 0.5, 0.475, fz), Vector3(seg.y - seg.x, 0.95, 0.08))
+	var mb := Vector3(porch_offset + 1.6, 0.15, curb_distance - 0.45)
+	add_box("post", mb + Vector3(0, 0.5, 0), Vector3(0.1, 1.0, 0.1))
+	add_box("post", mb + Vector3(0, 1.17, 0), Vector3(0.24, 0.34, 0.48))
