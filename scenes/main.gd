@@ -13,12 +13,16 @@ extends Node
 @onready var intro: CanvasLayer = $LevelIntro
 @onready var result: CanvasLayer = $Result
 @onready var pause_ui: CanvasLayer = $Pause
+@onready var hangar: CanvasLayer = $Hangar
+@onready var settings_menu: CanvasLayer = $SettingsMenu
+@onready var credits: CanvasLayer = $Credits
 
 var _loading: CanvasLayer
 var _menu_t := 0.0
 var _end_timer := -1.0
 var _pending := {}
 var _last_flight_time := 0.0
+var _slow_cooldown := 0.0
 
 
 func _ready() -> void:
@@ -38,6 +42,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	town.build()
+	_apply_cosmetics()
 	_loading.queue_free()
 	go_menu()
 
@@ -63,6 +68,14 @@ func _wire() -> void:
 	plane.barrel_roll_done.connect(func(): hud.float_text(plane.state.pos, "+50"))
 	plane.landed.connect(_on_landed)
 	plane.crashed.connect(_on_crashed)
+	plane.gust_used.connect(func(): Settings.vibrate(20))
+	plane.entered_thermal.connect(func(): _tip("thermal", "Rising air! Circle inside it to climb"))
+	Game.cosmetics_changed.connect(_apply_cosmetics)
+	menu.hangar_pressed.connect(func(): hangar.open())
+	menu.settings_pressed.connect(func(): settings_menu.open())
+	menu.credits_pressed.connect(func(): credits.open())
+	hangar.closed.connect(func(): menu.refresh())
+	pause_ui.settings_pressed.connect(func(): settings_menu.open())
 	level.star_collected.connect(func(p: Vector3):
 		Audio.play("star", -2.0)
 		plane.add_star_gust()
@@ -183,8 +196,11 @@ func _on_landed(info: Dictionary) -> void:
 		"bonus": level.bonus_points,
 	}
 	var score := Game.compute_landing_score(stats)
+	var ribbons_before := Game.total_ribbons()
 	var is_best := Game.record_landing(Game.current_level, score.total, score.ribbons)
-	_pending = {"kind": "land", "score": score, "stats": stats, "best": is_best}
+	var unlocks := Cosmetics.newly_unlocked(ribbons_before, Game.total_ribbons())
+	_pending = {"kind": "land", "score": score, "stats": stats, "best": is_best, "unlocks": unlocks}
+	Settings.vibrate(60)
 	cam.orbit_center = info.position
 	cam.set_mode(ChaseCamera.Mode.ORBIT)
 	hud.banner(score.headline, UIKit.GOLD, 1.6)
@@ -199,6 +215,7 @@ func _on_crashed(message: String, _kind: String) -> void:
 	_pending = {"kind": "crash", "message": message, "stars": level.stars_collected,
 		"stars_total": level.stars_total(), "time": plane.flight_time}
 	cam.shake(0.9)
+	Settings.vibrate(120)
 	cam.orbit_center = plane.state.pos
 	cam.set_mode(ChaseCamera.Mode.ORBIT)
 	hud.banner(message, Color("#ffb3a1"), 1.3)
@@ -212,7 +229,7 @@ func _show_result() -> void:
 	Game.set_state(Game.State.RESULT)
 	hud.visible = false
 	if _pending.kind == "land":
-		result.show_landing(_pending.score, _pending.stats, _pending.best, Game.has_next_level())
+		result.show_landing(_pending.score, _pending.stats, _pending.best, Game.has_next_level(), _pending.unlocks)
 	else:
 		result.show_crash(_pending.message, _pending.stars, _pending.stars_total, _pending.time)
 
@@ -241,7 +258,10 @@ func _process(delta: float) -> void:
 				x += touch.stick.x
 				y += -touch.stick.y
 				touch.gust_charge = plane.gusts
+			x *= Settings.sensitivity
+			y *= Settings.sensitivity * (-1.0 if Settings.invert_pitch else 1.0)
 			plane.set_controls(clampf(x, -1.0, 1.0), clampf(y, -1.0, 1.0))
+			_flight_hints(delta)
 			hud.update_flight(plane, level, cam, plane.flight_time, delta)
 			level.update_guides(plane)
 			Audio.set_wind(plane.state.v, true)
@@ -304,3 +324,39 @@ func _update_menu_plane(delta: float) -> void:
 
 func _menu_path(t: float) -> Vector3:
 	return Vector3(13.0 * sin(t), 11.5 + 2.0 * sin(2.0 * t), -105.0 + 72.0 * cos(t))
+
+
+# --- Cosmetics and flight tips --------------------------------------------------------------
+
+func _apply_cosmetics() -> void:
+	var c := Game.cosmetics
+	Cosmetics.apply(plane.get_node_or_null("Visual/Model") as MeshInstance3D, c.paper, c.sticker)
+	Cosmetics.apply(menu_plane.get_node_or_null("Model") as MeshInstance3D, c.paper, c.sticker)
+	if kid.has_method("held_plane"):
+		Cosmetics.apply(kid.held_plane(), c.paper, c.sticker)
+	plane.set_trail_style(c.trail)
+
+
+## Shows a one-time tip (until tips are reset in Settings).
+func _tip(id: String, text: String, duration := 2.6) -> void:
+	if not Settings.show_tips or Game.tips_seen.has(id) or Game.state != Game.State.FLYING:
+		return
+	Game.mark_tip_seen(id)
+	hud.banner(text, Color.WHITE, duration)
+
+
+func _flight_hints(delta: float) -> void:
+	var t := plane.flight_time
+	if t > 0.8:
+		_tip("steer", "Drag left or right to steer, up to climb" if touch.visible else "A / D to steer, W / S to climb and dive")
+	if t > 4.5:
+		_tip("climb", "Climbing costs speed. Ease off before you get slow")
+	if t > 6.0 and plane.state.vy < -1.2 and plane.gusts >= 1.0:
+		_tip("gust", "Tap Gust for a quick lift" if touch.visible else "Press Space for a quick lift")
+	if level.horizontal_distance_to_pad(plane.state.pos) < 30.0 and t > 2.0:
+		_tip("land", "Slow down and settle gently onto the gold circle")
+	# Early warning before a stall, every flight.
+	_slow_cooldown -= delta
+	if plane.state.v < 6.0 and not plane.stalled and _slow_cooldown <= 0.0:
+		_slow_cooldown = 6.0
+		hud.banner("Too slow! Ease the nose down", Color("#ffd9a1"), 1.0)

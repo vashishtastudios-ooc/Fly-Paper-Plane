@@ -25,19 +25,39 @@ To try the touch controls on desktop, run with the user argument `--touch-ui`. I
 | Throw | Enter or Space | A | "Throw the plane" |
 | Pause | Esc | Start | Pause button (top right) |
 
-## Export to Android
+## Publish to Google Play
+
+The game is set up as a free release with no ads and no data collection. Store text, Play Console answers and step-by-step release instructions are in **[store/STORE_LISTING.md](store/STORE_LISTING.md)**. The privacy policy is **[PRIVACY.md](PRIVACY.md)**: fill in your support email and host it publicly.
+
+Short version:
 
 1. Open *Editor > Manage Export Templates* and download the templates for your Godot version.
-2. Open *Editor Settings > Export > Android* and set the Java SDK path (JDK 17) and the Android SDK path. Godot creates a debug keystore automatically.
-3. Open *Project > Export*, select the **Android** preset (already included in `export_presets.cfg`, arm64), change `package/unique_name` to your own id, then click **Export Project** (or use one-click deploy with a phone connected over USB).
+2. Open *Editor Settings > Export > Android* and set the JDK 17 path and the Android SDK path.
+3. Choose *Project > Install Android Build Template*. The preset builds an **AAB** with Gradle.
+4. Create an upload keystore and enter it under *Project > Export > Android > Keystore > Release*.
+5. Export `export/GlideHome.aab` and upload it to an Internal testing track first.
 
-Android-specific settings are already applied through feature tags:
+What the **Android** preset in `export_presets.cfg` already sets:
+
+- AAB through Gradle, arm64, min SDK 24, target SDK 35
+- package id `com.vashishtastudios.glidehome` (change it before your first upload if you want a different id)
+- launcher and adaptive icons from `icons/`
+- the VIBRATE permission only
+
+Store graphics are in `store/`, generated from the game:
+
+- `feature_graphic.png` (1024×500)
+- `screenshots/phone_*.png` (1080×1920)
+- `screenshots/landscape_*.png` (1920×1080)
+
+The `store/` folder has a `.gdignore` file, so Godot never imports or exports it.
+
+Platform settings applied through feature tags:
 
 - `rendering/renderer/rendering_method.mobile = "mobile"` selects the Mobile renderer. Desktop uses Forward+.
-- The directional shadow atlas is 4096 on desktop and 2048 on mobile. MSAA is lighter on mobile, and the 3D render scale is 0.8.
-- SSAO is on for desktop and off for mobile. SSR, SDFGI and volumetric fog are never used (see `Settings.configure_environment`).
-- `window/handheld/orientation = sensor`, so the game supports both landscape and portrait. The UI stretch base switches between 1280x720 and 720x1280 to match.
-- Touch UI respects the display safe area on notched phones. The Android back button pauses the game or returns to the menu.
+- The shadow atlas is 2048 on mobile and 4096 on desktop. SSAO is used only on desktop at High quality. SSR, SDFGI and volumetric fog are never used.
+- `window/handheld/orientation = sensor`, so the game supports both portrait and landscape. The UI stretch base switches between 1280×720 and 720×1280 to match.
+- Touch UI respects the safe area on notched phones. The back button pauses the game or returns to the menu, and switching apps pauses the flight.
 
 ## Tuning the flight
 
@@ -55,12 +75,55 @@ Other places to tune:
 
 ## Levels
 
-Each level is a `LevelData` resource in `levels/level_1.tres`, `level_2.tres` and `level_3.tres`. You can edit them in the inspector. Each one holds:
+| # | Flight | Start | Landing target |
+|---|---|---|---|
+| 1 | Window to the Picnic | Upstairs balcony on Linden Lane | Picnic blanket in the park |
+| 2 | Under the Old Bridge | Corner balcony by the river | Fishing jetty |
+| 3 | Up to the Clock Tower | Bakery roof on Market Street | Clock tower balcony |
+| 4 | Classroom Window Escape | A desk in the upstairs classroom of Linden Primary | A friend's backpack in the schoolyard |
+
+In the classroom level, warm air rises off the radiator. Hitting the spinning ceiling fan or a closed window crashes the plane. Bunting is strung across the room and across the yard.
+
+Each level is a `LevelData` resource in `levels/level_N.tres`. You can edit them in the inspector. Each one holds:
 
 - launch platform and aim point
 - the route `Curve3D` (handles are smoothed at runtime)
 - landing pad, radius, name and par time
 - thermals, bonus stars, the bonus ring and hazard lines
+- `gate_radius`, the ring size (smaller indoors)
+
+A thermal can also set `base` (start height, for example a classroom floor) and `ceiling` (where the visual column stops).
+
+To add a level, create `levels/level_5.tres` and add its path to `LEVEL_PATHS` in `autoload/game.gd`.
+
+## Hangar (plane customization)
+
+The Hangar lets players change the plane's paper, wingtip trail and wing sticker. These are looks only, so flight behavior and level balance never change. Items unlock from the total number of ribbons earned across all flights (up to 12):
+
+- **Papers:** Notebook (free), Graph paper (2), Red origami (4), Newspaper (6), Old map (8), Sky blue card (10), Polka dot (12)
+- **Trails:** Classic white (free), Rainbow ribbon (3), Gold sparkles (5), Confetti (7), Comet glow (9)
+- **Stickers:** Gold star (free), Heart (1), Smiley (2), Lightning (6), Lucky 7 (11)
+
+The catalog and unlock thresholds are in `scripts/cosmetics/cosmetics.gd`. Paper and sticker textures are generated in `scripts/core/tex_gen.gd`. The result screen announces new unlocks.
+
+## Settings, tips and accessibility
+
+- **Settings** (from the menu or pause screen):
+  - Music, Effects and Wind/birds volume
+  - graphics quality (Low, Medium, High)
+  - steering sensitivity
+  - invert climb and dive
+  - vibration (phones)
+  - flight tips
+- **Flight tips:** one-time hints on the first flights:
+  - steering
+  - climbing costs speed
+  - rising air
+  - gusts
+  - how to land
+
+  Turning tips back on in Settings shows them again. A "Too slow!" warning appears before every stall.
+- **Credits:** includes the Godot Engine license notice that publishing requires.
 
 At runtime the game places seven stars along the route, gold rings about every 14 m, and the dotted flight line. It also removes trees near the first route segments and the pad.
 
@@ -71,19 +134,22 @@ autoload/        Settings (platform, input map, safe area), Game (state, levels,
 scenes/main.*    Main flow: loading, menu, intro, throw, flight, result, pause
 scenes/town/     town.tscn -> scripts/town/town_builder.gd (fixed seed 20261013)
 props/           One scene per prop: house, shop, civic building, clock tower, bridge, fountain,
-                 bandstand, jetty, picnic blanket, cafe table, car
+                 bandstand, jetty, picnic blanket, cafe table, car, school, backpack mat
 scenes/plane/    Plane scene, flight model, procedural paper dart
 scenes/kid/      The kid who throws the plane
 scenes/gameplay/ Thermal, Star, Gate (ring), LandingPad, HazardLine (bunting / washing / rope)
 scenes/ambient/  Birds, butterflies, ducks, pedestrians, cyclists, falling leaves and motes
-scenes/ui/       HUD, TouchControls, Menu, LevelIntro, Result, Pause (notebook-paper theme)
+scenes/ui/       HUD, TouchControls, Menu, LevelIntro, Result, Pause, Hangar, SettingsMenu, Credits
 scripts/core/    MeshBuilder, TexGen (generated textures), Mats, PropMeshes, Batcher (MultiMesh), Prop
 scripts/level/   LevelData resource and LevelRuntime
+scripts/cosmetics/ Paper, trail and sticker catalog
+icons/           App icons (SVG sources plus Android PNGs)
+store/           Play Store listing text and generated store graphics (ignored by Godot)
 shaders/         Water, thermal shimmer, pad light beam
 levels/          level_1.tres ... level_3.tres
 ```
 
-Saves go to `user://save.cfg`: best score and ribbons per level, plus unlocked levels. Volume settings go to `user://settings.cfg`.
+Saves go to `user://save.cfg`: best score and ribbons per level, unlocked levels, Hangar choices and seen tips. Settings go to `user://settings.cfg`.
 
 ## Swapping in real models
 
@@ -112,3 +178,5 @@ Include each font's `OFL.txt` alongside it. If a file is missing, `scripts/ui/ui
   - Level 1: about 10 s, 0.5 m from the center
   - Level 2: about 7.3 s, including the +500 bridge ring
   - Level 3: about 32 s
+  - Level 4: about 4 s, out the window and onto the backpack
+- Screenshots were checked in landscape and portrait, for every flight and for the Hangar, Settings and Credits screens.

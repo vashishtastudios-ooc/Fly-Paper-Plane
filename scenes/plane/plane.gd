@@ -107,6 +107,9 @@ var _trail_mesh: ImmediateMesh
 var _trail_node: MeshInstance3D
 var _trail_fade := 0.0
 var _query := PhysicsShapeQueryParameters3D.new()
+var trail_style := "white"
+var _trail_mat: StandardMaterial3D
+var _trail_fx: GPUParticles3D
 var _sparkles: GPUParticles3D
 var _scraps: GPUParticles3D
 var _shock: MeshInstance3D
@@ -162,6 +165,7 @@ func launch(pos: Vector3, yaw: float) -> void:
 	_trail_fade = 1.0
 	mode = Mode.FLYING
 	visible = true
+	_trail_fx.emitting = _trail_fx.visible
 	_apply_transform()
 	reset_physics_interpolation()
 	launched.emit()
@@ -170,6 +174,7 @@ func launch(pos: Vector3, yaw: float) -> void:
 func reset() -> void:
 	mode = Mode.IDLE
 	visible = false
+	_trail_fx.emitting = false
 	_trail_l.clear()
 	_trail_r.clear()
 	_trail_mesh.clear_surfaces()
@@ -379,6 +384,8 @@ func _message_for(kind: String, at: Vector3) -> String:
 		"bridge": return "Bonk! Into the bridge"
 		"wall", "car": return "Bonk! Into a wall"
 		"water": return "Splash! Into the river"
+		"fan": return "Whacked by the ceiling fan"
+		"glass": return "Bonk! The window was closed"
 	if level and level.horizontal_distance_to_pad(at) < short_landing_distance + level.pad_radius() and at.y < level.pad_top() + 2.0:
 		return "Touched down short"
 	return "Crash landing"
@@ -392,6 +399,7 @@ func _land(contact: Vector3) -> void:
 		"dist": level.horizontal_distance_to_pad(contact) if level else 0.0,
 	}
 	mode = Mode.LANDED
+	_trail_fx.emitting = false
 	state.pos = contact
 	state.vy = 0.0
 	_skid_t = 0.0
@@ -422,6 +430,7 @@ func _skid(dt: float) -> void:
 
 func _crash(message: String, kind: String, at: Vector3) -> void:
 	mode = Mode.CRASHED
+	_trail_fx.emitting = false
 	state.pos = at
 	position = at
 	_play_crash_fx(kind)
@@ -546,13 +555,109 @@ func _build_trails() -> void:
 	_trail_node.mesh = _trail_mesh
 	_trail_node.top_level = true
 	_trail_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var m := StandardMaterial3D.new()
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.vertex_color_use_as_albedo = true
-	m.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_trail_node.material_override = m
+	_trail_mat = StandardMaterial3D.new()
+	_trail_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_trail_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_trail_mat.vertex_color_use_as_albedo = true
+	_trail_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_trail_node.material_override = _trail_mat
 	add_child(_trail_node)
+	_trail_fx = GPUParticles3D.new()
+	_trail_fx.name = "TrailFX"
+	_trail_fx.local_coords = false
+	_trail_fx.emitting = false
+	_trail_fx.visible = false
+	_trail_fx.position = Vector3(0, 0.02, 0.45)
+	_trail_fx.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_trail_fx.visibility_aabb = AABB(Vector3(-20, -20, -20), Vector3(40, 40, 40))
+	_visual.add_child(_trail_fx)
+
+
+## Selects the wingtip trail look (see Cosmetics.TRAILS).
+func set_trail_style(style: String) -> void:
+	trail_style = style
+	_trail_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD if style == "comet" else BaseMaterial3D.BLEND_MODE_MIX
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3(0, 0.2, 1)
+	pm.spread = 35.0
+	var q := QuadMesh.new()
+	_trail_fx.visible = true
+	match style:
+		"gold":
+			_trail_fx.amount = 28
+			_trail_fx.lifetime = 0.9
+			pm.initial_velocity_min = 0.3
+			pm.initial_velocity_max = 1.0
+			pm.gravity = Vector3(0, -0.3, 0)
+			pm.scale_min = 0.5
+			pm.scale_max = 1.1
+			pm.color_ramp = _fade_ramp(Color(1.0, 0.85, 0.4))
+			pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+			pm.emission_box_extents = Vector3(0.4, 0.02, 0.05)
+			q.size = Vector2(0.16, 0.16)
+			q.material = Mats.additive(Color(1, 0.9, 0.55), TexGen.get_tex("star_glint"), true)
+		"confetti":
+			_trail_fx.amount = 36
+			_trail_fx.lifetime = 1.3
+			pm.initial_velocity_min = 0.5
+			pm.initial_velocity_max = 1.5
+			pm.gravity = Vector3(0, -2.5, 0)
+			pm.angular_velocity_min = -540.0
+			pm.angular_velocity_max = 540.0
+			pm.angle_max = 360.0
+			pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+			pm.emission_box_extents = Vector3(0.4, 0.02, 0.05)
+			var g := Gradient.new()
+			g.offsets = PackedFloat32Array([0.0, 0.25, 0.5, 0.75, 1.0])
+			g.colors = PackedColorArray([Color("#e8546a"), Color("#f2c14e"), Color("#6fb4e8"), Color("#7fd08c"), Color("#c38be8")])
+			var gt := GradientTexture1D.new()
+			gt.gradient = g
+			pm.color_initial_ramp = gt
+			q.size = Vector2(0.06, 0.04)
+			var cm := StandardMaterial3D.new()
+			cm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			cm.vertex_color_use_as_albedo = true
+			cm.vertex_color_is_srgb = true
+			cm.cull_mode = BaseMaterial3D.CULL_DISABLED
+			cm.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+			q.material = cm
+		"comet":
+			_trail_fx.amount = 40
+			_trail_fx.lifetime = 0.45
+			pm.spread = 12.0
+			pm.initial_velocity_min = 0.2
+			pm.initial_velocity_max = 0.6
+			pm.gravity = Vector3.ZERO
+			pm.scale_min = 0.8
+			pm.scale_max = 1.4
+			var sc := Curve.new()
+			sc.add_point(Vector2(0, 1))
+			sc.add_point(Vector2(1, 0.1))
+			var sct := CurveTexture.new()
+			sct.curve = sc
+			pm.scale_curve = sct
+			var g2 := Gradient.new()
+			g2.set_color(0, Color(0.6, 0.95, 1.0, 0.9))
+			g2.set_color(1, Color(1.0, 0.5, 0.3, 0.0))
+			var gt2 := GradientTexture1D.new()
+			gt2.gradient = g2
+			pm.color_ramp = gt2
+			q.size = Vector2(0.32, 0.32)
+			q.material = Mats.additive(Color(1, 1, 1), TexGen.get_tex("soft_dot"), true)
+		_:
+			_trail_fx.visible = false
+	_trail_fx.process_material = pm
+	_trail_fx.draw_pass_1 = q
+	_trail_fx.emitting = _trail_fx.visible and mode == Mode.FLYING
+
+
+func _fade_ramp(c: Color) -> GradientTexture1D:
+	var g := Gradient.new()
+	g.set_color(0, Color(c, 1.0))
+	g.set_color(1, Color(c, 0.0))
+	var gt := GradientTexture1D.new()
+	gt.gradient = g
+	return gt
 
 
 func _update_trail_points() -> void:
@@ -575,6 +680,8 @@ func _process(_delta: float) -> void:
 		return
 	var cam := get_viewport().get_camera_3d()
 	var cam_pos := cam.global_position if cam else Vector3.ZERO
+	var now := Time.get_ticks_msec() * 0.001
+	var wmul := Cosmetics.trail_width(trail_style)
 	for trail in [_trail_l, _trail_r]:
 		_trail_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP)
 		var n: int = trail.size()
@@ -583,9 +690,10 @@ func _process(_delta: float) -> void:
 			var t := float(i) / float(n - 1)
 			var dir: Vector3 = (trail[mini(i + 1, n - 1)] - trail[maxi(i - 1, 0)])
 			var to_cam := (cam_pos - p).normalized()
-			var side := dir.cross(to_cam).normalized() * (0.012 + 0.022 * t)
+			var side := dir.cross(to_cam).normalized() * (0.012 + 0.022 * t) * wmul
 			var near_fade := smoothstep(1.2, 3.2, p.distance_to(cam_pos))
-			var c := Color(1, 1, 1, 0.55 * t * t * near_fade)
+			var c := Cosmetics.trail_color(trail_style, t, i, now)
+			c.a *= near_fade
 			_trail_mesh.surface_set_color(c)
 			_trail_mesh.surface_add_vertex(p - side)
 			_trail_mesh.surface_set_color(c)

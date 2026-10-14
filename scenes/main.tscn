@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/town/town.tscn" id="2_town"]
@@ -12,6 +12,9 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/level_intro.tscn" id="10_intro"]
 [ext_resource type="PackedScene" path="res://scenes/ui/result.tscn" id="11_result"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause.tscn" id="12_pause"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hangar.tscn" id="13_hangar"]
+[ext_resource type="PackedScene" path="res://scenes/ui/settings_menu.tscn" id="14_settings"]
+[ext_resource type="PackedScene" path="res://scenes/ui/credits.tscn" id="15_credits"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -44,3 +47,9 @@ script = ExtResource("6_cam")
 [node name="Result" parent="." instance=ExtResource("11_result")]
 
 [node name="Pause" parent="." instance=ExtResource("12_pause")]
+
+[node name="Hangar" parent="." instance=ExtResource("13_hangar")]
+
+[node name="SettingsMenu" parent="." instance=ExtResource("14_settings")]
+
+[node name="Credits" parent="." instance=ExtResource("15_credits")]

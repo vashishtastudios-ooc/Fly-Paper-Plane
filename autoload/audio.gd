@@ -17,6 +17,7 @@ var _wind_target_db := -60.0
 var _wind_target_pitch := 1.0
 var _music_wanted := false
 var birds_enabled := true
+var _tasks: Array[int] = []
 
 
 func _ready() -> void:
@@ -40,8 +41,15 @@ func _ready() -> void:
 	_birds.bus = "Ambience"
 	_birds.volume_db = -14.0
 	add_child(_birds)
-	WorkerThreadPool.add_task(_synth_sfx, false, "synth sfx")
-	WorkerThreadPool.add_task(_synth_music, false, "synth music")
+	_tasks.append(WorkerThreadPool.add_task(_synth_sfx, false, "synth sfx"))
+	_tasks.append(WorkerThreadPool.add_task(_synth_music, false, "synth music"))
+
+
+func _exit_tree() -> void:
+	# Let the synth threads finish before the autoload is freed (e.g. quitting on the loading screen).
+	for t in _tasks:
+		WorkerThreadPool.wait_for_task_completion(t)
+	_tasks.clear()
 
 
 func _make_buses() -> void:

@@ -18,6 +18,8 @@ const SQUARE_END := -610.0
 const BOUNDS_X := Terrain.BOUNDS_X
 
 const HOUSE_SCENE := preload("res://props/house.tscn")
+const SCHOOL_SCENE := preload("res://props/school.tscn")
+const BACKPACK_SCENE := preload("res://props/backpack_mat.tscn")
 const SHOP_SCENE := preload("res://props/shop.tscn")
 const CIVIC_SCENE := preload("res://props/civic_building.tscn")
 const TOWER_SCENE := preload("res://props/clock_tower.tscn")
@@ -229,7 +231,7 @@ func _environment() -> void:
 func _terrain() -> void:
 	var x0 := -230.0
 	var x1 := 230.0
-	var z0 := 80.0
+	var z0 := 150.0
 	var z1 := -740.0
 	var step := 4.0
 	var nx := int((x1 - x0) / step) + 1
@@ -400,21 +402,16 @@ func _lane_houses() -> void:
 		h.rotation.y = -PI * 0.5 if side > 0 else PI * 0.5
 		add_child(h)
 		i += 1
-	# Houses at the north end, facing down the lane.
-	for x in [-14.0, 14.0]:
-		var h2: Node3D = HOUSE_SCENE.instantiate()
-		h2.batcher = batcher
-		h2.wall_color = Color(Mats.PALETTE_HOUSES[(i + 2) % Mats.PALETTE_HOUSES.size()])
-		h2.roof_color = Mats.ROOF_TERRACOTTA
-		h2.door_color = Mats.pick(rng, Mats.DOOR_COLORS)
-		h2.seed_value = i + 40
-		h2.yard_depth = 6.0
-		h2.curb_distance = 8.0
-		h2.fence_style = "hedge"
-		h2.position = Vector3(x, 0, 32.0)
-		h2.rotation.y = PI
-		add_child(h2)
-		i += 1
+	# Linden Primary School at the north end of the lane, its yard opening onto the street.
+	var school: Node3D = SCHOOL_SCENE.instantiate()
+	school.batcher = batcher
+	school.position = Vector3(0, 0, 48.0)
+	add_child(school)
+	var mat: Node3D = BACKPACK_SCENE.instantiate()
+	mat.batcher = batcher
+	mat.position = Vector3(-10.0, 0.0, 17.5)
+	mat.rotation.y = 0.35
+	add_child(mat)
 
 
 func _add_tree(p: Vector3, scale: float, autumn := false, conifer := false, collide := true) -> void:
@@ -912,10 +909,10 @@ func _background() -> void:
 			continue
 		var p := Vector3(x, ground_height(x, z), z)
 		_add_tree(p, rng.randf_range(1.1, 1.9), rng.randf() < 0.3, rng.randf() < 0.45, absf(x) < BOUNDS_X)
-	# Trees north of the lane.
-	for i in 30:
-		var p := Vector3(rng.randf_range(-44.0, 44.0), 0, rng.randf_range(20.0, 70.0))
-		if absf(p.x) < 9.0 and p.z < 40.0:
+	# Trees around the school grounds.
+	for i in 40:
+		var p := Vector3(rng.randf_range(-44.0, 44.0), 0, rng.randf_range(16.0, 105.0))
+		if absf(p.x) < 21.0 and p.z < 66.0:
 			continue
 		p.y = ground_height(p.x, p.z)
 		_try_tree(p, rng.randf_range(1.0, 1.5), rng.randf() < 0.35, rng.randf() < 0.2)

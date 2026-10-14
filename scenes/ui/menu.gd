@@ -2,10 +2,13 @@ extends CanvasLayer
 ## Title screen and flight (level) select on a sheet of notebook paper.
 
 signal level_chosen(index: int)
+signal hangar_pressed
+signal settings_pressed
+signal credits_pressed
 
 var _root: Control
 var _sheet: NotebookSheet
-var _cards_box: BoxContainer
+var _cards_box: GridContainer
 var _cards: Array[Button] = []
 var _title: Label
 var _subtitle: Label
@@ -31,19 +34,30 @@ func _ready() -> void:
 	v.add_child(_subtitle)
 	var h := UIKit.label("Flights", UIKit.display_font(), 38, UIKit.INK_DARK)
 	v.add_child(h)
-	_cards_box = HBoxContainer.new()
-	_cards_box.add_theme_constant_override("separation", 14)
+	_cards_box = GridContainer.new()
+	_cards_box.add_theme_constant_override("h_separation", 14)
+	_cards_box.add_theme_constant_override("v_separation", 10)
 	_cards_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(_cards_box)
 	for i in Game.levels.size():
 		var card := _make_card(i)
 		_cards_box.add_child(card)
 		_cards.append(card)
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 10)
+	v.add_child(buttons)
+	for b_def in [["Hangar", hangar_pressed], ["Settings", settings_pressed], ["Credits", credits_pressed]]:
+		var b := UIKit.paper_button(b_def[0], b_def[0] == "Hangar", 24)
+		var sig: Signal = b_def[1]
+		b.pressed.connect(func(): sig.emit())
+		buttons.add_child(b)
 	_hint = UIKit.label("", UIKit.ui_font(), 18, Color(UIKit.PENCIL, 0.8))
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	v.add_child(_hint)
+	_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	buttons.add_child(_hint)
 	_hint.text = "Drag on the left to steer, tap Gust for a lift." if Settings.touch_ui \
-		else "A/D turn   W/S climb and dive   Space gust   Q/E barrel roll   Esc pause"
+		else "A/D turn  W/S climb, dive  Space gust  Q/E roll"
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 	refresh()
@@ -81,29 +95,18 @@ func _layout() -> void:
 	if portrait:
 		sheet_size = Vector2(minf(s.x * 0.94, 640.0), minf(s.y * 0.86, 1100.0))
 	else:
-		sheet_size = Vector2(minf(s.x * 0.86, 1040.0), minf(s.y * 0.9, 640.0))
+		sheet_size = Vector2(minf(s.x * 0.86, 1040.0), minf(s.y * 0.94, 680.0))
 	_sheet.size = sheet_size
 	_sheet.position = (s - sheet_size) * 0.5
-	var portrait_cards := portrait
-	if (_cards_box is HBoxContainer and portrait_cards) or (_cards_box is VBoxContainer and not portrait_cards):
-		var parent := _cards_box.get_parent()
-		var idx := _cards_box.get_index()
-		var nb: BoxContainer = VBoxContainer.new() if portrait_cards else HBoxContainer.new()
-		nb.add_theme_constant_override("separation", 12 if portrait_cards else 14)
-		nb.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		for c in _cards:
-			_cards_box.remove_child(c)
-			nb.add_child(c)
-		parent.remove_child(_cards_box)
-		_cards_box.queue_free()
-		parent.add_child(nb)
-		parent.move_child(nb, idx)
-		_cards_box = nb
+	var n := _cards.size()
+	var cols := 1 if portrait else (n if n <= 3 else 2)
+	_cards_box.columns = cols
+	var rows := int(ceil(float(n) / cols))
 	var scale_f := clampf(sheet_size.x / 900.0, 0.6, 1.1) if not portrait else clampf(sheet_size.x / 560.0, 0.7, 1.1)
-	_title.add_theme_font_size_override("font_size", int(84 * scale_f))
+	_title.add_theme_font_size_override("font_size", int((84 if rows < 2 or portrait else 64) * scale_f))
 	_subtitle.add_theme_font_size_override("font_size", int(20 * scale_f))
 	for c in _cards:
-		c.custom_minimum_size = Vector2(0, 150 * scale_f) if portrait else Vector2((sheet_size.x - 150) / 3.0, 230 * scale_f)
+		c.custom_minimum_size = Vector2(0, 124 * scale_f) if portrait else Vector2((sheet_size.x - 150) / cols, (250.0 / rows) * scale_f)
 		c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		c.size_flags_vertical = Control.SIZE_EXPAND_FILL
 

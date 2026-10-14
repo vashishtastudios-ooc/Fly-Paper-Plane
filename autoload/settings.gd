@@ -11,6 +11,18 @@ var portrait := false
 var music_volume := 0.7
 var sfx_volume := 1.0
 var ambience_volume := 0.8
+## 0 = Low, 1 = Medium, 2 = High. Defaults to Medium on phones and High on desktop.
+var quality := -1
+## Steering multiplier applied to stick, touch and keyboard input.
+var sensitivity := 1.0
+var invert_pitch := false
+var vibration := true
+var show_tips := true
+
+const QUALITY_NAMES := ["Low", "Medium", "High"]
+
+var _env: Environment
+var _sun: DirectionalLight3D
 
 
 func _ready() -> void:
@@ -23,12 +35,13 @@ func _ready() -> void:
 		Input.emulate_touch_from_mouse = true
 	_register_inputs()
 	_load()
+	if quality < 0:
+		quality = 1 if is_mobile else 2
 	get_viewport().size_changed.connect(_on_size_changed)
 	_on_size_changed()
 	if is_mobile:
-		get_viewport().scaling_3d_scale = 0.8
-		get_viewport().msaa_3d = Viewport.MSAA_2X
 		Engine.max_fps = 60
+	apply_quality()
 
 
 func _on_size_changed() -> void:
@@ -66,22 +79,69 @@ func safe_margins() -> Vector4:
 	return Vector4(l, t, r, b)
 
 
-## Configures the environment and sun for the current platform.
+## Configures the environment and sun for the current platform and quality level.
 func configure_environment(env: Environment, sun: DirectionalLight3D) -> void:
-	env.ssao_enabled = not is_mobile
+	_env = env
+	_sun = sun
 	env.ssr_enabled = false
 	env.sdfgi_enabled = false
 	env.ssil_enabled = false
 	env.volumetric_fog_enabled = false
-	if is_mobile:
-		env.glow_levels_set_extra = false
-		sun.shadow_blur = 1.0
-		sun.directional_shadow_max_distance = 90.0
-		sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	else:
-		sun.shadow_blur = 1.6
-		sun.directional_shadow_max_distance = 160.0
-		sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	apply_quality()
+
+
+## Applies the graphics quality level to the viewport, environment and sun.
+func apply_quality() -> void:
+	var vp := get_viewport()
+	match quality:
+		0:
+			vp.scaling_3d_scale = 0.7
+			vp.msaa_3d = Viewport.MSAA_DISABLED
+		1:
+			vp.scaling_3d_scale = 0.8 if is_mobile else 0.9
+			vp.msaa_3d = Viewport.MSAA_2X
+		_:
+			vp.scaling_3d_scale = 1.0
+			vp.msaa_3d = Viewport.MSAA_2X if is_mobile else Viewport.MSAA_4X
+	if _env:
+		_env.ssao_enabled = quality >= 2 and not is_mobile
+		_env.glow_enabled = quality >= 1
+	if _sun:
+		_sun.shadow_enabled = true
+		match quality:
+			0:
+				_sun.shadow_blur = 0.8
+				_sun.directional_shadow_max_distance = 50.0
+				_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+			1:
+				_sun.shadow_blur = 1.0
+				_sun.directional_shadow_max_distance = 90.0
+				_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+			_:
+				_sun.shadow_blur = 1.6
+				_sun.directional_shadow_max_distance = 160.0 if not is_mobile else 110.0
+				_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if not is_mobile else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+
+
+func set_quality(q: int) -> void:
+	quality = clampi(q, 0, 2)
+	apply_quality()
+	_save()
+
+
+func set_option(option: String, value: Variant) -> void:
+	match option:
+		"sensitivity": sensitivity = clampf(value, 0.5, 1.6)
+		"invert_pitch": invert_pitch = value
+		"vibration": vibration = value
+		"show_tips": show_tips = value
+	_save()
+
+
+## Short haptic tick on phones (when enabled).
+func vibrate(ms: int) -> void:
+	if is_mobile and vibration:
+		Input.vibrate_handheld(ms)
 
 
 func shadows_for_small_props() -> GeometryInstance3D.ShadowCastingSetting:
@@ -112,11 +172,21 @@ func _load() -> void:
 		music_volume = cfg.get_value("audio", "music", music_volume)
 		sfx_volume = cfg.get_value("audio", "sfx", sfx_volume)
 		ambience_volume = cfg.get_value("audio", "ambience", ambience_volume)
+		quality = int(cfg.get_value("video", "quality", -1))
+		sensitivity = float(cfg.get_value("controls", "sensitivity", 1.0))
+		invert_pitch = bool(cfg.get_value("controls", "invert_pitch", false))
+		vibration = bool(cfg.get_value("controls", "vibration", true))
+		show_tips = bool(cfg.get_value("controls", "show_tips", true))
 
 
 func _save() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("audio", "music", music_volume)
+	cfg.set_value("video", "quality", quality)
+	cfg.set_value("controls", "sensitivity", sensitivity)
+	cfg.set_value("controls", "invert_pitch", invert_pitch)
+	cfg.set_value("controls", "vibration", vibration)
+	cfg.set_value("controls", "show_tips", show_tips)
 	cfg.set_value("audio", "sfx", sfx_volume)
 	cfg.set_value("audio", "ambience", ambience_volume)
 	cfg.save(SETTINGS_PATH)

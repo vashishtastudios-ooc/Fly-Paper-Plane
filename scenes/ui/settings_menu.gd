@@ -1,0 +1,144 @@
+extends CanvasLayer
+## Settings: volumes, graphics quality, steering sensitivity, invert climb/dive, vibration and tips.
+## Works from the main menu and from the pause screen (runs while paused).
+
+signal closed
+
+var _sheet: NotebookSheet
+var _quality_buttons: Array[Button] = []
+var _done: Button
+
+
+func _ready() -> void:
+	layer = 25
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(root)
+	var dim := ColorRect.new()
+	dim.color = Color(0.12, 0.07, 0.02, 0.35)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(dim)
+	_sheet = NotebookSheet.new()
+	_sheet.tilt_degrees = 0.9
+	root.add_child(_sheet)
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 8)
+	_sheet.add_child(outer)
+	outer.add_child(UIKit.label("Settings", UIKit.display_font(), 54, UIKit.INK))
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	outer.add_child(scroll)
+	var v := VBoxContainer.new()
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.add_theme_constant_override("separation", 6)
+	scroll.add_child(v)
+
+	v.add_child(_section("Sound"))
+	v.add_child(_slider_row("Music", Settings.music_volume, func(x: float): Settings.set_volume("Music", x)))
+	v.add_child(_slider_row("Effects", Settings.sfx_volume, func(x: float): Settings.set_volume("SFX", x)))
+	v.add_child(_slider_row("Wind and birds", Settings.ambience_volume, func(x: float): Settings.set_volume("Ambience", x)))
+
+	v.add_child(_section("Graphics"))
+	var qrow := HBoxContainer.new()
+	qrow.add_theme_constant_override("separation", 8)
+	var group := ButtonGroup.new()
+	for i in 3:
+		var b := UIKit.paper_button(Settings.QUALITY_NAMES[i], false, 24)
+		b.toggle_mode = true
+		b.button_group = group
+		var q := i
+		b.pressed.connect(func(): Settings.set_quality(q))
+		qrow.add_child(b)
+		_quality_buttons.append(b)
+	v.add_child(qrow)
+	v.add_child(_note("Lower quality saves battery and keeps older phones smooth."))
+
+	v.add_child(_section("Controls"))
+	v.add_child(_slider_row("Steering sensitivity", inverse_lerp(0.5, 1.6, Settings.sensitivity),
+		func(x: float): Settings.set_option("sensitivity", lerpf(0.5, 1.6, x))))
+	v.add_child(_check_row("Invert climb and dive", Settings.invert_pitch, func(on: bool): Settings.set_option("invert_pitch", on)))
+	if Settings.is_mobile:
+		v.add_child(_check_row("Vibration", Settings.vibration, func(on: bool): Settings.set_option("vibration", on)))
+	v.add_child(_check_row("Flight tips", Settings.show_tips, func(on: bool):
+		Settings.set_option("show_tips", on)
+		if on:
+			Game.reset_tips()))
+
+	_done = UIKit.paper_button("Done", true, 28)
+	_done.pressed.connect(func():
+		close()
+		closed.emit())
+	outer.add_child(_done)
+	get_viewport().size_changed.connect(_layout)
+	visible = false
+
+
+func _section(text: String) -> Label:
+	return UIKit.label(text, UIKit.display_font(), 30, UIKit.INK_DARK)
+
+
+func _note(text: String) -> Label:
+	var l := UIKit.label(text, UIKit.body_font(), 16, UIKit.PENCIL)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return l
+
+
+func _slider_row(text: String, value: float, on_change: Callable) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	var l := UIKit.label(text, UIKit.body_font(), 20, UIKit.INK_DARK)
+	l.custom_minimum_size.x = 200
+	row.add_child(l)
+	var s := HSlider.new()
+	s.min_value = 0.0
+	s.max_value = 1.0
+	s.step = 0.01
+	s.value = value
+	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	s.custom_minimum_size.y = 32
+	s.value_changed.connect(on_change)
+	row.add_child(s)
+	return row
+
+
+func _check_row(text: String, value: bool, on_change: Callable) -> Control:
+	var c := CheckButton.new()
+	c.text = text
+	c.button_pressed = value
+	c.add_theme_font_override("font", UIKit.body_font())
+	c.add_theme_font_size_override("font_size", 20)
+	c.add_theme_color_override("font_color", UIKit.INK_DARK)
+	c.add_theme_color_override("font_pressed_color", UIKit.INK_DARK)
+	c.add_theme_color_override("font_hover_color", UIKit.INK)
+	c.add_theme_color_override("font_hover_pressed_color", UIKit.INK)
+	c.add_theme_color_override("font_focus_color", UIKit.INK)
+	c.toggled.connect(on_change)
+	return c
+
+
+func open() -> void:
+	for i in _quality_buttons.size():
+		_quality_buttons[i].set_pressed_no_signal(i == Settings.quality)
+	visible = true
+	_layout()
+	_done.grab_focus()
+
+
+func close() -> void:
+	visible = false
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if visible and event.is_action_pressed("pause"):
+		close()
+		closed.emit()
+		get_viewport().set_input_as_handled()
+
+
+func _layout() -> void:
+	var s := Settings.viewport_size()
+	_sheet.size = Vector2(minf(s.x - 24.0, 640.0), minf(s.y - 24.0, 720.0))
+	_sheet.position = (s - _sheet.size) * 0.5

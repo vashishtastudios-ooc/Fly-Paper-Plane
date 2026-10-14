@@ -48,7 +48,9 @@ func _ready() -> void:
 	_rows.add_theme_constant_override("v_separation", 1)
 	_rows.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(_rows)
-	_best = UIKit.label("", UIKit.display_font(), 26, UIKit.MARGIN)
+	_best = UIKit.label("", UIKit.display_font(), 24, UIKit.MARGIN)
+	_best.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_best.custom_minimum_size.x = 300
 	v.add_child(_best)
 	var row := HFlowContainer.new()
 	row.add_theme_constant_override("h_separation", 12)
@@ -83,7 +85,7 @@ func _row(label: String, value: String, bold := false) -> void:
 
 
 ## score: result of Game.compute_landing_score(); stats: the raw flight stats.
-func show_landing(score: Dictionary, stats: Dictionary, is_best: bool, has_next: bool) -> void:
+func show_landing(score: Dictionary, stats: Dictionary, is_best: bool, has_next: bool, unlocks: Array = []) -> void:
 	_clear_rows()
 	_headline.text = score.headline
 	_sub.text = "Touched down %.1f m from the center at %d km/h." % [stats.dist, roundi(stats.speed * 3.6)]
@@ -97,6 +99,8 @@ func show_landing(score: Dictionary, stats: Dictionary, is_best: bool, has_next:
 	_row(tricks, str(score.tricks))
 	_row("Total", str(score.total), true)
 	_best.text = "New best!" if is_best else ""
+	if not unlocks.is_empty():
+		_best.text += ("   " if is_best else "") + "Unlocked in the Hangar: " + ", ".join(unlocks)
 	_next.visible = has_next
 	_open()
 	(_next if has_next else _retry).grab_focus()

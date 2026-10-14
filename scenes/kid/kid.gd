@@ -109,6 +109,10 @@ func is_throwing() -> bool:
 	return _throwing
 
 
+func held_plane() -> MeshInstance3D:
+	return _held
+
+
 ## World position of the held plane (the launch point).
 func hand_position() -> Vector3:
 	if _held:

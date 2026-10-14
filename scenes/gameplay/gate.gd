@@ -38,6 +38,11 @@ static func _mats() -> void:
 	_gold_mat.emission_energy_multiplier = 2.8
 
 
+## Flying this close to the center passes the ring (2.3 m for the standard 1.7 m ring).
+func pass_radius() -> float:
+	return ring_radius + (PASS_RADIUS - 1.7)
+
+
 func _ready() -> void:
 	_mats()
 	_mesh = MeshInstance3D.new()

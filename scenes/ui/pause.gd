@@ -4,6 +4,7 @@ extends CanvasLayer
 signal resume_pressed
 signal restart_pressed
 signal flights_pressed
+signal settings_pressed
 
 var _sheet: NotebookSheet
 var _resume: Button
@@ -33,6 +34,9 @@ func _ready() -> void:
 	var restart := UIKit.paper_button("Restart flight", false, 26)
 	restart.pressed.connect(func(): restart_pressed.emit())
 	v.add_child(restart)
+	var settings := UIKit.paper_button("Settings", false, 26)
+	settings.pressed.connect(func(): settings_pressed.emit())
+	v.add_child(settings)
 	var flights := UIKit.paper_button("Flights", false, 26)
 	flights.pressed.connect(func(): flights_pressed.emit())
 	v.add_child(flights)
@@ -60,5 +64,5 @@ func close() -> void:
 
 func _layout() -> void:
 	var s := Settings.viewport_size()
-	_sheet.size = Vector2(minf(s.x - 40.0, 380.0), minf(s.y - 40.0, 380.0))
+	_sheet.size = Vector2(minf(s.x - 40.0, 380.0), minf(s.y - 40.0, 450.0))
 	_sheet.position = (s - _sheet.size) * 0.5

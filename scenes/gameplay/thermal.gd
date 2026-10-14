@@ -10,6 +10,8 @@ extends Node3D
 @export var style := "golden"
 ## Height where the smoke starts (chimney top).
 @export var source_height := 0.0
+## Visual column is cut off here (e.g. a classroom ceiling). Lift is unaffected.
+@export var ceiling := INF
 
 
 ## Vertical air speed contributed at a world position (m/s).
@@ -25,7 +27,7 @@ func lift_at(p: Vector3) -> float:
 
 func _ready() -> void:
 	var base := global_position.y
-	var h := maxf(2.0, top + 2.0 - base)
+	var h := maxf(2.0, minf(top + 2.0, ceiling) - base)
 	var col := MeshInstance3D.new()
 	col.name = "Shimmer"
 	var cm := CylinderMesh.new()

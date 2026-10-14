@@ -2,6 +2,7 @@ extends Node
 ## Game state, level list, scoring rules and the save file.
 
 signal state_changed(new_state: int)
+signal cosmetics_changed
 
 enum State { LOADING, MENU, INTRO, THROWING, FLYING, LANDED, CRASHED, RESULT }
 
@@ -10,6 +11,7 @@ const LEVEL_PATHS := [
 	"res://levels/level_1.tres",
 	"res://levels/level_2.tres",
 	"res://levels/level_3.tres",
+	"res://levels/level_4.tres",
 ]
 
 var state: int = State.LOADING
@@ -18,6 +20,10 @@ var current_level := 0
 var unlocked := 1
 var best_scores := {}   # level index -> int
 var best_ribbons := {}  # level index -> int
+## Selected cosmetics: {"paper", "trail", "sticker"} ids (see Cosmetics).
+var cosmetics := Cosmetics.DEFAULTS.duplicate()
+## Flight tips the player has already seen.
+var tips_seen := {}
 
 
 func _ready() -> void:
@@ -44,6 +50,31 @@ func is_unlocked(i: int) -> bool:
 
 func has_next_level() -> bool:
 	return current_level + 1 < levels.size()
+
+
+func total_ribbons() -> int:
+	var n := 0
+	for k in best_ribbons:
+		n += int(best_ribbons[k])
+	return n
+
+
+func set_cosmetic(kind: String, id: String) -> void:
+	if not Cosmetics.is_unlocked(kind, id, total_ribbons()):
+		return
+	cosmetics[kind] = id
+	save_game()
+	cosmetics_changed.emit()
+
+
+func mark_tip_seen(tip: String) -> void:
+	tips_seen[tip] = true
+	save_game()
+
+
+func reset_tips() -> void:
+	tips_seen.clear()
+	save_game()
 
 
 # --- Scoring ---------------------------------------------------------------
@@ -112,6 +143,9 @@ func load_save() -> void:
 	if cfg.load(SAVE_PATH) != OK:
 		return
 	unlocked = clampi(int(cfg.get_value("progress", "unlocked", 1)), 1, LEVEL_PATHS.size())
+	for kind in Cosmetics.DEFAULTS:
+		cosmetics[kind] = str(cfg.get_value("cosmetics", kind, Cosmetics.DEFAULTS[kind]))
+	tips_seen = cfg.get_value("tips", "seen", {})
 	for i in LEVEL_PATHS.size():
 		var key := "level_%d" % (i + 1)
 		if cfg.has_section_key(key, "best_score"):
@@ -123,6 +157,9 @@ func load_save() -> void:
 func save_game() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("progress", "unlocked", unlocked)
+	for kind in cosmetics:
+		cfg.set_value("cosmetics", kind, cosmetics[kind])
+	cfg.set_value("tips", "seen", tips_seen)
 	for i in LEVEL_PATHS.size():
 		var key := "level_%d" % (i + 1)
 		if best_scores.has(i):

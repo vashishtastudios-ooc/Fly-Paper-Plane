@@ -90,6 +90,7 @@ func _build_visual() -> void:
 			var flags := MultiMeshInstance3D.new()
 			flags.name = "Flags"
 			flags.multimesh = mm
+			flags.material_override = _flag_material()
 			flags.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			flags.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 			flags.visibility_range_end = 220.0
@@ -154,3 +155,16 @@ func _build_visual() -> void:
 			add_child(body)
 	var mi := mb.build_instance("Visual", false)
 	add_child(mi)
+
+
+static var _flag_mat: StandardMaterial3D
+
+
+## Cloth for pennants that fades out right in front of the camera.
+static func _flag_material() -> StandardMaterial3D:
+	if _flag_mat == null:
+		_flag_mat = (Mats.get_mat("cloth") as StandardMaterial3D).duplicate()
+		_flag_mat.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER
+		_flag_mat.distance_fade_min_distance = 0.7
+		_flag_mat.distance_fade_max_distance = 2.0
+	return _flag_mat

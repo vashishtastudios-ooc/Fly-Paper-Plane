@@ -90,7 +90,8 @@ func build(level_data: LevelData, town_builder: TownBuilder) -> void:
 		t.top = th.top
 		t.style = th.get("style", "golden")
 		t.source_height = th.get("source", 0.0)
-		t.position = Vector3(th.x, Terrain.ground_height(th.x, th.z), th.z)
+		t.ceiling = th.get("ceiling", INF)
+		t.position = Vector3(th.x, th.get("base", Terrain.ground_height(th.x, th.z)), th.z)
 		_content.add_child(t)
 		thermals.append(t)
 
@@ -106,6 +107,7 @@ func build(level_data: LevelData, town_builder: TownBuilder) -> void:
 		# The golden bonus ring replaces route rings right next to it (e.g. under the arch).
 		if not (data.has_bonus_ring and gp.distance_to(data.bonus_ring_position) < 7.5):
 			var g: Gate = GATE_SCENE.instantiate()
+			g.ring_radius = data.gate_radius
 			g.axis = _tangent(off_g)
 			g.position = gp
 			_content.add_child(g)
@@ -284,7 +286,7 @@ func process_flight(prev: Vector3, pos: Vector3) -> void:
 	while next_gate < gates.size():
 		var g := gates[next_gate]
 		var gp := g.global_position
-		if _seg_point_dist(gp, prev, pos) < Gate.PASS_RADIUS:
+		if _seg_point_dist(gp, prev, pos) < g.pass_radius():
 			rings_passed += 1
 			next_gate += 1
 			changed = true

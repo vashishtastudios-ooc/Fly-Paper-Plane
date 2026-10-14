@@ -20,6 +20,9 @@ extends Resource
 ## Waypoints of the intended flight line (handles are smoothed at runtime).
 @export var route: Curve3D
 
+## Radius of the gold route rings (smaller for indoor levels).
+@export var gate_radius := 1.7
+
 @export_group("Landing pad")
 @export var pad_position := Vector3.ZERO
 @export var pad_radius := 2.5
@@ -28,6 +31,7 @@ extends Resource
 
 @export_group("Air and pickups")
 ## Each entry: {"x", "z", "radius", "strength", "top", "style"} where style is "golden" or "smoke".
+## Optional "base": height the column starts at (e.g. a classroom floor); defaults to the ground.
 @export var thermals: Array = []
 @export var bonus_stars: PackedVector3Array = PackedVector3Array()
 @export var has_bonus_ring := false

@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0.8, 6.1, 58.6, 0, 0, 0, 0, 0, 0, 2.4, 6.05, 54.5, 0, 0, 0, 0, 0, 0, 3.5, 5.85, 50.5, 0, 0, 0, 0, 0, 0, 3.5, 5.7, 47, 0, 0, 0, 0, 0, 0, 2, 5, 41, 0, 0, 0, 0, 0, 0, -1.5, 3.9, 34, 0, 0, 0, 0, 0, 0, -4.5, 2.7, 27.5, 0, 0, 0, 0, 0, 0, -7.5, 1.5, 21.5, 0, 0, 0, 0, 0, 0, -10, 0.6, 18),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 9
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Classroom Window Escape"
+short_goal = "Slip out the classroom window and land on your friend's backpack."
+goal_text = "The bell is about to ring. Launch from your desk, let the warm air over the radiator lift you, and slip out through the open window. Mind the spinning ceiling fan and the closed windows! Duck under the schoolyard bunting and land softly on your friend's backpack. Follow the dotted line and fly through the gold rings to find the way."
+platform_kind = "desk"
+platform_position = Vector3(0.5, 4.75, 59.6)
+platform_yaw = 0
+aim_point = Vector3(3.5, 0, 48)
+route = SubResource("Curve3D_route")
+pad_position = Vector3(-10, 0.28, 17.5)
+pad_radius = 1.8
+pad_name = "Friend's backpack"
+par_time = 9
+gate_radius = 1.0
+thermals = [{
+"x": 3.5,
+"z": 48.6,
+"radius": 1.8,
+"strength": 2.6,
+"top": 6.4,
+"style": "golden",
+"base": 4,
+"ceiling": 7.4
+}, {
+"x": -3,
+"z": 31,
+"radius": 6,
+"strength": 2.8,
+"top": 9,
+"style": "golden"
+}]
+bonus_stars = PackedVector3Array(-3, 8.5, 31)
+hazard_lines = [{
+"a": Vector3(-7.8, 7.15, 52),
+"b": Vector3(7.8, 7.15, 52),
+"sag": 0.35,
+"kind": "bunting",
+"posts": false
+}, {
+"a": Vector3(-19.5, 4.8, 26),
+"b": Vector3(6, 4.8, 26),
+"sag": 0.5,
+"kind": "bunting",
+"posts": true
+}]

@@ -7,7 +7,7 @@ const RIVER_Z := -300.0
 const WATER_Y := -1.55
 const BED_Y := -2.6
 const BOUNDS_X := 90.0
-const BOUNDS_Z_MAX := 45.0
+const BOUNDS_Z_MAX := 115.0
 const BOUNDS_Z_MIN := -650.0
 
 
@@ -17,7 +17,7 @@ static func ground_height(x: float, z: float) -> float:
 	var hill := smoothstep(44.0, 78.0, ax)
 	if hill > 0.0:
 		h += hill * (4.5 + 3.5 * sin(z * 0.019 + x * 0.021) + 2.2 * sin(z * 0.047 - x * 0.033) + (ax - 44.0) * 0.12)
-	h += smoothstep(30.0, 90.0, z) * 5.0
+	h += smoothstep(72.0, 130.0, z) * 6.0
 	h += smoothstep(-640.0, -720.0, z) * 8.0
 	var d := absf(z - RIVER_Z)
 	var river := 1.0 - smoothstep(7.0, 16.0, d)

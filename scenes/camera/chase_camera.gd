@@ -123,6 +123,7 @@ func _update(delta: float, snap: bool) -> void:
 				cam_roll = s.roll * roll_follow
 				target_fov += clampf((s.v - 9.0) / 12.0, 0.0, 1.0) * speed_fov + _lift_s * 2.5
 				desired = _clamp_to_world(desired, p)
+				desired = _avoid_walls(p + Vector3(0, 0.15, 0), desired)
 		Mode.ORBIT:
 			_orbit_angle += delta * 0.32
 			var r2 := 5.5
@@ -136,6 +137,7 @@ func _update(delta: float, snap: bool) -> void:
 	_look = look if snap else _look.lerp(look, 1.0 - exp(-rate * 1.6 * delta))
 	if mode == Mode.FOLLOW and plane:
 		pos = _clamp_to_world(pos, plane.state.pos)
+		pos = _avoid_walls(plane.get_global_transform_interpolated().origin + Vector3(0, 0.15, 0), pos)
 	var offset := Vector3.ZERO
 	if _shake > 0.001:
 		offset = Vector3(_rng.randf_range(-1, 1), _rng.randf_range(-1, 1), _rng.randf_range(-1, 1)) * _shake * 0.35
@@ -154,6 +156,19 @@ func _avoid_walls(focus: Vector3, desired: Vector3) -> Vector3:
 		return desired
 	var q := PhysicsRayQueryParameters3D.create(focus, desired, 1)
 	var hit := space.intersect_ray(q)
+	# Look through thin or leafy things (trees, posts, fences); only walls block the view.
+	var tries := 0
+	while not hit.is_empty() and tries < 4:
+		var col: Object = hit.get("collider")
+		var kind: String = col.get_meta("kind", "wall") if col else "wall"
+		if kind in ["tree", "post", "fence", "desk"]:
+			var ex := q.exclude
+			ex.append(hit.rid)
+			q.exclude = ex
+			hit = space.intersect_ray(q)
+			tries += 1
+		else:
+			break
 	if hit.is_empty():
 		return desired
 	var back := (focus - desired).normalized()
