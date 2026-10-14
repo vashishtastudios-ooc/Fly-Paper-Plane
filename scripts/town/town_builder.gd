@@ -25,6 +25,8 @@ const SHOP_SCENE := preload("res://props/shop.tscn")
 const CIVIC_SCENE := preload("res://props/civic_building.tscn")
 const TOWER_SCENE := preload("res://props/clock_tower.tscn")
 const BRIDGE_SCENE := preload("res://props/bridge.tscn")
+const FOOTBRIDGE_SCENE := preload("res://props/footbridge.tscn")
+const ARCHWAY_SCENE := preload("res://props/archway.tscn")
 const FOUNTAIN_SCENE := preload("res://props/fountain.tscn")
 const BANDSTAND_SCENE := preload("res://props/bandstand.tscn")
 const JETTY_SCENE := preload("res://props/jetty.tscn")
@@ -100,6 +102,7 @@ func build() -> void:
 	_ambient_life()
 	# Built last so the shared random sequence (and the rest of the town) stays unchanged.
 	_rowan_row()
+	_ponds()
 	batcher.finalize()
 	_on_quality(Settings.quality)
 	is_built = true
@@ -272,10 +275,10 @@ func _terrain() -> void:
 		var z := z0 - iz * step
 		for ix in nx:
 			var x := x0 + ix * step
-			var h := ground_height(x, z)
+			var h := Terrain.land_height(x, z)
 			verts.append(Vector3(x, h, z))
-			var hx := ground_height(x + 0.5, z) - ground_height(x - 0.5, z)
-			var hz := ground_height(x, z + 0.5) - ground_height(x, z - 0.5)
+			var hx := Terrain.land_height(x + 0.5, z) - Terrain.land_height(x - 0.5, z)
+			var hz := Terrain.land_height(x, z + 0.5) - Terrain.land_height(x, z - 0.5)
 			normals.append(Vector3(-hx, 1.0, -hz).normalized())
 			uvs.append(Vector2(x, z) * 0.25)
 			var n := noise.get_noise_2d(x, z) * 0.5 + 0.5
@@ -286,6 +289,9 @@ func _terrain() -> void:
 			colors.append(c)
 	for iz in nz - 1:
 		for ix in nx - 1:
+			# Leave a hole for the ponds (their stone basins are built separately).
+			if Terrain.pond_at(x0 + (ix + 0.5) * step, z0 - (iz + 0.5) * step) >= 0:
+				continue
 			var a := iz * nx + ix
 			var b := a + 1
 			var c := a + nx
@@ -482,10 +488,14 @@ func _add_tree(p: Vector3, scale: float, autumn := false, conifer := false, coll
 	var trunk_h := 2.0 * scale
 	var r := 2.2 * scale
 	var col := Mats.pick(rng, AUTUMN) if autumn else Mats.pick(rng, GREENS)
+	var spin := rng.randf() * TAU
+	for pond in Terrain.PONDS:
+		if (pond[0] as Rect2).grow(1.5).has_point(Vector2(p.x, p.z)):
+			return
 	var handles := []
 	handles.append(batcher.add("trunk", Transform3D(Basis().scaled(Vector3(scale, trunk_h + r * 0.6, scale)), p), Color.WHITE))
 	var cc := p + Vector3(0, trunk_h + r * 0.75, 0)
-	var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(r, r * (1.25 if conifer else 1.0), r))
+	var basis := Basis(Vector3.UP, spin).scaled(Vector3(r, r * (1.25 if conifer else 1.0), r))
 	handles.append(batcher.add("conifer" if conifer else "canopy", Transform3D(basis, cc), col))
 	var body := StaticBody3D.new()
 	body.collision_layer = 1
@@ -786,6 +796,15 @@ func _market() -> void:
 			s.shutter_color = Mats.pick(rng, Mats.SHUTTER_COLORS)
 			s.seed_value = name_i + 11
 			name_i += 1
+			if side < 0 and k == 1:
+				# Mill Lane: an arched passage through to the millpond (flight 3).
+				s.free()
+				var arch: Node3D = ARCHWAY_SCENE.instantiate()
+				arch.batcher = batcher
+				arch.position = Vector3(-9.0, 0.15, zc)
+				arch.rotation.y = PI * 0.5
+				add_child(arch)
+				continue
 			s.position = Vector3(side * 9.0, 0.15, zc)
 			s.rotation.y = -PI * 0.5 if side > 0 else PI * 0.5
 			add_child(s)
@@ -1031,6 +1050,82 @@ func _square() -> void:
 		_lamp_collider(p)
 	for i in 14:
 		batcher.add("cobble_post", Transform3D(Basis(), Vector3(-8.8 if i % 2 == 0 else 8.8, 0.03, -478 - (i / 2) * 3.0)))
+
+
+# --- Ponds ----------------------------------------------------------------------------------
+
+## Stone-walled ponds (see Terrain.PONDS): the millpond behind Market Street with its footbridge
+## and ducks, and the little wildlife pond in the schoolyard.
+func _ponds() -> void:
+	var prng := RandomNumberGenerator.new()
+	prng.seed = SEED + 7
+	var b := MeshBuilder.new()
+	var stone := Mats.get_mat("stone")
+	var wall_c := Color("#b9b2a2")
+	var coping_c := Color("#e6dccb")
+	for pond in Terrain.PONDS:
+		var r: Rect2 = pond[0]
+		var level: float = pond[1]
+		var x0 := r.position.x
+		var x1 := r.end.x
+		var z0 := r.position.y
+		var z1 := r.end.y
+		var bed := Terrain.POND_BED
+		# Dark bed and the inner walls.
+		b.box_mm(Mats.get_mat("solid"), Vector3(x0, bed - 0.1, z0), Vector3(x1, bed, z1), Color("#3c5a52"), 4)
+		b.quad(stone, Vector3(x0, bed, z0), Vector3(x0, bed, z1), Vector3(x0, 0.0, z1), Vector3(x0, 0.0, z0), wall_c)
+		b.quad(stone, Vector3(x1, bed, z1), Vector3(x1, bed, z0), Vector3(x1, 0.0, z0), Vector3(x1, 0.0, z1), wall_c)
+		b.quad(stone, Vector3(x1, bed, z0), Vector3(x0, bed, z0), Vector3(x0, 0.0, z0), Vector3(x1, 0.0, z0), wall_c)
+		b.quad(stone, Vector3(x0, bed, z1), Vector3(x1, bed, z1), Vector3(x1, 0.0, z1), Vector3(x0, 0.0, z1), wall_c)
+		# Coping stones around the rim (just outside the water).
+		var cw := 0.45
+		for edge in [[Vector3(x0 - cw, 0, z0 - cw), Vector3(x1 + cw, 0.12, z0)], [Vector3(x0 - cw, 0, z1), Vector3(x1 + cw, 0.12, z1 + cw)],
+				[Vector3(x0 - cw, 0, z0), Vector3(x0, 0.12, z1)], [Vector3(x1, 0, z0), Vector3(x1 + cw, 0.12, z1)]]:
+			var a: Vector3 = edge[0]
+			var c: Vector3 = edge[1]
+			b.box_mm(stone, a, c, coping_c, 63 - 8)
+			_static_box("wall", (a + c) * 0.5, c - a)
+		# Water surface.
+		var pm := PlaneMesh.new()
+		pm.size = Vector2(r.size.x, r.size.y)
+		var water := MeshInstance3D.new()
+		water.name = "Pond"
+		water.mesh = pm
+		water.material_override = Mats.get_mat("water")
+		water.position = Vector3(r.get_center().x, level, r.get_center().y)
+		water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(water)
+		# Reeds in the corners and lily pads along the long walls.
+		for corner in [Vector2(x0, z0), Vector2(x1, z0), Vector2(x0, z1), Vector2(x1, z1)]:
+			for i in 7:
+				var px: float = corner.x + signf(r.get_center().x - corner.x) * prng.randf_range(0.2, 1.4)
+				var pz: float = corner.y + signf(r.get_center().y - corner.y) * prng.randf_range(0.2, 1.4)
+				var sc := prng.randf_range(0.8, 1.2)
+				batcher.add("reed", Transform3D(Basis(Vector3.UP, prng.randf() * TAU).scaled(Vector3(sc, sc, sc)), Vector3(px, level - 0.1, pz)), Color("#7d9a4a").lerp(Color("#a3a85a"), prng.randf()))
+		var pads := int(r.size.y * 0.6)
+		for i in pads:
+			var side := -1.0 if i % 2 == 0 else 1.0
+			var px: float = (x0 + prng.randf_range(0.6, 2.6)) if side < 0 else (x1 - prng.randf_range(0.6, 2.6))
+			var pz := prng.randf_range(z0 + 1.0, z1 - 1.0)
+			var pr := prng.randf_range(0.22, 0.42)
+			b.cylinder(Mats.get_mat("solid"), Transform3D(Basis(), Vector3(px, level + 0.005, pz)), pr, pr, 0.02, 9, Color("#5f8f45").lerp(Color("#86ad55"), prng.randf()))
+			if prng.randf() < 0.25:
+				b.sphere(Mats.get_mat("solid"), Vector3(px, level + 0.07, pz), Vector3(0.08, 0.06, 0.08), 3, 6, Color("#f5b8c8"))
+	add_child(b.build_instance("Ponds", false))
+	# Footbridges: over the middle of the millpond, and across the school pond.
+	for fb in [[Vector3(-32, 0, -424), 22.0, 2.0, 1.3], [Vector3(-8, 0, 24), 15.0, 1.4, 0.9]]:
+		var bridge: Node3D = FOOTBRIDGE_SCENE.instantiate()
+		bridge.batcher = batcher
+		bridge.span = fb[1]
+		bridge.width = fb[2]
+		bridge.rise = fb[3]
+		bridge.position = fb[0]
+		add_child(bridge)
+	# A family of ducks on the millpond (paddling along its length).
+	var ducks := DUCKS_SCENE.instantiate()
+	ducks.position = Vector3(-37, Terrain.PONDS[0][1], -372)
+	ducks.rotation.y = PI * 0.5
+	add_child(ducks)
 
 
 # --- Background: hills, distant rows, extra trees -------------------------------------------
@@ -1299,7 +1394,7 @@ func _grass() -> void:
 		if near_pad or p.distance_to(Vector3(-27, 0, -142)) < 5.0:
 			continue
 		p.y = ground_height(p.x, p.z)
-		if p.y < WATER_Y + 0.05:
+		if p.y < WATER_Y + 0.05 or Terrain.is_water(p.x, p.z):
 			continue
 		var s := rng.randf_range(0.7, 1.35)
 		var tint := Color("#8fbf5a").lerp(Color("#c3d870"), rng.randf()).lerp(Color("#d9b25a"), rng.randf() * 0.12)

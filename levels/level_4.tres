@@ -4,28 +4,28 @@
 
 [sub_resource type="Curve3D" id="Curve3D_route"]
 _data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0.8, 6.1, 58.6, 0, 0, 0, 0, 0, 0, 2.4, 6.05, 54.5, 0, 0, 0, 0, 0, 0, 3.5, 5.85, 50.5, 0, 0, 0, 0, 0, 0, 3.5, 5.7, 47, 0, 0, 0, 0, 0, 0, 2, 5.2, 41, 0, 0, 0, 0, 0, 0, -1.5, 5.6, 33, 0, 0, 0, 0, 0, 0, -1, 6.6, 24, 0, 0, 0, 0, 0, 0, 0, 7, 12, 0, 0, 0, 0, 0, 0, 0.5, 7.2, 0, 0, 0, 0, 0, 0, 0, 1, 7.4, -18, 0, 0, 0, 0, 0, 0, 2, 7, -38, 0, 0, 0, 0, 0, 0, 3, 6, -58, 0, 0, 0, 0, 0, 0, 5, 4.2, -69, 0, 0, 0, 0, 0, 0, 9, 2, -75.5, 0, 0, 0, 0, 0, 0, 12.5, 0.6, -78),
-"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0.8, 6.1, 58.6, 0, 0, 0, 0, 0, 0, 2.4, 6.05, 54.5, 0, 0, 0, 0, 0, 0, 3.5, 5.85, 50.5, 0, 0, 0, 0, 0, 0, 3.5, 5.7, 47, 0, 0, 0, 0, 0, 0, 2.2, 4.7, 42.5, 0, 0, 0, 0, 0, 0, -1.5, 2.9, 37.5, 0, 0, 0, 0, 0, 0, -5.5, 1.3, 33, 0, 0, 0, 0, 0, 0, -7.8, 0.35, 28.5, 0, 0, 0, 0, 0, 0, -8, 0.15, 24, 0, 0, 0, 0, 0, 0, -7.6, 0.3, 19.5, 0, 0, 0, 0, 0, 0, -5, 0.85, 15, 0, 0, 0, 0, 0, 0, -1.8, 2.2, 9, 0, 0, 0, 0, 0, 0, 0, 4.6, 2, 0, 0, 0, 0, 0, 0, 0.5, 6.6, -8, 0, 0, 0, 0, 0, 0, 1, 7.4, -18, 0, 0, 0, 0, 0, 0, 2, 7, -38, 0, 0, 0, 0, 0, 0, 3, 6, -58, 0, 0, 0, 0, 0, 0, 5, 4.2, -69, 0, 0, 0, 0, 0, 0, 9, 2, -75.5, 0, 0, 0, 0, 0, 0, 12.5, 0.6, -78),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 }
-point_count = 15
+point_count = 20
 
 [resource]
 script = ExtResource("1_data")
 level_name = "Classroom Window Escape"
-short_goal = "Slip out the classroom window and glide down the lane to the bus stop."
-goal_text = "The bell is about to ring! Launch from your desk, let the warm air over the radiator lift you, and slip out through the open window. Mind the spinning ceiling fan and the closed windows. Cross the schoolyard, glide down Linden Lane under the bunting, and land on your friend's backpack at the bus stop. Follow the dotted line and fly through the gold rings to find the way."
+short_goal = "Slip out the classroom window, under the pond bridge, and down the lane to the bus stop."
+goal_text = "The bell is about to ring! Launch from your desk, let the warm air over the radiator lift you, and slip out through the open window. Mind the spinning ceiling fan and the closed windows. Dive down into the schoolyard and skim low over the wildlife pond, under the bunting and the little wooden footbridge, then out through the gate. Ride the warm air up over Linden Lane, glide under the bunting and land on your friend's backpack at the bus stop. Follow the dotted line and fly through the gold rings to find the way."
 platform_kind = "desk"
 platform_position = Vector3(0.5, 4.75, 59.6)
 platform_yaw = 0
 aim_point = Vector3(3.5, 0, 48)
 route = SubResource("Curve3D_route")
-pad_position = Vector3(12.5, 0.28, -78)
-pad_radius = 1.8
-pad_name = "Friend's backpack"
-par_time = 18
-gate_radius = 1.7
+gate_radius = 1.4
 small_gate_box = AABB(-8, 4, 49, 16, 3.4, 12)
-small_gate_radius = 1.0
+small_gate_radius = 0.85
+pad_position = Vector3(12.5, 0.28, -78)
+pad_radius = 1.5
+pad_name = "Friend's backpack"
+par_time = 20
 thermals = [{
 "x": 3.5,
 "z": 48.6,
@@ -36,28 +36,21 @@ thermals = [{
 "base": 4,
 "ceiling": 7.4
 }, {
-"x": -3,
-"z": 31,
-"radius": 6,
-"strength": 2.8,
-"top": 9,
-"style": "golden"
-}, {
-"x": 0,
-"z": 4,
+"x": -0.5,
+"z": 5,
 "radius": 7,
-"strength": 3,
+"strength": 3.8,
 "top": 10,
 "style": "golden"
 }, {
 "x": 1.5,
 "z": -28,
-"radius": 7,
-"strength": 3,
+"radius": 6.5,
+"strength": 2.8,
 "top": 10,
 "style": "golden"
 }]
-bonus_stars = PackedVector3Array(-3, 8.5, 31, 1.5, 9.5, -28)
+bonus_stars = PackedVector3Array(-5.5, 5.4, 51.5, 1.5, 9.5, -28)
 hazard_lines = [{
 "a": Vector3(-7.8, 7.15, 52),
 "b": Vector3(7.8, 7.15, 52),

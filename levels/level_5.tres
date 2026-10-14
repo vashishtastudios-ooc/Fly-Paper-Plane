@@ -4,61 +4,70 @@
 
 [sub_resource type="Curve3D" id="Curve3D_route"]
 _data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 15.3, -595, 0, 0, 0, 0, 0, 0, -4, 14.5, -578, 0, 0, 0, 0, 0, 0, -10, 13.8, -555, 0, 0, 0, 0, 0, 0, -12, 14.5, -535, 0, 0, 0, 0, 0, 0, -6, 14.5, -512, 0, 0, 0, 0, 0, 0, 0, 13.5, -490, 0, 0, 0, 0, 0, 0, 2, 12.8, -465, 0, 0, 0, 0, 0, 0, 0, 12.5, -440, 0, 0, 0, 0, 0, 0, -2, 12, -415, 0, 0, 0, 0, 0, 0, 0, 11, -390, 0, 0, 0, 0, 0, 0, 1, 10, -365, 0, 0, 0, 0, 0, 0, 0, 8.5, -345, 0, 0, 0, 0, 0, 0, 0, 6.5, -330, 0, 0, 0, 0, 0, 0, 0, 4.6, -318, 0, 0, 0, 0, 0, 0, 0, 2.8, -308, 0, 0, 0, 0, 0, 0, 0, 2, -302.5),
-"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 15.3, -595, 0, 0, 0, 0, 0, 0, -4, 14.5, -578, 0, 0, 0, 0, 0, 0, -10, 13.8, -555, 0, 0, 0, 0, 0, 0, -12, 14.5, -535, 0, 0, 0, 0, 0, 0, -6, 14.2, -512, 0, 0, 0, 0, 0, 0, 0, 13.2, -492, 0, 0, 0, 0, 0, 0, 1.5, 12.2, -472, 0, 0, 0, 0, 0, 0, 0.5, 9.4, -453, 0, 0, 0, 0, 0, 0, 0, 8, -440, 0, 0, 0, 0, 0, 0, -1, 8.8, -422, 0, 0, 0, 0, 0, 0, -1, 10.4, -406, 0, 0, 0, 0, 0, 0, 0, 10.6, -390, 0, 0, 0, 0, 0, 0, 1, 9.4, -366, 0, 0, 0, 0, 0, 0, 0.5, 7.6, -352, 0, 0, 0, 0, 0, 0, 0.5, 6.6, -343, 0, 0, 0, 0, 0, 0, 2, 5.6, -334, 0, 0, 0, 0, 0, 0, 4.5, 4.4, -326, 0, 0, 0, 0, 0, 0, 9.5, 2.7, -318, 0, 0, 0, 0, 0, 0, 13.5, 1.2, -311, 0, 0, 0, 0, 0, 0, 15, 0.25, -305, 0, 0, 0, 0, 0, 0, 11.5, -0.2, -301, 0, 0, 0, 0, 0, 0, 5.5, -0.4, -300, 0, 0, 0, 0, 0, 0, 0, -0.45, -300, 0, 0, 0, 0, 0, 0, -6, -0.6, -300, 0, 0, 0, 0, 0, 0, -11, -0.85, -300, 0, 0, 0, 0, 0, 0, -14.5, -1.05, -300),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 }
-point_count = 16
+point_count = 26
 
 [resource]
 script = ExtResource("1_data")
 level_name = "Lantern Night"
-short_goal = "At dusk, glide from the clock tower to the lantern festival on the old bridge."
-goal_text = "The town is lit up for the lantern festival. Throw from the clock tower balcony and glide all the way down Market Street to the party on the old stone bridge. Warm air rising from the lanterns will carry you up, so circle in it to stay high, and keep above the glowing lantern strings. Follow the dotted line and fly through the lantern hoops to find the way."
+short_goal = "At dusk, weave down Market Street, under the old bridge, and land on the lantern raft."
+goal_text = "The town is lit up for the lantern festival. Throw from the clock tower balcony and glide down Market Street, over some lantern strings and under others. Warm air rising from the lanterns will carry you up, so circle in it to stay high. At the end of the street, swing out over the river bank, drop down to the water and thread the old stone arch, then land on the little lantern raft moored on the other side. Follow the dotted line and fly through the lantern hoops to find the way."
 platform_kind = "tower"
 platform_position = Vector3(0, 14.05, -598.4)
-platform_yaw = 3.1416
+platform_yaw = 3.142
 aim_point = Vector3(0, 0, -560)
 route = SubResource("Curve3D_route")
-pad_position = Vector3(0, 1.55, -301.5)
-pad_radius = 2.4
-pad_name = "Lantern festival"
-par_time = 45
+gate_radius = 1.3
+small_gate_box = AABB(-6, -2, -305, 12, 2.6, 10)
+small_gate_radius = 1
 gate_style = "lantern"
 time_of_day = "dusk"
 decor = "lantern_festival"
+pad_position = Vector3(-15, -1.25, -300)
+pad_radius = 1.7
+pad_name = "Lantern raft"
+par_time = 48
 thermals = [{
 "x": -13,
 "z": -532,
-"radius": 7,
-"strength": 4.5,
-"top": 18,
+"radius": 6.5,
+"strength": 4,
+"top": 17,
 "style": "lantern"
 }, {
-"x": 1,
-"z": -468,
-"radius": 7,
-"strength": 4,
-"top": 16,
+"x": 0,
+"z": -490,
+"radius": 6,
+"strength": 3,
+"top": 14,
 "style": "lantern"
 }, {
 "x": -1,
 "z": -412,
-"radius": 7,
-"strength": 3.8,
-"top": 15,
+"radius": 6.5,
+"strength": 3.6,
+"top": 13,
 "style": "lantern"
 }, {
 "x": 1,
-"z": -362,
-"radius": 6.5,
-"strength": 3.5,
-"top": 12,
+"z": -364,
+"radius": 6,
+"strength": 3,
+"top": 11,
 "style": "lantern"
 }]
-bonus_stars = PackedVector3Array(-13, 17, -532, 1, 15, -468)
+bonus_stars = PackedVector3Array(-13, 16.5, -532, -1, 12.5, -412)
 hazard_lines = [{
-"a": Vector3(-9, 9, -428),
-"b": Vector3(9, 9, -428),
+"a": Vector3(-9, 9.6, -472),
+"b": Vector3(9, 9.6, -472),
+"sag": 0.9,
+"kind": "lanterns",
+"posts": false
+}, {
+"a": Vector3(-9, 10.3, -440),
+"b": Vector3(9, 10.3, -440),
 "sag": 0.9,
 "kind": "lanterns",
 "posts": false
@@ -69,9 +78,9 @@ hazard_lines = [{
 "kind": "lanterns",
 "posts": false
 }, {
-"a": Vector3(-5.6, 4.2, -322),
-"b": Vector3(5.6, 4.2, -322),
-"sag": 0.5,
+"a": Vector3(-9, 9.7, -347),
+"b": Vector3(9, 9.7, -347),
+"sag": 0.7,
 "kind": "lanterns",
-"posts": true
+"posts": false
 }]

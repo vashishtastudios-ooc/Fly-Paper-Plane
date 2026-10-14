@@ -17,6 +17,8 @@ const WINDOWS := [[-6.5, -3.5, false], [-1.5, 1.5, false], [2.0, 5.0, true]]
 const SILL_Y := 4.6
 const HEAD_Y := 6.9
 const FAN_POS := Vector3(-2.5, 7.05, 7.0)
+## Schoolyard benches (they face the building).
+const BENCHES := [Vector3(-17.0, 0, -15.0), Vector3(2.5, 0, -27.0), Vector3(17.0, 0, -30.0)]
 
 var _fan: Node3D
 
@@ -203,7 +205,12 @@ func _exterior(b: MeshBuilder) -> void:
 	for s in 3:
 		b.box_mm(stone, Vector3(ex - 1.6, 0, -1.6 + s * 0.4), Vector3(ex + 1.6, 0.6 - s * 0.2, 0.0), Color("#d6cdbd"))
 	# Schoolyard surface and painted games.
-	b.box_mm(Mats.get_mat("asphalt"), Vector3(-20, 0.0, -34), Vector3(20, 0.025, -0.1), Color(1.05, 1.03, 1.0), 4)
+	var tarmac := Mats.get_mat("asphalt")
+	var tc := Color(1.05, 1.03, 1.0)
+	b.box_mm(tarmac, Vector3(-20, 0.0, -34), Vector3(20, 0.025, -30.45), tc, 4)
+	b.box_mm(tarmac, Vector3(-20, 0.0, -17.55), Vector3(20, 0.025, -0.1), tc, 4)
+	b.box_mm(tarmac, Vector3(-20, 0.0, -30.45), Vector3(-14.45, 0.025, -17.55), tc, 4)
+	b.box_mm(tarmac, Vector3(-1.55, 0.0, -30.45), Vector3(20, 0.025, -17.55), tc, 4)
 	var paint_c := [Color("#f2c14e"), Color("#e8546a"), Color("#6fb4e8"), Color("#fbf8f0")]
 	for k in 8:
 		var hz := -6.0 - k * 1.0
@@ -305,7 +312,7 @@ func _after_build() -> void:
 	_fan.add_child(fan_mesh)
 	add_child(_fan)
 	# Schoolyard props.
-	for p in [Vector3(-14.0, 0, -18.0), Vector3(-3.0, 0, -28.0), Vector3(17.0, 0, -30.0)]:
+	for p in BENCHES:
 		inst("bench", Transform3D(Basis(Vector3.UP, PI), p))
 	for p in [Vector3(-19.0, 0, -4.0), Vector3(19.0, 0, -4.0)]:
 		inst("bush", Transform3D(Basis().scaled(Vector3(1.4, 1.2, 1.4)), p), Color("#5f8f45"))
@@ -334,6 +341,8 @@ func _process(delta: float) -> void:
 
 
 func _build_colliders() -> void:
+	for p in BENCHES:
+		add_box("post", p + Vector3(0, 0.45, 0.05), Vector3(1.7, 0.9, 0.5), PI)
 	var hw := WIDTH * 0.5
 	add_box("wall", Vector3(0, FLOOR_Y * 0.5, DEPTH * 0.5), Vector3(WIDTH, FLOOR_Y, DEPTH))
 	add_box("wall", Vector3((-hw - ROOM_X - 0.3) * 0.5, (FLOOR_Y + ROOF_Y) * 0.5, DEPTH * 0.5), Vector3(hw - ROOM_X - 0.3, ROOF_Y - FLOOR_Y, DEPTH))

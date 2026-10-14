@@ -79,18 +79,33 @@ Other places to tune:
 |---|---|---|---|
 | 1 | Window to the Picnic | Upstairs balcony on Linden Lane | Picnic blanket in the park |
 | 2 | Under the Old Bridge | Corner balcony by the river | Fishing jetty |
-| 3 | Up to the Clock Tower | Bakery roof on Market Street | Clock tower balcony |
+| 3 | Up to the Clock Tower | Bakery roof on Market Street, through Mill Lane to the millpond | Clock tower balcony |
 | 4 | Classroom Window Escape | A desk in the upstairs classroom of Linden Primary | A friend's backpack at the bus stop on Linden Lane |
-| 5 | Lantern Night | The clock tower balcony, at dusk | The lantern festival on the old bridge |
+| 5 | Lantern Night | The clock tower balcony, at dusk | The lantern raft on the river, past the old bridge |
 | 6 | Open House Day | An attic bedroom on Rowan Row | The cat's rug by the cottage fireplace |
 
-**Classroom Window Escape:** warm air rises off the radiator, and the spinning ceiling fan or a closed window crashes the plane. After the window you cross the schoolyard and glide about 130 m down Linden Lane, under bunting and through two pockets of rising air, to the bus stop. Rings inside the classroom are smaller (`small_gate_box`).
+**Difficulty climbs flight by flight.** Flights 3 to 5 mix the two hardest ideas in the game: low, precise flying over water (as under the old bridge in flight 2) and threading tight openings (as in Open House Day, flight 6, the hardest). Rings and landing targets shrink as you go:
 
-**Lantern Night:** the same town at dusk. The sky deepens, the sun sits low and every window and street lamp glows. You glide about 300 m down Market Street.
+| Flight | Ring radius | Target radius | What makes it harder |
+|---|---|---|---|
+| 1 | 1.7 m | 2.8 m | Gentle glide over the lane |
+| 2 | 1.7 m | 2.2 m | Low over the river, under the arch |
+| 3 | 1.5 m (1.1 in the archway) | 1.8 m | A 3.4 m archway, a long glide down the millpond under a footbridge, three climbs by circling |
+| 4 | 1.4 m (0.85 indoors) | 1.5 m | Classroom, then low over the school pond under its footbridge |
+| 5 | 1.3 m (1.0 under the arch) | 1.7 m | Dusk, lantern strings to go over and under, under the old bridge low over the river, onto a small raft |
+| 6 | 0.95 m | 1.7 m | Room to room through windows and doors |
+
+**Up to the Clock Tower:** from the bakery roof, through the Mill Lane archway (a covered passage through the west row of shops, `props/archway`). Circle up in the warm air behind the shops, then glide the length of the millpond, under the bunting and the wooden footbridge (`props/footbridge`). Water sinks the air, so this is a long descending glide that has to arrive under the bridge low but not wet. Rising air just past the pond lifts you again. Then into the square, circling up over the fountain and on to the tower balcony.
+
+**Classroom Window Escape:** warm air rises off the radiator, and the spinning ceiling fan or a closed window crashes the plane. After the window you dive into the schoolyard, skim the wildlife pond under the bunting and its little footbridge, and leave through the yard gate. Rising air over the lane lifts you back up, and you glide about 130 m down Linden Lane to the bus stop. Rings inside the classroom are smaller (`small_gate_box`).
+
+**Ponds:** stone-walled basins cut into the ground (`Terrain.PONDS`, built by `TownBuilder._ponds()`). Each pond has its own water level, and `Terrain.water_height()` covers the river and the ponds alike, so skips, skims, splashes and sinking air work the same everywhere. Pond edges sit on the 4 m terrain grid so the terrain mesh can leave a clean hole for them.
+
+**Lantern Night:** the same town at dusk. The sky deepens, the sun sits low and every window and street lamp glows. You glide about 300 m down Market Street, over some lantern strings and under others. At the end of the street you swing out over the bank, drop to the river and thread the old bridge's arch, then land on a little lantern raft moored on the far side.
 - Rings are hoops of paper lanterns (`gate_style = "lantern"`).
 - Rising air comes from the lanterns and carries glowing sky lanterns upward (thermal style `lantern`).
 - Lantern strings across the street are hazards.
-- The festival decor (`decor = "lantern_festival"`) adds floating river lanterns and lantern posts along the bridge.
+- The festival decor (`decor = "lantern_festival"`) adds floating river lanterns, lantern posts along the bridge and the lantern raft. Touching the edge of the target at deck height (a raft or jetty) hops up onto it as a landing.
 - `time_of_day = "dusk"` switches the lighting through `TownBuilder.set_time_of_day()`.
 
 **Open House Day:** a flight through the houses of Rowan Row, a garden street behind the east side of Market Street (`TownBuilder._rowan_row()`). It takes about 7 s along the line.
@@ -221,7 +236,7 @@ scenes/main.*    Main flow: loading, menu, intro, throw, flight, result, pause
 scenes/town/     town.tscn -> scripts/town/town_builder.gd (fixed seed 20261013)
 props/           One scene per prop: house, shop, civic building, clock tower, bridge, fountain,
                  bandstand, jetty, picnic blanket, cafe table, car, school, backpack mat,
-                 open house (walk-through houses of Rowan Row)
+                 open house (walk-through houses of Rowan Row), footbridge, archway (Mill Lane)
 scenes/plane/    Plane scene, flight model, procedural paper dart
 scenes/kid/      The kid who throws the plane
 scenes/gameplay/ Thermal, Star, Gate (ring), LandingPad, HazardLine (bunting / washing / rope)
@@ -261,10 +276,11 @@ Include each font's `OFL.txt` alongside it. If a file is missing, `scripts/ui/ui
 ## Verified
 
 - All scripts and scenes load without errors in a headless check.
-- A test autopilot that steers along the dotted line and settles onto each pad lands all three levels with the flight constants unchanged:
+- A test autopilot that steers along the dotted line and settles onto each pad lands all six levels with the flight constants unchanged:
   - Level 1: about 10 s, 0.5 m from the center
   - Level 2: about 7.3 s, including the +500 bridge ring
-  - Level 3: about 32 s
-  - Level 4: about 15 s, from the classroom to the bus stop
-  - Level 5: about 32 s, from the clock tower to the bridge
+  - Level 3: about 67 s, through Mill Lane, down the millpond and circling three times
+  - Level 4: about 12 s, from the classroom under the pond bridge to the bus stop
+  - Level 5: about 35 s, from the clock tower under the old bridge to the raft
+  - Level 6: about 7 s, room to room
 - Screenshots were checked in landscape and portrait, for every flight and for the Hangar, Settings and Credits screens.

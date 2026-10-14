@@ -129,6 +129,7 @@ var _land_info := {}
 var _landed_sent := false
 ## A skip is available again once the plane has climbed ~1 m clear of the water.
 var _skip_armed := true
+var _skim_y := 0.0
 var _spray: GPUParticles3D
 var _visual: Node3D
 var _trail_l := PackedVector3Array()
@@ -397,6 +398,10 @@ func _check_collisions(prev: Vector3, prev_vy: float) -> void:
 			if level and prev.y >= level.pad_top() - 0.15:
 				_land(level.pad_contact_point(safe))
 				return
+		# Clipping the edge of the target itself (a raft or jetty) at deck height: hop up onto it.
+		if level and level.horizontal_distance_to_pad(contact) < level.pad_radius() + 0.4 				and absf(contact.y - level.pad_top()) < 0.35:
+			_land(level.pad_contact_point(safe))
+			return
 		var kind := "wall"
 		if collider and collider.has_meta("kind"):
 			kind = collider.get_meta("kind")
@@ -415,8 +420,9 @@ func _check_collisions(prev: Vector3, prev_vy: float) -> void:
 			return
 	# Ground and water.
 	var ground := Terrain.ground_height(pos.x, pos.z)
-	if ground < Terrain.WATER_Y and pos.y - collision_radius * 0.5 < Terrain.WATER_Y:
-		_touch_water(pos)
+	var water := Terrain.water_height(pos.x, pos.z)
+	if pos.y - collision_radius * 0.5 < water:
+		_touch_water(pos, water)
 		return
 	if pos.y - collision_radius < ground:
 		if _can_slide(_ground_normal(pos.x, pos.z)):
@@ -446,7 +452,7 @@ func _message_for(kind: String, at: Vector3) -> String:
 
 func _land(contact: Vector3) -> void:
 	# A slide-in keeps the softness of its first touch; a direct landing uses this moment.
-	var sliding_in := mode == Mode.SLIDING
+	var sliding_in := mode == Mode.SLIDING or mode == Mode.SKIMMING
 	_land_info = {
 		"vertical_impact": _touch_impact if sliding_in else maxf(0.0, -state.vy),
 		"speed": _touch_speed if sliding_in else state.v,
@@ -541,7 +547,7 @@ func _floor_below(p: Vector3) -> Dictionary:
 	var hit := space.intersect_ray(q)
 	var ground := Terrain.ground_height(p.x, p.z)
 	if hit.is_empty() or hit.position.y < ground:
-		return {"y": ground, "pad": false, "water": ground < Terrain.WATER_Y, "flat": _ground_normal(p.x, p.z).y >= slide_min_flatness}
+		return {"y": ground, "pad": false, "water": Terrain.is_water(p.x, p.z), "flat": _ground_normal(p.x, p.z).y >= slide_min_flatness}
 	var col: Object = hit.collider
 	var is_pad: bool = col is CollisionObject3D and (col as CollisionObject3D).collision_layer & 2
 	return {"y": hit.position.y, "pad": is_pad, "water": false, "flat": hit.normal.y >= slide_min_flatness}
@@ -574,7 +580,8 @@ func _slide(dt: float) -> void:
 	var next := state.pos + step
 	var below := _floor_below(next)
 	if below.water:
-		_crash("Splash! Into the river", "water", Vector3(next.x, Terrain.WATER_Y + 0.05, next.z))
+		# Slid off the bank into the water: carry on as a skim.
+		_start_skim(Vector3(next.x, Terrain.water_height(next.x, next.z), next.z))
 		return
 	if next.y - below.y > 0.35 or not below.flat:
 		# Slid off an edge: it's flying again (falling).
@@ -596,12 +603,12 @@ func _slide(dt: float) -> void:
 
 # --- Water: skip, skim, splash ----------------------------------------------------------
 
-func _touch_water(pos: Vector3) -> void:
+func _touch_water(pos: Vector3, water: float) -> void:
 	var vel := velocity()
 	var into := -vel.normalized().y if vel.length() > 0.01 else 0.0
-	var surface := Vector3(pos.x, Terrain.WATER_Y, pos.z)
+	var surface := Vector3(pos.x, water, pos.z)
 	if state.pitch < -0.5 or into > sin(deg_to_rad(25.0)):
-		_crash("Splash! Into the river", "water", surface + Vector3(0, 0.05, 0))
+		_crash("Splash! Into %s" % Terrain.water_name(pos.x, pos.z), "water", surface + Vector3(0, 0.05, 0))
 		return
 	if _skip_armed and state.v > skip_min_speed and into < sin(deg_to_rad(skip_max_angle)):
 		# Skip like a stone: bounce back up, a little slower.
@@ -617,8 +624,15 @@ func _touch_water(pos: Vector3) -> void:
 		skipped.emit()
 		return
 	# Too slow (or already skipped without climbing away): skim a short way, then soak.
+	_touch_impact = maxf(0.0, -state.vy)
+	_touch_speed = state.v
+	_start_skim(surface)
+
+
+func _start_skim(surface: Vector3) -> void:
 	mode = Mode.SKIMMING
 	_skid_t = 0.0
+	_skim_y = surface.y
 	state.pos = surface + Vector3(0, 0.02, 0)
 	state.vy = 0.0
 	state.flap_v = 0.0
@@ -635,6 +649,13 @@ func _skim(dt: float) -> void:
 	state.roll = _damp(state.roll, 0.0, 6.0, dt)
 	var fwd := Vector3(-sin(state.yaw), 0.0, -cos(state.yaw))
 	var step := fwd * state.v * dt
+	var next := state.pos + step
+	# Skimmed up onto a raft or jetty that is the target: that's a landing.
+	if level and level.is_landing(state.pos, next):
+		_spray.emitting = false
+		state.pos = next
+		_land(level.pad_contact_point(next))
+		return
 	var space := get_world_3d().direct_space_state
 	_query.transform = Transform3D(Basis(), state.pos + Vector3(0, 0.24, 0))
 	_query.motion = step
@@ -645,15 +666,19 @@ func _skim(dt: float) -> void:
 		_spray.emitting = false
 		_crash(_message_for("wall", state.pos), "wall", state.pos)
 		return
-	var next := state.pos + step
-	if Terrain.ground_height(next.x, next.z) > Terrain.WATER_Y:
-		# Skimmed onto the bank: carry on as a normal slide.
+	if not Terrain.is_water(next.x, next.z):
 		_spray.emitting = false
-		state.pos = Vector3(next.x, Terrain.ground_height(next.x, next.z) + 0.03, next.z)
+		var g := Terrain.ground_height(next.x, next.z)
+		if g > _skim_y + 0.2:
+			# Bumped into a stone pond edge: stop here.
+			_crash("Soaked!", "soaked", state.pos)
+			return
+		# Skimmed onto a sloping bank: carry on as a normal slide.
+		state.pos = Vector3(next.x, g + 0.03, next.z)
 		mode = Mode.SLIDING
 		_apply_transform()
 		return
-	state.pos = Vector3(next.x, Terrain.WATER_Y + 0.02, next.z)
+	state.pos = Vector3(next.x, _skim_y + 0.02, next.z)
 	_spray.global_position = state.pos
 	_spray.amount_ratio = clampf(state.v / 6.0, 0.2, 1.0)
 	_apply_transform()
@@ -662,7 +687,7 @@ func _skim(dt: float) -> void:
 		_crash("Soaked!", "soaked", state.pos)
 		# The wet paper settles into the water.
 		var tw := create_tween().set_parallel(true).set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
-		tw.tween_property(self, "position:y", Terrain.WATER_Y - 0.06, 1.4).set_trans(Tween.TRANS_SINE)
+		tw.tween_property(self, "position:y", _skim_y - 0.06, 1.4).set_trans(Tween.TRANS_SINE)
 		tw.tween_property(_visual, "rotation:x", -0.25, 1.4)
 
 

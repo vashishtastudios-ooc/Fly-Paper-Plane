@@ -144,6 +144,7 @@ func _update(delta: float, snap: bool) -> void:
 				cam_roll = s.roll * roll_follow
 				target_fov += clampf((s.v - 9.0) / 12.0, 0.0, 1.0) * speed_fov + _lift_s * 2.5
 				desired = _clamp_to_world(desired, p)
+				desired = _under_ceiling(p, desired)
 				desired = _avoid_walls(p + Vector3(0, 0.15, 0), desired)
 		Mode.ORBIT:
 			_orbit_angle += delta * 0.32
@@ -158,6 +159,7 @@ func _update(delta: float, snap: bool) -> void:
 	_look = look if snap else _look.lerp(look, 1.0 - exp(-rate * 1.6 * delta))
 	if mode == Mode.FOLLOW and plane:
 		pos = _clamp_to_world(pos, plane.state.pos)
+		pos = _under_ceiling(plane.state.pos, pos)
 		pos = _avoid_walls(plane.get_global_transform_interpolated().origin + Vector3(0, 0.15, 0), pos)
 	var offset := Vector3.ZERO
 	if _shake > 0.001:
@@ -194,6 +196,31 @@ func _avoid_walls(focus: Vector3, desired: Vector3) -> Vector3:
 		return desired
 	var back := (focus - desired).normalized()
 	return hit.position + back * 0.35 + hit.normal * 0.2
+
+
+## Under something low (a footbridge, an archway, a ceiling), keeps the camera just under it,
+## behind the plane, instead of up inside or above it.
+func _under_ceiling(subject: Vector3, cam: Vector3) -> Vector3:
+	var reach := 2.6
+	var ceiling := minf(_ceiling_above(subject, reach), _ceiling_above(Vector3(cam.x, subject.y, cam.z), reach))
+	if ceiling < INF:
+		cam.y = clampf(cam.y, subject.y - 0.2, maxf(subject.y + 0.05, ceiling - 0.35))
+	return cam
+
+
+## Height of the first solid thing above `p` within `reach` (trees ignored), or INF.
+func _ceiling_above(p: Vector3, reach: float) -> float:
+	var space := get_world_3d().direct_space_state
+	if space == null:
+		return INF
+	var q := PhysicsRayQueryParameters3D.create(p + Vector3(0, 0.05, 0), p + Vector3(0, reach, 0), 1)
+	var hit := space.intersect_ray(q)
+	if hit.is_empty():
+		return INF
+	var col: Object = hit.get("collider")
+	if col and col.get_meta("kind", "wall") == "tree":
+		return INF
+	return hit.position.y
 
 
 ## Keeps the camera above ground/water (0.5 m) except when following the plane under the arch.
