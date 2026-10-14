@@ -10,6 +10,9 @@ var _done: Button
 ## Controls by setting name, so they can be refreshed (e.g. after Reset to defaults).
 var _sliders := {}
 var _checks := {}
+## Value labels next to sliders, with how to format each one.
+var _value_labels := {}
+var _formats := {}
 
 
 func _ready() -> void:
@@ -117,9 +120,20 @@ func _slider_row(key: String, text: String, value: float, on_change: Callable) -
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	s.custom_minimum_size.y = 32
+	if key == "sensitivity":
+		# Snap to tidy 0.1× steps (0.5× to 1.6×).
+		s.step = 1.0 / 11.0
 	s.value_changed.connect(on_change)
 	row.add_child(s)
 	_sliders[key] = s
+	var vl := UIKit.label("", UIKit.ui_font(), 20, UIKit.INK)
+	vl.custom_minimum_size.x = 58
+	vl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	row.add_child(vl)
+	_value_labels[key] = vl
+	_formats[key] = func(x: float) -> String: return ("%.1f×" % lerpf(0.5, 1.6, x)) if key == "sensitivity" else ("%d%%" % roundi(x * 100.0))
+	s.value_changed.connect(func(x: float): vl.text = _formats[key].call(x))
+	vl.text = _formats[key].call(value)
 	return row
 
 
@@ -151,6 +165,8 @@ func _sync() -> void:
 		(_checks.vibration as CheckButton).set_pressed_no_signal(Settings.vibration)
 	for i in _quality_buttons.size():
 		_quality_buttons[i].set_pressed_no_signal(i == Settings.quality)
+	for key in _sliders:
+		(_value_labels[key] as Label).text = _formats[key].call((_sliders[key] as HSlider).value)
 
 
 func open() -> void:
