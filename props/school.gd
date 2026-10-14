@@ -218,7 +218,7 @@ func _exterior(b: MeshBuilder) -> void:
 	b.cylinder(stone, Transform3D(Basis(), fp), 0.4, 0.4, 0.3, 8, Color("#d6cdbd"))
 	b.cylinder(Mats.get_mat("metal"), Transform3D(Basis(), fp), 0.06, 0.04, 8.5, 6, Color("#d8d8d8"))
 	b.sphere(Mats.get_mat("metal"), fp + Vector3(0, 8.55, 0), Vector3(0.12, 0.12, 0.12), 3, 6, Color("#d4a63a"))
-	var fl := Mats.get_mat("cloth")
+	var fl := Mats.get_mat("cloth_wind")
 	for k in 5:
 		var c := Color("#c8423b") if k % 2 == 0 else Color("#fbf8f0")
 		var y0 := 7.0 + k * 0.24

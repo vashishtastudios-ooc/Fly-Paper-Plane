@@ -8,10 +8,10 @@ const CHUNK := 80.0
 ## Per-kind draw distance (0 = unlimited) and whether the kind casts shadows.
 const RANGES := {
 	"picket": 110.0, "flower": 90.0, "flowerbox": 120.0, "shutter": 160.0, "window": 220.0,
-	"bunting_flag": 160.0, "bush": 180.0, "hedge": 200.0, "mailbox": 90.0, "bench": 110.0,
+	"bunting_flag": 160.0, "grass": 70.0, "bush": 180.0, "hedge": 200.0, "mailbox": 90.0, "bench": 110.0,
 	"lamp": 200.0, "reed": 90.0, "rock": 150.0, "cobble_post": 90.0, "shirt": 120.0, "sheet": 120.0,
 }
-const NO_SHADOW := ["flower", "flowerbox", "shutter", "window", "reed", "bunting_flag", "cobble_post", "rock"]
+const NO_SHADOW := ["grass", "flower", "flowerbox", "shutter", "window", "reed", "bunting_flag", "cobble_post", "rock"]
 
 var _groups := {}
 var _instances := {}  # key -> MultiMeshInstance3D

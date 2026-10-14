@@ -104,6 +104,29 @@ A thermal can also set `base` (start height, for example a classroom floor) and 
 
 To add a level, create `levels/level_6.tres` and add its path to `LEVEL_PATHS` in `autoload/game.gd`.
 
+## Look and atmosphere
+
+- **Storybook pass** (`shaders/storybook_post.gdshader`, attached to the chase camera):
+  - a soft warm ink outline found from depth edges, fading with distance
+  - a gentle vignette and faint paper grain
+- **Color grading:** a warm split-tone 3D LUT built in `TownBuilder._storybook_lut()` and used as the environment's color correction.
+- **Wind** (`shaders/foliage.gdshader`, `shaders/cloth_wind.gdshader`):
+  - trees, bushes and flowers sway and rustle
+  - about 9,000 grass tufts bend from the base (about 3,200 on phones)
+  - bunting, washing and the school flag flutter
+- **Light:**
+  - soft slanted sunbeams through gaps in the trees (`shaders/sunbeam.gdshader`)
+  - a sun glow on the horizon
+  - warmer haze toward the sun
+- **Water** (`shaders/water.gdshader`):
+  - a reflection probe over the river captures the bridge, banks and houses, and re-captures at dusk
+  - desktop High adds screen-space reflections
+  - twinkling glints appear only where light reaches, so they respect shadows and also shine under the festival lights
+- **Quality levels:**
+  - Low turns off the outline, sunbeams and grass
+  - Medium and High enable everything
+  - SSR runs only on desktop High
+
 ## Hangar (plane customization)
 
 The Hangar lets players change the plane's paper, wingtip trail and wing sticker. These are looks only, so flight behavior and level balance never change. Items unlock from the total number of ribbons earned across all flights (up to 15):

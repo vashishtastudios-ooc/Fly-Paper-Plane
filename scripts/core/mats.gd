@@ -44,9 +44,16 @@ static func get_mat(kind: String) -> Material:
 			g.metallic_specular = 0.8
 			m = g
 		"foliage":
-			var f := _plain(0.95)
-			f.backlight_enabled = false
-			m = f
+			# Trees, bushes and flowers sway and rustle in the wind.
+			m = _shader("res://shaders/foliage.gdshader", {"sway": 0.09, "rustle": 0.022})
+		"grass_wind":
+			m = _shader("res://shaders/foliage.gdshader", {"sway": 0.13, "rustle": 0.035, "tip_weighted": 1.0, "tip_height": 0.45})
+		"cloth_wind":
+			# Washing and flags; vertex color alpha is the flutter weight.
+			m = _shader("res://shaders/cloth_wind.gdshader", {"amplitude": 0.07})
+		"flag_wind":
+			# Bunting pennants hanging from a rope; fade out right in front of the camera.
+			m = _shader("res://shaders/cloth_wind.gdshader", {"local_y_weight": 1.0, "flag_length": 0.42, "amplitude": 0.09, "near_fade": 2.0})
 		"rope":
 			var r := _plain(0.9)
 			r.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -96,6 +103,14 @@ static func _tex(tex_kind: String, scale: float, rough: float) -> StandardMateri
 	m.uv1_scale = Vector3(scale, scale, 1.0)
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	return m
+
+
+static func _shader(path: String, params: Dictionary) -> ShaderMaterial:
+	var sm := ShaderMaterial.new()
+	sm.shader = load(path)
+	for k in params:
+		sm.set_shader_parameter(k, params[k])
+	return sm
 
 
 static func _plain(rough: float) -> StandardMaterial3D:

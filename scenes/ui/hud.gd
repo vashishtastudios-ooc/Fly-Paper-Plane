@@ -73,6 +73,7 @@ func _ready() -> void:
 
 	_banner = UIKit.label("", UIKit.display_font(), 56, Color.WHITE)
 	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_banner.add_theme_color_override("font_outline_color", Color(0.25, 0.15, 0.05, 0.75))
 	_banner.add_theme_constant_override("outline_size", 10)
 	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -114,8 +115,8 @@ func _layout() -> void:
 	_target_pill.position = Vector2((s.x - tw) * 0.5, ty)
 	_vario.position = Vector2(m.x + 8, s.y * 0.5 - _vario.custom_minimum_size.y * 0.5)
 	_vario.size = _vario.custom_minimum_size
-	_banner.size = Vector2(s.x, 80)
-	_banner.position = Vector2(0, s.y * (0.24 if portrait else 0.22))
+	_banner.size = Vector2(s.x - 80.0, 80)
+	_banner.position = Vector2(40.0, s.y * (0.24 if portrait else 0.22))
 	_banner.add_theme_font_size_override("font_size", 46 if portrait else 56)
 
 
@@ -198,6 +199,9 @@ func banner(text: String, color := Color.WHITE, duration := 1.6) -> void:
 		return
 	_banner.text = text
 	_banner.add_theme_color_override("font_color", color)
+	# Long tips use a smaller size so they fit on one or two lines.
+	var base := 46 if Settings.portrait else 56
+	_banner.add_theme_font_size_override("font_size", base if text.length() <= 26 else int(base * 0.68))
 	_banner.modulate.a = 0.0
 	_banner.scale = Vector2(0.9, 0.9)
 	_banner.pivot_offset = _banner.size * 0.5

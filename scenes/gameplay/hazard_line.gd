@@ -69,7 +69,7 @@ func _build_visual() -> void:
 		fine.append(point_at(float(i) / 48.0))
 	mb.tube(Mats.get_mat("rope"), fine, 0.018, 4, rope_col)
 	var length := a.distance_to(b)
-	var cloth := Mats.get_mat("cloth")
+	var cloth := Mats.get_mat("cloth_wind")
 	match kind:
 		"bunting":
 			# Pennants are drawn with a MultiMesh (one instance per flag).
@@ -188,14 +188,8 @@ func _build_visual() -> void:
 	add_child(mi)
 
 
-static var _flag_mat: StandardMaterial3D
 
 
 ## Cloth for pennants that fades out right in front of the camera.
-static func _flag_material() -> StandardMaterial3D:
-	if _flag_mat == null:
-		_flag_mat = (Mats.get_mat("cloth") as StandardMaterial3D).duplicate()
-		_flag_mat.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER
-		_flag_mat.distance_fade_min_distance = 0.7
-		_flag_mat.distance_fade_max_distance = 2.0
-	return _flag_mat
+static func _flag_material() -> Material:
+	return Mats.get_mat("flag_wind")

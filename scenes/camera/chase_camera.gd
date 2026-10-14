@@ -30,6 +30,24 @@ var _lift_s := 0.0
 var _orbit_angle := 0.0
 var _look := Vector3.ZERO
 var _rng := RandomNumberGenerator.new()
+var _post: MeshInstance3D
+
+
+## Full-screen quad drawn last: soft ink outline, vignette and paper grain.
+func _build_storybook_pass() -> void:
+	_post = MeshInstance3D.new()
+	_post.name = "StorybookPass"
+	var q := QuadMesh.new()
+	q.size = Vector2(2, 2)
+	var m := ShaderMaterial.new()
+	m.shader = load("res://shaders/storybook_post.gdshader")
+	m.render_priority = 127
+	q.material = m
+	_post.mesh = q
+	_post.extra_cull_margin = 16384.0
+	_post.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_post.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	add_child(_post)
 
 
 func _ready() -> void:
@@ -37,6 +55,9 @@ func _ready() -> void:
 	near = 0.08
 	far = 1600.0
 	fov = base_fov
+	_build_storybook_pass()
+	Settings.quality_changed.connect(func(q: int): _post.visible = q >= 1)
+	_post.visible = Settings.quality >= 1
 
 
 func set_mode(m: int, snap := false) -> void:

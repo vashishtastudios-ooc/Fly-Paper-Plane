@@ -2,6 +2,7 @@ extends Node
 ## Platform detection, input map, quality settings, layout (portrait/landscape) and safe area.
 
 signal layout_changed(portrait: bool)
+signal quality_changed(quality: int)
 
 const SETTINGS_PATH := "user://settings.cfg"
 
@@ -106,6 +107,12 @@ func apply_quality() -> void:
 	if _env:
 		_env.ssao_enabled = quality >= 2 and not is_mobile
 		_env.glow_enabled = quality >= 1
+		# Screen-space reflections (river) only on desktop High; phones use the reflection probe.
+		_env.ssr_enabled = quality >= 2 and not is_mobile
+		_env.ssr_max_steps = 48
+		_env.ssr_fade_in = 0.12
+		_env.ssr_fade_out = 2.0
+		_env.ssr_depth_tolerance = 0.4
 	if _sun:
 		_sun.shadow_enabled = true
 		match quality:
@@ -121,6 +128,7 @@ func apply_quality() -> void:
 				_sun.shadow_blur = 1.6
 				_sun.directional_shadow_max_distance = 160.0 if not is_mobile else 110.0
 				_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if not is_mobile else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	quality_changed.emit(quality)
 
 
 func set_quality(q: int) -> void:

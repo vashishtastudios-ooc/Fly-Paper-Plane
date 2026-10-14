@@ -59,6 +59,11 @@ var _route_keepouts: Array = []  # [Vector3 a, Vector3 b] segments from every le
 var _pad_keepouts: Array = []
 var _clouds: Array[MeshInstance3D] = []
 var _sky_mat: ProceduralSkyMaterial
+var _probe: ReflectionProbe
+var _sun_glow: MeshInstance3D
+var _beams: MultiMeshInstance3D
+var _beam_mat: ShaderMaterial
+var _grass_nodes: Array[Node] = []
 ## "golden" (default) or "dusk" (Lantern Night).
 var time_of_day := "golden"
 var is_built := false
@@ -89,13 +94,20 @@ func build() -> void:
 	_square()
 	_background()
 	_clouds_build()
+	_grass()
+	_sun_effects()
 	_ambient_life()
 	batcher.finalize()
+	_on_quality(Settings.quality)
 	is_built = true
 	built.emit()
 
 
 func _process(delta: float) -> void:
+	if _sun_glow:
+		var cam := get_viewport().get_camera_3d()
+		if cam:
+			_sun_glow.global_position = cam.global_position + _to_sun() * 900.0
 	for c in _clouds:
 		c.position.x += delta * c.get_meta("speed", 1.0)
 		if c.position.x > 420.0:
@@ -203,14 +215,15 @@ func _environment() -> void:
 	env.fog_mode = Environment.FOG_MODE_DEPTH
 	env.fog_light_color = Color("#f5d2ac")
 	env.fog_light_energy = 1.0
-	env.fog_sun_scatter = 0.18
+	env.fog_sun_scatter = 0.35
 	env.fog_depth_begin = 70.0
 	env.fog_depth_end = 430.0
 	env.fog_depth_curve = 1.3
 	env.fog_sky_affect = 0.25
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 1.06
-	env.adjustment_contrast = 1.02
+	env.adjustment_contrast = 1.0
+	env.adjustment_color_correction = _storybook_lut()
 	world_env = WorldEnvironment.new()
 	world_env.name = "WorldEnvironment"
 	world_env.environment = env
@@ -304,6 +317,17 @@ func _water() -> void:
 	mi.mesh = pm
 	mi.material_override = Mats.get_mat("water")
 	mi.position = Vector3(0, WATER_Y, RIVER_Z)
+	# Captures the bridge, banks and houses once so the river can reflect them.
+	_probe = ReflectionProbe.new()
+	_probe.name = "RiverReflections"
+	_probe.position = Vector3(0, 4.0, RIVER_Z)
+	_probe.size = Vector3(330, 26, 46)
+	_probe.box_projection = true
+	_probe.max_distance = 320.0
+	_probe.update_mode = ReflectionProbe.UPDATE_ONCE
+	_probe.intensity = 1.0
+	_probe.ambient_mode = ReflectionProbe.AMBIENT_DISABLED
+	add_child(_probe)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
 
@@ -1061,7 +1085,159 @@ func set_time_of_day(mode: String) -> void:
 	var water := Mats.get_mat("water") as ShaderMaterial
 	water.set_shader_parameter("sky_color", Color(0.78, 0.5, 0.52) if dusk else Color(0.96, 0.82, 0.68))
 	water.set_shader_parameter("deep_color", Color(0.12, 0.22, 0.33) if dusk else Color(0.24, 0.47, 0.55))
+	_update_sun_uniforms()
 	for c in _clouds:
 		var m := (c.mesh as QuadMesh).material as StandardMaterial3D
 		var a := m.albedo_color.a
 		m.albedo_color = Color(0.95, 0.66, 0.68, a) if dusk else Color(1.0, 0.95, 0.9, a)
+
+
+# --- Storybook look, grass, sunbeams --------------------------------------------------------
+
+## Direction toward the sun for the current time of day.
+func _to_sun() -> Vector3:
+	return (Vector3(0.66, 0.1, -0.74) if time_of_day == "dusk" else Vector3(0.62, 0.36, -0.7)).normalized()
+
+
+## A soft "storybook" color grade as a 3D LUT: lifted warm shadows, creamy highlights,
+## slightly softened contrast and a touch more saturation.
+static func _storybook_lut() -> ImageTexture3D:
+	var n := 17
+	var images: Array[Image] = []
+	for bz in n:
+		var img := Image.create(n, n, false, Image.FORMAT_RGB8)
+		for gy in n:
+			for rx in n:
+				var c := Vector3(float(rx), float(gy), float(bz)) / float(n - 1)
+				var lum := c.dot(Vector3(0.3, 0.59, 0.11))
+				c = c * 0.96 + Vector3.ONE * 0.018
+				c += Vector3(0.03, 0.01, 0.045) * pow(1.0 - lum, 2.0)
+				c += Vector3(0.03, 0.012, -0.025) * pow(lum, 2.0)
+				c = Vector3(lum, lum, lum).lerp(c, 1.06)
+				img.set_pixel(rx, gy, Color(clampf(c.x, 0, 1), clampf(c.y, 0, 1), clampf(c.z, 0, 1)))
+		images.append(img)
+	var tex := ImageTexture3D.new()
+	tex.create(Image.FORMAT_RGB8, n, n, n, false, images)
+	return tex
+
+
+## Grass tufts that bend in the wind: front and back yards, the park and the river banks.
+func _grass() -> void:
+	var count := 3200 if Settings.is_mobile else 9000
+	var placed := 0
+	var tries := 0
+	while placed < count and tries < count * 4:
+		tries += 1
+		var region := rng.randi() % 10
+		var p := Vector3.ZERO
+		if region < 5:
+			var side := -1.0 if rng.randf() < 0.5 else 1.0
+			var far := rng.randf() < 0.45
+			p = Vector3(side * (rng.randf_range(27.0, 42.0) if far else rng.randf_range(8.8, 16.6)), 0, rng.randf_range(-276.0, 14.0))
+		elif region < 8:
+			p = Vector3(rng.randf_range(-39.5, -10.0), 0, rng.randf_range(-187.0, -97.0))
+		else:
+			var bank := -1.0 if rng.randf() < 0.5 else 1.0
+			p = Vector3(rng.randf_range(-70.0, 70.0), 0, RIVER_Z + bank * rng.randf_range(12.5, 17.0))
+			if absf(p.x) < 7.0 or (bank > 0 and p.x > 22.0 and p.x < 30.0):
+				continue
+		var near_pad := false
+		for pad in _pad_keepouts:
+			if Vector2(p.x - pad.x, p.z - pad.z).length() < 3.2:
+				near_pad = true
+		if near_pad or p.distance_to(Vector3(-27, 0, -142)) < 5.0:
+			continue
+		p.y = ground_height(p.x, p.z)
+		if p.y < WATER_Y + 0.05:
+			continue
+		var s := rng.randf_range(0.7, 1.35)
+		var tint := Color("#8fbf5a").lerp(Color("#c3d870"), rng.randf()).lerp(Color("#d9b25a"), rng.randf() * 0.12)
+		batcher.add("grass", Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.8, 1.2), s)), p), tint)
+		placed += 1
+
+
+## Horizon sun glow and soft slanted sunbeams through gaps in the trees.
+func _sun_effects() -> void:
+	_sun_glow = MeshInstance3D.new()
+	_sun_glow.name = "SunGlow"
+	var q := QuadMesh.new()
+	q.size = Vector2(520, 520)
+	var gm := StandardMaterial3D.new()
+	gm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	gm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	gm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	gm.albedo_texture = TexGen.get_tex("soft_dot")
+	gm.albedo_color = Color(1.0, 0.78, 0.5, 0.42)
+	gm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	gm.disable_fog = true
+	gm.disable_receive_shadows = true
+	q.material = gm
+	_sun_glow.mesh = q
+	_sun_glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_sun_glow.extra_cull_margin = 2000.0
+	_sun_glow.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	add_child(_sun_glow)
+
+	# Beams start in the canopies and slant down along the light direction.
+	var spots: Array[Vector3] = []
+	for t in trees:
+		var p: Vector3 = t.pos
+		if absf(p.x) > 44.0 or p.z > 40.0 or p.z < -620.0:
+			continue
+		if rng.randf() < 0.35:
+			spots.append(p + Vector3(rng.randf_range(-2.0, 2.0), 0, rng.randf_range(-2.0, 2.0)))
+	var max_beams := 18 if Settings.is_mobile else 40
+	while spots.size() > max_beams:
+		spots.remove_at(rng.randi() % spots.size())
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	var bq := QuadMesh.new()
+	bq.size = Vector2(1, 1)
+	_beam_mat = ShaderMaterial.new()
+	_beam_mat.shader = load("res://shaders/sunbeam.gdshader")
+	bq.material = _beam_mat
+	mm.mesh = bq
+	mm.instance_count = spots.size()
+	var light_dir := -_to_sun()
+	for i in spots.size():
+		var ground := spots[i]
+		var length := rng.randf_range(16.0, 24.0)
+		var width := rng.randf_range(1.6, 3.2)
+		var center := ground - light_dir * length * 0.5
+		var axis := -light_dir
+		var x := axis.cross(Vector3.UP).normalized()
+		var z := x.cross(axis).normalized()
+		mm.set_instance_transform(i, Transform3D(Basis(x * width, axis * length, z), center))
+	_beams = MultiMeshInstance3D.new()
+	_beams.name = "Sunbeams"
+	_beams.multimesh = mm
+	_beams.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_beams.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	_beams.custom_aabb = AABB(Vector3(-80, -10, -700), Vector3(160, 60, 800))
+	add_child(_beams)
+	Settings.quality_changed.connect(_on_quality)
+	_on_quality(Settings.quality)
+	_update_sun_uniforms()
+
+
+func _on_quality(q: int) -> void:
+	if _beams:
+		_beams.visible = q >= 1 and time_of_day != "dusk"
+	for node in batcher.get_children():
+		if node.name.begins_with("grass_"):
+			(node as Node3D).visible = q >= 1
+
+
+func _update_sun_uniforms() -> void:
+	var dusk := time_of_day == "dusk"
+	var water := Mats.get_mat("water") as ShaderMaterial
+	water.set_shader_parameter("sun_dir", _to_sun())
+	water.set_shader_parameter("sun_color", Color(1.0, 0.6, 0.38) if dusk else Color(1.0, 0.86, 0.62))
+	if _sun_glow:
+		var gm := (_sun_glow.mesh as QuadMesh).material as StandardMaterial3D
+		gm.albedo_color = Color(1.0, 0.55, 0.32, 0.55) if dusk else Color(1.0, 0.78, 0.5, 0.42)
+	if _beams:
+		_beams.visible = Settings.quality >= 1 and not dusk
+	if _probe:
+		# Nudge the probe so it re-captures the town under the new lighting.
+		_probe.size = Vector3(330, 26, 46) + (Vector3(0.01, 0, 0) if dusk else Vector3.ZERO)

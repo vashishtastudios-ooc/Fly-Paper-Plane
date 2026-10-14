@@ -108,6 +108,27 @@ static func _build(kind: String) -> Mesh:
 			for i in 7:
 				var c := Mats.pick(rng, Mats.FLOWER_COLORS)
 				b.sphere(fm2, Vector3(-0.45 + i * 0.15, 0.3 + rng.randf() * 0.05, rng.randf_range(-0.05, 0.05)), Vector3(0.08, 0.07, 0.08), 3, 5, c)
+		"grass":
+			# A tuft of grass blades, ~0.45 m tall, darker at the base, tinted per instance.
+			var st := SurfaceTool.new()
+			st.begin(Mesh.PRIMITIVE_TRIANGLES)
+			var rng := RandomNumberGenerator.new()
+			rng.seed = 77
+			for i in 7:
+				var a := rng.randf() * TAU
+				var r := rng.randf_range(0.0, 0.08)
+				var base := Vector3(cos(a) * r, 0, sin(a) * r)
+				var lean := Vector3(cos(a), 0, sin(a)) * rng.randf_range(0.04, 0.14)
+				var h := rng.randf_range(0.28, 0.48)
+				var side := Vector3(-sin(a), 0, cos(a)) * 0.025
+				var tip := base + lean + Vector3(0, h, 0)
+				for v in [[base - side, Color(0.62, 0.75, 0.45)], [tip, Color(1.1, 1.12, 0.85)], [base + side, Color(0.62, 0.75, 0.45)]]:
+					st.set_color(v[1])
+					st.set_normal(Vector3.UP)
+					st.add_vertex(v[0])
+			var gm := st.commit()
+			gm.surface_set_material(0, Mats.get_mat("grass_wind"))
+			return gm
 		"bunting_flag":
 			# Triangle pennant 0.32 wide, hanging 0.4 down from the origin, in the XY plane.
 			var cl := Mats.get_mat("cloth")
