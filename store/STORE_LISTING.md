@@ -53,15 +53,16 @@
 
 ## Release steps
 
-1. In Godot, choose *Project > Install Android Build Template*. The preset uses a Gradle build to produce an AAB.
-2. Create an upload keystore once and keep it safe:
+1. In `autoload/game.gd`, set `UNLOCK_ALL_FOR_TESTING` to `false` so flights and Hangar items unlock normally.
+2. In Godot, choose *Project > Install Android Build Template*. The preset uses a Gradle build to produce an AAB.
+3. Create an upload keystore once and keep it safe:
 
    ```
    keytool -genkey -v -keystore glidehome-upload.keystore -alias glidehome -keyalg RSA -keysize 2048 -validity 10000
    ```
 
-3. In *Project > Export > Android > Options > Keystore*, set Release, Release User and Release Password. Godot stores these outside the repo, in `.godot/export_credentials.cfg`.
-4. Set *Version > Code* (for example 1, then 2, 3...) and *Version > Name* (for example 1.0.0).
-5. Click *Export Project* with *Export With Debug* off to create `export/GlideHome.aab`.
-6. In Play Console, create the app, enable Play App Signing, then upload the AAB to an **Internal testing** track first.
-7. Test on two or three real phones, ideally one older and slower. Then promote to Closed or Production.
+4. In *Project > Export > Android > Options > Keystore*, set Release, Release User and Release Password. Godot stores these outside the repo, in `.godot/export_credentials.cfg`.
+5. Set *Version > Code* (for example 1, then 2, 3...) and *Version > Name* (for example 1.0.0).
+6. Click *Export Project* with *Export With Debug* off to create `export/GlideHome.aab`.
+7. In Play Console, create the app, enable Play App Signing, then upload the AAB to an **Internal testing** track first.
+8. Test on two or three real phones, ideally one older and slower. Then promote to Closed or Production.

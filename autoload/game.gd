@@ -7,6 +7,9 @@ signal cosmetics_changed
 enum State { LOADING, MENU, INTRO, THROWING, FLYING, LANDED, CRASHED, RESULT }
 
 const SAVE_PATH := "user://save.cfg"
+## Testing switch: unlocks every flight and every Hangar item without earning ribbons.
+## Set to false before publishing.
+const UNLOCK_ALL_FOR_TESTING := true
 const LEVEL_PATHS := [
 	"res://levels/level_1.tres",
 	"res://levels/level_2.tres",
@@ -45,7 +48,7 @@ func level() -> LevelData:
 
 
 func is_unlocked(i: int) -> bool:
-	return i < unlocked
+	return UNLOCK_ALL_FOR_TESTING or i < unlocked
 
 
 func has_next_level() -> bool:

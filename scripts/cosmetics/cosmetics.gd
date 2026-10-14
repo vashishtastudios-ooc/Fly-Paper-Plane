@@ -49,7 +49,7 @@ static func requirement(kind: String, id: String) -> int:
 
 
 static func is_unlocked(kind: String, id: String, ribbons: int) -> bool:
-	return requirement(kind, id) <= ribbons
+	return Game.UNLOCK_ALL_FOR_TESTING or requirement(kind, id) <= ribbons
 
 
 ## Items that unlock exactly at `ribbons` (used to announce new unlocks).
