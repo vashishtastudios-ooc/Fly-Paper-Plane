@@ -534,11 +534,11 @@ func _opening(b: MeshBuilder, h: Dictionary, z_out: float, facing: float, thick:
 		b.box_mm(solid, Vector3(x0 - 0.15, y0 - 0.1, za - 0.06), Vector3(x1 + 0.15, y0, zb + 0.06), trim)
 	match kind:
 		"window":
-			_leaves(b, x0, x1, y0, y1, z_out, facing, false)
+			# Open windows are just frames (no swung casements) so the way through reads clearly.
 			if exterior and y0 > 1.2:
 				inst("flowerbox", Transform3D(Basis(Vector3.UP, 0.0 if facing > 0 else PI), Vector3(cx, y0 - 0.35, z_out + facing * 0.16)))
 		"french":
-			_leaves(b, x0, x1, y0, y1, z_out, facing, true)
+			pass
 		"glass":
 			var zm := z_out - facing * thick * 0.5
 			b.box_mm(_m("window_lit"), Vector3(x0, y0, zm - 0.02), Vector3(x1, y1, zm + 0.02), Color("#8fb8d6"))
@@ -550,7 +550,10 @@ func _opening(b: MeshBuilder, h: Dictionary, z_out: float, facing: float, thick:
 				for sx in [x0 - 0.3, x1 + 0.3]:
 					inst("shutter", Transform3D(basis, Vector3(sx, cy, z_out + facing * 0.05)), shutter_color)
 		"door":
-			# Door swung open into the room, flat against the wall beside the hinge.
+			if not exterior:
+				# Inner doorways are left as open frames.
+				return
+			# Front door swung open into the room, flat against the wall beside the hinge.
 			var w := x1 - x0 - 0.04
 			var dir := Vector3(cos(1.7), 0, -facing * sin(1.7))
 			var c := Vector3(x0 + 0.02, y0 + (y1 - y0 - 0.04) * 0.5, z_in) + dir * (w * 0.5)
@@ -564,27 +567,6 @@ func _opening(b: MeshBuilder, h: Dictionary, z_out: float, facing: float, thick:
 				b.box_mm(_m("stone"), Vector3(x0 - 0.2, 0, z_out), Vector3(x1 + 0.2, y0, z_out + facing * 0.6), Color("#d6cdbd"))
 		"hatch":
 			b.box_mm(_m("wood"), Vector3(x0, y0 - 0.02, za), Vector3(x1, y0, zb), Color("#a87a4f"))
-
-
-## Two casements (windows) or glazed door leaves swung outward on hinges at the opening's sides.
-func _leaves(b: MeshBuilder, x0: float, x1: float, y0: float, y1: float, z_out: float, facing: float, doors: bool) -> void:
-	var solid := _m("solid")
-	var pw := (x1 - x0) * 0.5 - 0.02
-	var ph := y1 - y0 - 0.04
-	var cy := (y0 + y1) * 0.5
-	var ang := 1.75 if doors else 1.65
-	for side in [0, 1]:
-		var hinge_x: float = x0 if side == 0 else x1
-		var dir := Vector3(cos(ang) * (1.0 if side == 0 else -1.0), 0.0, facing * sin(ang))
-		var c := Vector3(hinge_x, cy, z_out + facing * 0.02) + dir * (pw * 0.5)
-		var basis := Basis(Vector3.UP, atan2(-dir.z, dir.x))
-		var fc := Color("#f4f0e6") if not doors else door_color
-		b.box(_m("window_lit"), Transform3D(basis, c), Vector3(pw - 0.12, ph - 0.12, 0.02), Color("#9cc3dd"))
-		b.box(solid, Transform3D(basis, c + Vector3(0, ph * 0.5 - 0.03, 0)), Vector3(pw, 0.06, 0.05), fc)
-		b.box(solid, Transform3D(basis, c - Vector3(0, ph * 0.5 - 0.03, 0)), Vector3(pw, 0.06 if not doors else 0.3, 0.05), fc)
-		b.box(solid, Transform3D(basis, c + dir * (pw * 0.5 - 0.03)), Vector3(0.06, ph, 0.05), fc)
-		b.box(solid, Transform3D(basis, c - dir * (pw * 0.5 - 0.03)), Vector3(0.06, ph, 0.05), fc)
-		b.box(solid, Transform3D(basis, c), Vector3(pw, 0.04, 0.04), fc)
 
 
 ## Siding walls along both long sides (x = +-hw), full depth. Interiors get _side_plaster.

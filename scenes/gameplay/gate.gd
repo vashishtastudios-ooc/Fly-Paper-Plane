@@ -41,8 +41,11 @@ static func _mats() -> void:
 	_future_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_future_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_future_mat.albedo_color = Color(1, 1, 1, 0.3)
+	# Bonus rings are rose-violet so they never look like the main route's gold rings.
 	_gold_mat = _next_mat.duplicate()
-	_gold_mat.emission_energy_multiplier = 2.8
+	_gold_mat.albedo_color = Color("#e070c0")
+	_gold_mat.emission = Color("#ff7ad9")
+	_gold_mat.emission_energy_multiplier = 2.6
 	_rope_mat = StandardMaterial3D.new()
 	_rope_mat.albedo_color = Color("#4a3426")
 	_rope_mat.roughness = 0.9
