@@ -7,6 +7,9 @@ signal closed
 var _sheet: NotebookSheet
 var _quality_buttons: Array[Button] = []
 var _done: Button
+## Controls by setting name, so they can be refreshed (e.g. after Reset to defaults).
+var _sliders := {}
+var _checks := {}
 
 
 func _ready() -> void:
@@ -36,9 +39,9 @@ func _ready() -> void:
 	scroll.add_child(v)
 
 	v.add_child(_section("Sound"))
-	v.add_child(_slider_row("Music", Settings.music_volume, func(x: float): Settings.set_volume("Music", x)))
-	v.add_child(_slider_row("Effects", Settings.sfx_volume, func(x: float): Settings.set_volume("SFX", x)))
-	v.add_child(_slider_row("Wind and birds", Settings.ambience_volume, func(x: float): Settings.set_volume("Ambience", x)))
+	v.add_child(_slider_row("music", "Music", Settings.music_volume, func(x: float): Settings.set_volume("Music", x)))
+	v.add_child(_slider_row("sfx", "Effects", Settings.sfx_volume, func(x: float): Settings.set_volume("SFX", x)))
+	v.add_child(_slider_row("ambience", "Wind and birds", Settings.ambience_volume, func(x: float): Settings.set_volume("Ambience", x)))
 
 	v.add_child(_section("Graphics"))
 	var qrow := HBoxContainer.new()
@@ -56,28 +59,36 @@ func _ready() -> void:
 	v.add_child(_note("Lower quality saves battery and keeps older phones smooth."))
 
 	v.add_child(_section("Controls"))
-	v.add_child(_slider_row("Steering sensitivity", inverse_lerp(0.5, 1.6, Settings.sensitivity),
+	v.add_child(_slider_row("sensitivity", "Steering sensitivity", inverse_lerp(0.5, 1.6, Settings.sensitivity),
 		func(x: float): Settings.set_option("sensitivity", lerpf(0.5, 1.6, x))))
-	v.add_child(_check_row("Invert climb and dive", Settings.invert_pitch, func(on: bool): Settings.set_option("invert_pitch", on)))
+	v.add_child(_check_row("invert", "Invert climb and dive", Settings.invert_pitch, func(on: bool): Settings.set_option("invert_pitch", on)))
 	if Settings.is_mobile:
-		v.add_child(_check_row("Vibration", Settings.vibration, func(on: bool): Settings.set_option("vibration", on)))
-	v.add_child(_check_row("Flight tips", Settings.show_tips, func(on: bool):
+		v.add_child(_check_row("vibration", "Vibration", Settings.vibration, func(on: bool): Settings.set_option("vibration", on)))
+	v.add_child(_check_row("tips", "Flight tips", Settings.show_tips, func(on: bool):
 		Settings.set_option("show_tips", on)
 		if on:
 			Game.reset_tips()))
 
 	if OS.is_debug_build() or Game.UNLOCK_ALL_FOR_TESTING:
 		v.add_child(_section("Testing"))
-		v.add_child(_check_row("Show collision shapes (F3)", false, func(on: bool):
+		v.add_child(_check_row("collision", "Show collision shapes (F3)", false, func(on: bool):
 			var dbg := get_tree().root.find_child("CollisionDebug", true, false)
 			if dbg:
 				dbg.set_shown(on)))
 
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 12)
+	outer.add_child(buttons)
 	_done = UIKit.paper_button("Done", true, 28)
 	_done.pressed.connect(func():
 		close()
 		closed.emit())
-	outer.add_child(_done)
+	buttons.add_child(_done)
+	var reset := UIKit.paper_button("Reset to defaults", false, 24)
+	reset.pressed.connect(func():
+		Settings.reset_to_defaults()
+		_sync())
+	buttons.add_child(reset)
 	get_viewport().size_changed.connect(_layout)
 	visible = false
 
@@ -92,7 +103,7 @@ func _note(text: String) -> Label:
 	return l
 
 
-func _slider_row(text: String, value: float, on_change: Callable) -> Control:
+func _slider_row(key: String, text: String, value: float, on_change: Callable) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	var l := UIKit.label(text, UIKit.body_font(), 20, UIKit.INK_DARK)
@@ -108,10 +119,11 @@ func _slider_row(text: String, value: float, on_change: Callable) -> Control:
 	s.custom_minimum_size.y = 32
 	s.value_changed.connect(on_change)
 	row.add_child(s)
+	_sliders[key] = s
 	return row
 
 
-func _check_row(text: String, value: bool, on_change: Callable) -> Control:
+func _check_row(key: String, text: String, value: bool, on_change: Callable) -> Control:
 	var c := CheckButton.new()
 	c.text = text
 	c.button_pressed = value
@@ -123,12 +135,26 @@ func _check_row(text: String, value: bool, on_change: Callable) -> Control:
 	c.add_theme_color_override("font_hover_pressed_color", UIKit.INK)
 	c.add_theme_color_override("font_focus_color", UIKit.INK)
 	c.toggled.connect(on_change)
+	_checks[key] = c
 	return c
 
 
-func open() -> void:
+## Shows the current settings in every control without re-triggering their callbacks.
+func _sync() -> void:
+	(_sliders.music as HSlider).set_value_no_signal(Settings.music_volume)
+	(_sliders.sfx as HSlider).set_value_no_signal(Settings.sfx_volume)
+	(_sliders.ambience as HSlider).set_value_no_signal(Settings.ambience_volume)
+	(_sliders.sensitivity as HSlider).set_value_no_signal(inverse_lerp(0.5, 1.6, Settings.sensitivity))
+	(_checks.invert as CheckButton).set_pressed_no_signal(Settings.invert_pitch)
+	(_checks.tips as CheckButton).set_pressed_no_signal(Settings.show_tips)
+	if _checks.has("vibration"):
+		(_checks.vibration as CheckButton).set_pressed_no_signal(Settings.vibration)
 	for i in _quality_buttons.size():
 		_quality_buttons[i].set_pressed_no_signal(i == Settings.quality)
+
+
+func open() -> void:
+	_sync()
 	visible = true
 	_layout()
 	_done.grab_focus()

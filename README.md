@@ -174,7 +174,7 @@ The catalog and unlock thresholds are in `scripts/cosmetics/cosmetics.gd`. Paper
 
 ## Settings, tips and accessibility
 
-- **Settings** (from the menu or pause screen):
+- **Settings** (from the menu or pause screen), with a **Reset to defaults** button:
   - Music, Effects and Wind/birds volume
   - graphics quality (Low, Medium, High)
   - steering sensitivity

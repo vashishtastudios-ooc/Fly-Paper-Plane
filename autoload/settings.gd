@@ -21,6 +21,11 @@ var vibration := true
 var show_tips := true
 
 const QUALITY_NAMES := ["Low", "Medium", "High"]
+## Default values (quality: Medium on phones, High on desktop).
+const DEFAULT_MUSIC := 0.7
+const DEFAULT_SFX := 1.0
+const DEFAULT_AMBIENCE := 0.8
+const DEFAULT_SENSITIVITY := 1.0
 
 var _env: Environment
 var _sun: DirectionalLight3D
@@ -129,6 +134,21 @@ func apply_quality() -> void:
 				_sun.directional_shadow_max_distance = 160.0 if not is_mobile else 110.0
 				_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if not is_mobile else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	quality_changed.emit(quality)
+
+
+## Puts every setting back to its default and saves.
+func reset_to_defaults() -> void:
+	music_volume = DEFAULT_MUSIC
+	sfx_volume = DEFAULT_SFX
+	ambience_volume = DEFAULT_AMBIENCE
+	quality = 1 if is_mobile else 2
+	sensitivity = DEFAULT_SENSITIVITY
+	invert_pitch = false
+	vibration = true
+	show_tips = true
+	apply_volumes()
+	apply_quality()
+	_save()
 
 
 func set_quality(q: int) -> void:
