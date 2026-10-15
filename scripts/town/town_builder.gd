@@ -29,6 +29,13 @@ const FOOTBRIDGE_SCENE := preload("res://props/footbridge.tscn")
 const ARCHWAY_SCENE := preload("res://props/archway.tscn")
 const DOG_SCENE := preload("res://props/dog.tscn")
 const CAT_SCENE := preload("res://props/cat.tscn")
+const APARTMENT_SCENE := preload("res://props/apartment.tscn")
+const ROWBOAT_SCENE := preload("res://props/rowboat.tscn")
+## Flight 8: Skyline Apartments (launch roof) north of the school, and Grandpa's rowing boat
+## (landing target) moored on the river just west of the old bridge.
+const APARTMENT_POS := Vector3(-28, 0, 92)
+const APARTMENT_RECT := Rect2(-35.5, 85.5, 15.0, 13.0)
+const ROWBOAT_POS := Vector3(-18, Terrain.WATER_Y, -303)
 const FOUNTAIN_SCENE := preload("res://props/fountain.tscn")
 const BANDSTAND_SCENE := preload("res://props/bandstand.tscn")
 const JETTY_SCENE := preload("res://props/jetty.tscn")
@@ -119,6 +126,7 @@ func build() -> void:
 	_rowan_row()
 	_ponds()
 	_willow_close()
+	_grand_tour()
 	_pets()
 	batcher.finalize()
 	_on_quality(Settings.quality)
@@ -509,7 +517,7 @@ func _add_tree(p: Vector3, scale: float, autumn := false, conifer := false, coll
 	for pond in Terrain.PONDS:
 		if (pond[0] as Rect2).grow(1.5).has_point(Vector2(p.x, p.z)):
 			return
-	if WILLOW_RECT.grow(1.0).has_point(Vector2(p.x, p.z)):
+	if WILLOW_RECT.grow(1.0).has_point(Vector2(p.x, p.z)) or APARTMENT_RECT.grow(1.0).has_point(Vector2(p.x, p.z)):
 		return
 	var handles := []
 	handles.append(batcher.add("trunk", Transform3D(Basis().scaled(Vector3(scale, trunk_h + r * 0.6, scale)), p), Color.WHITE))
@@ -1165,6 +1173,8 @@ const LEVEL_PETS := {
 	3: ["dog", "beagle", Vector3(14.45, 0.0, -79.4)],
 	5: ["cat", "tuxedo", Vector3(33.0, 0.4, -420.1)],
 	6: ["dog", "golden", Vector3(36.8, 0.4, -171.4)],
+	# Marshmallow watches Grandpa's boat from the river bank (on the ground, farther away).
+	7: ["dog", "white", Vector3(-18.0, 0.0, -314.8), 14.0],
 }
 
 
@@ -1178,9 +1188,26 @@ func _pets() -> void:
 		pet.batcher = batcher
 		pet.variant = d[1]
 		pet.position = d[2]
+		if d.size() > 3:
+			# On the river bank: stand on the ground there, watching from farther away.
+			pet.position.y = Terrain.ground_height(pet.position.x, pet.position.z)
+			pet.watch_radius = d[3]
 		var to_pad: Vector3 = data.pad_position - pet.position
 		pet.rotation.y = atan2(to_pad.x, to_pad.z)
 		add_child(pet)
+
+
+# --- The Grand Tour (flight 8) -----------------------------------------------------------------
+
+func _grand_tour() -> void:
+	var apt: Node3D = APARTMENT_SCENE.instantiate()
+	apt.batcher = batcher
+	apt.position = Vector3(APARTMENT_POS.x, Terrain.ground_height(APARTMENT_POS.x, APARTMENT_POS.z), APARTMENT_POS.z)
+	add_child(apt)
+	var boat: Node3D = ROWBOAT_SCENE.instantiate()
+	boat.batcher = batcher
+	boat.position = ROWBOAT_POS
+	add_child(boat)
 
 
 # --- Willow Close -----------------------------------------------------------------------------
@@ -1492,7 +1519,7 @@ func _ambient_life() -> void:
 	bf2.position = Vector3(-13, 0, -532)
 	add_child(bf2)
 	var ducks := DUCKS_SCENE.instantiate()
-	ducks.position = Vector3(-30, WATER_Y, RIVER_Z)
+	ducks.position = Vector3(-48, WATER_Y, RIVER_Z)
 	add_child(ducks)
 	var ducks2 := DUCKS_SCENE.instantiate()
 	ducks2.position = Vector3(40, WATER_Y, RIVER_Z + 2.0)

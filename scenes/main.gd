@@ -335,7 +335,8 @@ func _notification(what: int) -> void:
 
 # --- Menu showreel ------------------------------------------------------------------------
 
-## Behind the menu, the paper plane flies the best bits of the flights: [level index, start,
+## Behind the menu, the paper plane flies the best bits of the flights (ending with the dive off
+## Skyline Apartments): [level index, start,
 ## end] (points near the route; the clip runs along the route between them).
 const REEL := [
 	[1, Vector3(-18, -0.4, -299.3), Vector3(16, -0.2, -304)],
@@ -345,6 +346,7 @@ const REEL := [
 	[2, Vector3(-34, 2.5, -411), Vector3(17, 9.3, -427)],
 	[5, Vector3(31, 8, -343), Vector3(32, 1.65, -396)],
 	[0, Vector3(5, 6.5, -44), Vector3(-19, 5.5, -111)],
+	[7, Vector3(-28, 32.4, 84.6), Vector3(-12, 8.1, 14)],
 ]
 const REEL_SPEED := 9.0
 const REEL_FADE := 0.35

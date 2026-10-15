@@ -1,9 +1,10 @@
 extends Pet
 ## A friendly sitting dog made of smooth rounded shapes: Biscuit the golden dog (flight 7, in his
-## bed in the den), Pepper the black-and-white collie and Bramble the beagle. The tail wags
+## bed in the den), Pepper the black-and-white collie, Bramble the beagle and Marshmallow the
+## white dog. The tail wags
 ## gently all the time, and happily (with a little bounce) when the paper plane touches the dog.
 
-## "golden", "collie" or "beagle".
+## "golden", "collie", "beagle" or "white".
 @export var variant := "golden"
 
 ## Fur, pale parts, ears, collar and (for the beagle) the dark saddle on the back.
@@ -11,6 +12,7 @@ const PALETTES := {
 	"golden": ["#d9a066", "#f6e2c2", "#8a5a32", "#c8423b", ""],
 	"collie": ["#34303a", "#fbf8f0", "#34303a", "#2f6f8f", ""],
 	"beagle": ["#c98a4b", "#fbf8f0", "#6b4429", "#3f7d4f", "#3a2c24"],
+	"white": ["#f4f1ea", "#ffffff", "#d9cfc2", "#e8546a", ""],
 }
 const BLACK := Color("#2a2522")
 

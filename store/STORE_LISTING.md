@@ -19,7 +19,7 @@
 > • Follow the dotted line and fly through the blue rings
 > • Settle down softly on the target for a Feather landing
 >
-> SEVEN HANDCRAFTED FLIGHTS
+> EIGHT HANDCRAFTED FLIGHTS
 > • **Window to the Picnic:** from an upstairs balcony to a picnic blanket in the park
 > • **Under the Old Bridge:** skim the river and thread the plane under a stone arch
 > • **Up to the Clock Tower:** slip through the Mill Lane archway, skim the millpond under a footbridge, fly through a flower shop and over the rooftops to a tiny balcony
@@ -27,6 +27,7 @@
 > • **Lantern Night:** at dusk, weave over and under the lantern strings, thread the old bridge's arch and land on a lantern raft
 > • **Open House Day:** fly room to room through open windows and doors, down a stairwell and onto the cat's rug
 > • **Willow Close:** from a treehouse, swoop through a library, over a car in a garage, up a stairwell and into the dog's bed
+> • **The Grand Tour:** dive from a rooftop, tour the whole town, fly through the bandstand and under the bridge into Grandpa's boat
 >
 > MAKE IT YOURS
 > Earn ribbons for soft, accurate landings and unlock new papers (graph paper, red origami, old map, newspaper and more), trails (rainbow ribbon, gold sparkles, confetti, comet glow) and wing stickers.

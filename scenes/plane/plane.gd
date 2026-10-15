@@ -660,6 +660,10 @@ func _skim(dt: float) -> void:
 	_query.collision_mask = 1 | 2
 	if res.size() == 2 and res[1] < 1.0:
 		_spray.emitting = false
+		# Skimmed into the side of the target itself (a boat or raft): hop aboard.
+		if level and level.horizontal_distance_to_pad(next) < level.pad_radius() + 1.0 				and absf(level.pad_top() - _skim_y) < 0.5:
+			_land(level.pad_contact_point(state.pos))
+			return
 		_crash(_message_for("wall", state.pos), "wall", state.pos)
 		return
 	if not Terrain.is_water(next.x, next.z):

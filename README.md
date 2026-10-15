@@ -86,6 +86,7 @@ Smooth, rounded pets (`props/pet.gd`, built from merged primitive shapes) sit be
 | 5 | Snow, white cat | On the river bank, watching the lantern raft |
 | 6 | Domino, tuxedo cat | By the fireplace, next to the rug |
 | 7 | Biscuit, golden dog | On the floor beside his bed |
+| 8 | Marshmallow, white dog | On the river bank, watching Grandpa's boat |
 
 When you land, the pet watching that spot reacts. Cats (`props/cat`, `variant`) swish their tail, flick their ears, hop and sparkle; idle, they flick their tail tip, twitch their ears and turn their head. Dogs (`props/dog`, `variant`) wag hard, bounce and sparkle; idle, they wag gently and breathe. Pets are solid (collider kind `pet`): a plane that runs into one comes to a gentle stop ("Bumped into a pet") with no crash.
 
@@ -117,6 +118,7 @@ The card photos in `ui/thumbs/` are snapshots of each flight's key moment, rende
 | 5 | Lantern Night | The clock tower balcony, at dusk | The lantern raft on the river, past the old bridge |
 | 6 | Open House Day | An attic bedroom on Rowan Row | The cat's rug by the cottage fireplace |
 | 7 | Willow Close | A treehouse at the top of Willow Close | Biscuit the dog's bed in the den |
+| 8 | The Grand Tour | The roof of Skyline Apartments, north of the school | Grandpa's rowing boat on the river |
 
 **Difficulty climbs flight by flight.** Flights 3 to 5 mix the two hardest ideas in the game: low, precise flying over water (as under the old bridge in flight 2) and threading tight openings (as in Open House Day, flight 6, the hardest). Rings and landing targets shrink as you go:
 
@@ -129,6 +131,7 @@ The card photos in `ui/thumbs/` are snapshots of each flight's key moment, rende
 | 5 | 1.3 m (1.0 under the arch) | 1.7 m | Dusk, lantern strings to go over and under, under the old bridge low over the river, onto a small raft |
 | 6 | 0.95 m | 1.7 m | Room to room through windows and doors |
 | 7 | 0.9 m | 1.4 m | Room to room again: down through a library, over a car in a garage, up a stairwell |
+| 8 | 1.4 m (0.9 in the bandstand and under the arch) | 1.3 m | The longest flight (about 45 s): a steep dive, the length of the lane, through the bandstand, under the bridge into a small boat |
 
 **Up to the Clock Tower:** from the bakery roof, through the Mill Lane archway (a covered passage through the west row of shops, `props/archway`). Turn right onto the millpond through a strong updraft in the bend, then make a short low glide down the water and under the wooden footbridge (`props/footbridge`). Two updrafts in a wide right turn lift you to the open upstairs window of a flower shop (`open_upstairs` on `props/shop`). You fly in the back window, through the room and out the front over Market Street. Another updraft takes you over the rooftops opposite, then you glide behind the shops into the square and past the tower's updraft to the balcony. There's no circling; every bend is wide.
 
@@ -139,6 +142,12 @@ The card photos in `ui/thumbs/` are snapshots of each flight's key moment, rende
 - Over the paddling pool, in through the garage's roller door, skim over the little car and out the back window.
 - Through the barbecue smoke, in through the hall's garden doors under the landing, then warm air from the floor grate lifts you up the stairwell and out the upstairs window (the reverse of Open House Day's stairwell).
 - Over the washing line and in through the den's garden doors to land in Biscuit's bed. Biscuit the dog (`props/dog`) sits in the middle of it.
+
+**The Grand Tour:** the longest flight, about 450 m and 45 s, touring the whole town. Throw from the roof of Skyline Apartments (`props/apartment`, 10 storeys, north of the school) and dive steeply for about 5 s past the school through a column of rings. Then:
+- Sweep onto Linden Lane and glide its length on rising air, under the bunting.
+- Swoop into the park and fly right through the bandstand (in at its east side, out at the west, between the posts and under the roof).
+- Climb in the rising air at the edge of the park and head back to the lane, where more rising air near the end lifts you for a steep dive to the river.
+- Thread the old bridge's arch and land in Grandpa's rowing boat (`props/rowboat`), moored just past the bridge. Skimming into the boat's side counts as hopping aboard.
 
 **Ponds:** stone-walled basins cut into the ground (`Terrain.PONDS`, built by `TownBuilder._ponds()`). Each pond has its own water level, and `Terrain.water_height()` covers the river and the ponds alike, so skips, skims, splashes and sinking air work the same everywhere. Pond edges sit on the 4 m terrain grid so the terrain mesh can leave a clean hole for them.
 
@@ -317,7 +326,7 @@ Include each font's `OFL.txt` alongside it. If a file is missing, `scripts/ui/ui
 ## Verified
 
 - All scripts and scenes load without errors in a headless check.
-- A test autopilot that steers along the dotted line and settles onto each pad lands all seven levels with the flight constants unchanged:
+- A test autopilot that steers along the dotted line and settles onto each pad lands all eight levels with the flight constants unchanged:
   - Level 1: about 10 s, 0.5 m from the center
   - Level 2: about 7.3 s, including the +500 bridge ring
   - Level 3: about 30 s, through Mill Lane, under the millpond footbridge and through the flower shop
@@ -325,4 +334,5 @@ Include each font's `OFL.txt` alongside it. If a file is missing, `scripts/ui/ui
   - Level 5: about 35 s, from the clock tower under the old bridge to the raft
   - Level 6: about 7 s, room to room
   - Level 7: about 6 s, treehouse to the dog's bed
+  - Level 8: about 45 s, Skyline Apartments to Grandpa's boat
 - Screenshots were checked in landscape and portrait, for every flight and for the Hangar, Settings and Credits screens.
