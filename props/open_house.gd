@@ -381,7 +381,7 @@ func _cottage(b: MeshBuilder) -> void:
 	_fireplace(b, -hd + T)
 	_armchair(b, Vector3(-3.1, GF, -3.0), Vector3.RIGHT, Color("#7c4f9e"))
 	_armchair(b, Vector3(3.1, GF, -3.0), Vector3.LEFT, Color("#3f7d4f"))
-	_sleeping_cat(b, Vector3(2.0, GF, -hd + 1.4))
+	# (The cat sits in the middle of the rug: props/cat, placed by the town.)
 	_bookshelf(b, Vector3(-hw + T, GF, -1.6), Vector3(-hw + T + 0.4, GF + 2.1, 0.2), Vector3.RIGHT)
 	_floor_lamp(b, Vector3(4.6, GF, -4.9))
 	_furn(b, "wood", Vector3(4.2, GF, -1.4), Vector3(4.9, GF + 0.6, -0.7), Color("#a87a4f"))
@@ -1201,15 +1201,3 @@ func _fireplace(b: MeshBuilder, wall_z: float) -> void:
 		b.cylinder(solid, Transform3D(Basis(), Vector3(cx, GF + 1.15, front + 0.08)), 0.03, 0.03, 0.2, 6, Color("#fbf3dc"))
 		b.sphere(_m("glow"), Vector3(cx, GF + 1.39, front + 0.08), Vector3(0.015, 0.03, 0.015), 2, 4, Color("#ffd27a"))
 	_picture(b, Vector3(0, 2.6, front + 0.005), Vector3.BACK, Vector2(1.1, 0.7), Color("#a9c9db"))
-
-
-func _sleeping_cat(b: MeshBuilder, at: Vector3) -> void:
-	var solid := _m("solid")
-	var fur := Color("#e8873a")
-	b.cylinder(_m("wood"), Transform3D(Basis(), at), 0.42, 0.46, 0.16, 14, Color("#c9a27e"))
-	b.cylinder(solid, Transform3D(Basis(), at + Vector3(0, 0.08, 0)), 0.36, 0.36, 0.06, 14, Color("#e6c3da"))
-	b.sphere(solid, at + Vector3(0, 0.22, 0), Vector3(0.26, 0.12, 0.2), 4, 8, fur)
-	b.sphere(solid, at + Vector3(0.2, 0.24, 0.08), Vector3(0.11, 0.09, 0.1), 4, 8, fur)
-	for s in [-1.0, 1.0]:
-		b.poly(solid, PackedVector3Array([at + Vector3(0.22, 0.3, 0.08 + s * 0.04), at + Vector3(0.26, 0.3, 0.08 + s * 0.08), at + Vector3(0.24, 0.38, 0.08 + s * 0.06)]), fur.darkened(0.15))
-	b.tube(solid, PackedVector3Array([at + Vector3(-0.22, 0.18, -0.05), at + Vector3(-0.1, 0.16, 0.18), at + Vector3(0.12, 0.17, 0.2)]), 0.035, 4, fur)

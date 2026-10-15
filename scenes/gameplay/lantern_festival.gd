@@ -118,6 +118,12 @@ func _build_raft(glow: Material) -> void:
 		b.cylinder(wood, Transform3D(Basis(), base), 0.05, 0.04, 1.5, 6, Color("#5a3f2e"))
 		spots.append(base + Vector3(0, 1.3, 0))
 	add_child(b.build_instance("LanternRaft", true))
+	# Snow the white cat sits in the middle of the raft, facing the bridge the plane comes under.
+	var cat: Node3D = load("res://props/cat.tscn").instantiate()
+	cat.variant = "white"
+	cat.position = Vector3(c.x, top, c.z)
+	cat.rotation.y = PI * 0.5
+	add_child(cat)
 	var lanterns := MultiMesh.new()
 	lanterns.transform_format = MultiMesh.TRANSFORM_3D
 	lanterns.use_colors = true

@@ -1,20 +1,39 @@
 extends Pet
-## Biscuit, a friendly sitting dog made of smooth rounded shapes (flight 7, in his bed in the
-## den). His tail wags gently all the time, and happily (with a little bounce) when the paper
-## plane touches him.
+## A friendly sitting dog made of smooth rounded shapes: Biscuit the golden dog (flight 7, in his
+## bed in the den), Pepper the black-and-white collie and Bramble the beagle. The tail wags
+## gently all the time, and happily (with a little bounce) when the paper plane touches the dog.
 
-const FUR := Color("#d9a066")
-const LIGHT := Color("#f6e2c2")
-const DARK := Color("#8a5a32")
+## "golden", "collie" or "beagle".
+@export var variant := "golden"
+
+## Fur, pale parts, ears, collar and (for the beagle) the dark saddle on the back.
+const PALETTES := {
+	"golden": ["#d9a066", "#f6e2c2", "#8a5a32", "#c8423b", ""],
+	"collie": ["#34303a", "#fbf8f0", "#34303a", "#2f6f8f", ""],
+	"beagle": ["#c98a4b", "#fbf8f0", "#6b4429", "#3f7d4f", "#3a2c24"],
+}
 const BLACK := Color("#2a2522")
+
+var FUR := Color("#d9a066")
+var LIGHT := Color("#f6e2c2")
+var DARK := Color("#8a5a32")
+var COLLAR := Color("#c8423b")
 
 var _tail: Node3D
 var _body: MeshInstance3D
 
 
 func _build(_b: MeshBuilder) -> void:
+	var pal: Array = PALETTES.get(variant, PALETTES["golden"])
+	FUR = Color(pal[0])
+	LIGHT = Color(pal[1])
+	DARK = Color(pal[2])
+	COLLAR = Color(pal[3])
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	if pal[4] != "":
+		# The beagle's dark saddle across the back.
+		_sphere(st, Vector3(0, 0.36, -0.05), Vector3(0.172, 0.17, 0.2), Color(pal[4]), Basis(Vector3.RIGHT, 0.22))
 	# Seated rump and thighs.
 	_sphere(st, Vector3(0, 0.24, -0.08), Vector3(0.24, 0.24, 0.27), FUR)
 	for s in [-1.0, 1.0]:
@@ -43,7 +62,7 @@ func _build(_b: MeshBuilder) -> void:
 	collar.outer_radius = 0.125
 	collar.rings = 20
 	collar.ring_segments = 8
-	_part(st, collar, Transform3D(Basis(Vector3.RIGHT, 0.35), Vector3(0, 0.655, 0.095)), Color("#c8423b"))
+	_part(st, collar, Transform3D(Basis(Vector3.RIGHT, 0.35), Vector3(0, 0.655, 0.095)), COLLAR)
 	_sphere(st, Vector3(0, 0.59, 0.2), Vector3(0.025, 0.025, 0.012), Color("#e0b24a"))
 	_body = _mesh_node(st, "Model")
 	add_child(_body)

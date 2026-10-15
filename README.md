@@ -75,12 +75,19 @@ Other places to tune:
 
 ## Pets on the landing spots
 
-Smooth, rounded pets (`props/pet.gd`, built from merged primitive shapes) sit in the middle of some landing spots:
+Smooth, rounded pets (`props/pet.gd`, built from merged primitive shapes) sit in the middle of every flight's landing spot, facing the way the plane comes in (`LEVEL_PETS` in `scripts/town/town_builder.gd`; flight 5's raft cat comes with the lantern festival decor):
 
-| Flight | Pet | Idle | When the plane touches it |
-|---|---|---|---|
-| 1 | Pickle, a ginger tabby, on the picnic blanket (`props/cat`) | Lazy tail-tip flick, ear twitches, slow head turns | Tail swish, ears flick, a little hop and pink sparkles |
-| 7 | Biscuit the dog, in his bed (`props/dog`) | Gentle tail wag, breathing | Big happy wag, a bounce and pink sparkles |
+| Flight | Landing spot | Pet |
+|---|---|---|
+| 1 | Picnic blanket | Pickle, ginger tabby cat |
+| 2 | Fishing jetty | Pepper, black-and-white collie |
+| 3 | Clock tower balcony | Smokey, grey tabby cat |
+| 4 | Friend's backpack | Bramble, beagle |
+| 5 | Lantern raft | Snow, white cat |
+| 6 | The cat's rug | Domino, tuxedo cat |
+| 7 | Biscuit's bed | Biscuit, golden dog |
+
+Cats (`props/cat`, `variant`): a lazy tail-tip flick, ear twitches and slow head turns; when touched, a tail swish, flicked ears, a little hop and pink sparkles. Dogs (`props/dog`, `variant`): a gentle wag and breathing; when touched, a big happy wag, a bounce and pink sparkles.
 
 A pet only reacts when the plane touches it: bumping into it or coming to rest against it. A pet is part of the landing spot (pad layer, collider kind `buddy`), so touching it counts as arriving and stops the plane there instead of crashing. A landing elsewhere on the spot leaves the pet alone.
 

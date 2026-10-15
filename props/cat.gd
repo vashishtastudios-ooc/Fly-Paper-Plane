@@ -1,14 +1,24 @@
 extends Pet
-## Pickle, a ginger tabby sitting in the middle of the picnic blanket (flight 1), made of smooth
-## rounded shapes. The tail tip flicks lazily and the ears twitch now and then; when the paper
+## A cat sitting on a landing spot, made of smooth rounded shapes: Pickle the ginger tabby
+## (flight 1), Smokey the grey tabby, Snow the white cat and Domino the tuxedo cat. The tail tip flicks lazily and the ears twitch now and then; when the paper
 ## plane touches her she sits up, swishes her tail and flicks her ears.
 
-const FUR := Color("#e8964a")
-const STRIPE := Color("#c76f2c")
-const WHITE := Color("#fbf3e6")
+## "ginger", "grey", "white" or "tuxedo".
+@export var variant := "ginger"
+
+const PALETTES := {
+	"ginger": ["#e8964a", "#c76f2c", "#fbf3e6", "#7fbf4a"],
+	"grey": ["#9aa0a8", "#6b717a", "#f2f0ea", "#e0b24a"],
+	"white": ["#f6f3ee", "#e4ddd3", "#ffffff", "#6fb4e8"],
+	"tuxedo": ["#33303a", "#2a2730", "#fbf8f0", "#8fd06a"],
+}
 const PINK := Color("#f2a0a8")
-const EYE := Color("#7fbf4a")
 const BLACK := Color("#2a2522")
+
+var FUR := Color("#e8964a")
+var STRIPE := Color("#c76f2c")
+var WHITE := Color("#fbf3e6")
+var EYE := Color("#7fbf4a")
 
 var _body: Node3D
 var _tail: Node3D
@@ -17,6 +27,11 @@ var _ears: Array[Node3D] = []
 
 
 func _build(_b: MeshBuilder) -> void:
+	var pal: Array = PALETTES.get(variant, PALETTES["ginger"])
+	FUR = Color(pal[0])
+	STRIPE = Color(pal[1])
+	WHITE = Color(pal[2])
+	EYE = Color(pal[3])
 	_body = Node3D.new()
 	_body.name = "Model"
 	add_child(_body)

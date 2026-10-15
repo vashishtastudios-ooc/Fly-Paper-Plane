@@ -119,6 +119,7 @@ func build() -> void:
 	_rowan_row()
 	_ponds()
 	_willow_close()
+	_pets()
 	batcher.finalize()
 	_on_quality(Settings.quality)
 	is_built = true
@@ -677,13 +678,7 @@ func _park() -> void:
 	blanket.position = Vector3(-30, 0, -128)
 	blanket.rotation.y = 0.25
 	add_child(blanket)
-	# Pickle the cat sits in the middle of the blanket (flight 1's landing spot), facing the way
-	# the plane comes in.
-	var cat: Node3D = CAT_SCENE.instantiate()
-	cat.batcher = batcher
-	cat.position = Vector3(-30, 0.13, -128)
-	cat.rotation.y = 0.59
-	add_child(cat)
+
 	var benches := [[Vector3(-12.5, 0, -121), 2.1], [Vector3(-23.5, 0, -133), 1.6], [Vector3(-34, 0, -155), 0.2],
 		[Vector3(-26, 0, -165), 3.0], [Vector3(-13, 0, -178), 2.5], [Vector3(-33, 0, -126), -1.4]]
 	for bdat in benches:
@@ -1158,6 +1153,43 @@ func _ponds() -> void:
 	add_child(ducks)
 
 
+# --- Pets on the landing spots -----------------------------------------------------------------
+
+## A pet sits on each flight's landing spot: [kind, variant, offset from the pad center].
+## (Flight 5's lantern raft is part of its decor, which brings its own cat.)
+const LEVEL_PETS := {
+	0: ["cat", "ginger", Vector3.ZERO],
+	1: ["dog", "collie", Vector3.ZERO],
+	2: ["cat", "grey", Vector3.ZERO],
+	3: ["dog", "beagle", Vector3(0.0, -0.01, -0.1)],
+	5: ["cat", "tuxedo", Vector3.ZERO],
+	6: ["dog", "golden", Vector3.ZERO],
+}
+
+
+func _pets() -> void:
+	for li in LEVEL_PETS:
+		if li >= Game.levels.size():
+			continue
+		var data: LevelData = Game.levels[li]
+		var d: Array = LEVEL_PETS[li]
+		var pet: Node3D = (CAT_SCENE if d[0] == "cat" else DOG_SCENE).instantiate()
+		pet.batcher = batcher
+		pet.variant = d[1]
+		pet.position = data.pad_position + d[2]
+		pet.rotation.y = facing_route_end(data)
+		add_child(pet)
+
+
+## Yaw that faces back along the end of a level's route (toward the plane as it comes in).
+static func facing_route_end(data: LevelData) -> float:
+	var pts := data.route_points()
+	if pts.size() < 2:
+		return 0.0
+	var back := pts[pts.size() - 2] - pts[pts.size() - 1]
+	return atan2(back.x, back.z)
+
+
 # --- Willow Close -----------------------------------------------------------------------------
 
 func _in_willow_house(p: Vector3) -> bool:
@@ -1188,13 +1220,6 @@ func _willow_close() -> void:
 		h.seed_value = 90 + i
 		add_child(h)
 
-	# Biscuit sits in the middle of his bed in the den (flight 7's landing spot), facing the doors.
-	var dog: Node3D = DOG_SCENE.instantiate()
-	dog.batcher = batcher
-	var den_z: float = WILLOW_HOUSES[3][1]
-	# The bed's center in the den (open_house DOG_BED), on top of the cushion.
-	dog.position = Vector3(WILLOW_X + 0.4, 0.54, den_z - 2.2)
-	add_child(dog)
 
 	var b := MeshBuilder.new()
 	var solid := Mats.get_mat("solid")
