@@ -45,6 +45,7 @@ var _dots: MultiMeshInstance3D
 var _arrow: Node3D
 var _marker: MeshInstance3D
 var _marker_mat: StandardMaterial3D
+var _arrow_mat: StandardMaterial3D
 
 
 func _ready() -> void:
@@ -59,6 +60,8 @@ func build(level_data: LevelData, town_builder: TownBuilder) -> void:
 	town = town_builder
 	if town:
 		town.set_time_of_day(data.time_of_day)
+	StarPickup.set_night(data.time_of_day == "dusk")
+	_arrow_mat.albedo_color = _route_color()
 	if _content:
 		_content.queue_free()
 	_content = Node3D.new()
@@ -151,6 +154,11 @@ func build(level_data: LevelData, town_builder: TownBuilder) -> void:
 	reset_progress()
 
 
+## Color of the dotted line and guide arrow: blue, or lantern orange with lantern hoops.
+func _route_color() -> Color:
+	return Color("#ffb066") if data and data.gate_style == "lantern" else UIKit.ROUTE
+
+
 func _add_star(p: Vector3, is_bonus: bool) -> void:
 	var s: StarPickup = STAR_SCENE.instantiate()
 	s.bonus = is_bonus
@@ -171,7 +179,7 @@ func _build_dots() -> void:
 	# Small glowing additive dots (camera-facing), faded out right next to the lens.
 	var q := QuadMesh.new()
 	q.size = Vector2(0.3, 0.3)
-	var mat := Mats.additive(Color(1.0, 0.86, 0.55, 1.0), TexGen.get_tex("soft_dot"))
+	var mat := Mats.additive(_route_color(), TexGen.get_tex("soft_dot"))
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	mat.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
 	mat.distance_fade_min_distance = 0.8
@@ -195,7 +203,8 @@ func _build_arrow() -> void:
 	_arrow.name = "GuideArrow"
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = Color("#ffc94d")
+	mat.albedo_color = UIKit.ROUTE
+	_arrow_mat = mat
 	mat.no_depth_test = false
 	var cone := MeshInstance3D.new()
 	var cm := CylinderMesh.new()

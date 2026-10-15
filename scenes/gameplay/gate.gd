@@ -31,20 +31,21 @@ static func _mats() -> void:
 	if _next_mat:
 		return
 	_next_mat = StandardMaterial3D.new()
-	_next_mat.albedo_color = Color("#f6c445")
+	_next_mat.albedo_color = UIKit.ROUTE
 	_next_mat.emission_enabled = true
-	_next_mat.emission = Color("#ffc94d")
-	_next_mat.emission_energy_multiplier = 2.2
-	_next_mat.metallic = 0.5
+	_next_mat.emission = UIKit.ROUTE
+	_next_mat.emission_energy_multiplier = 1.1
+	_next_mat.metallic = 0.2
 	_next_mat.roughness = 0.35
 	_future_mat = StandardMaterial3D.new()
 	_future_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_future_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_future_mat.albedo_color = Color(1, 1, 1, 0.3)
-	# Bonus rings are rose-violet so they never look like the main route's gold rings.
+	_future_mat.albedo_color = Color(0.62, 0.84, 1.0, 0.35)
+	# Bonus rings are pink so they never look like the main route's blue rings.
 	_gold_mat = _next_mat.duplicate()
-	_gold_mat.albedo_color = Color("#e070c0")
-	_gold_mat.emission = Color("#ff7ad9")
+	_gold_mat.albedo_color = UIKit.BONUS
+	_gold_mat.emission = Color("#ff9ccb")
+	_gold_mat.metallic = 0.5
 	_gold_mat.emission_energy_multiplier = 2.6
 	_rope_mat = StandardMaterial3D.new()
 	_rope_mat.albedo_color = Color("#4a3426")

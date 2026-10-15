@@ -43,6 +43,7 @@ func _ready() -> void:
 	sm.shader = load("res://shaders/thermal.gdshader")
 	sm.set_shader_parameter("height", h)
 	sm.set_shader_parameter("intensity", 0.15 if style == "golden" else 0.05)
+	sm.set_shader_parameter("tint", UIKit.LIFT)
 	if style == "smoke":
 		sm.set_shader_parameter("tint", Color(0.9, 0.85, 0.8))
 	elif style == "lantern":
@@ -107,15 +108,16 @@ func _ready() -> void:
 		pm.scale_min = 0.7
 		pm.scale_max = 1.4
 		var g2 := Gradient.new()
-		g2.set_color(0, Color(1, 0.82, 0.42, 0.0))
-		g2.add_point(0.15, Color(1, 0.86, 0.48, 1.0))
-		g2.add_point(0.75, Color(1, 0.86, 0.48, 0.8))
-		g2.set_color(g2.get_point_count() - 1, Color(1, 0.85, 0.5, 0.0))
+		var spark := Color(1, 0.86, 0.48) if style == "lantern" else Color(0.62, 1.0, 0.76)
+		g2.set_color(0, Color(spark, 0.0))
+		g2.add_point(0.15, Color(spark, 1.0))
+		g2.add_point(0.75, Color(spark, 0.8))
+		g2.set_color(g2.get_point_count() - 1, Color(spark, 0.0))
 		var gt2 := GradientTexture1D.new()
 		gt2.gradient = g2
 		pm.color_ramp = gt2
 		q.size = Vector2(0.24, 0.24)
-		var glint := Color(1, 0.7, 0.4) if style == "lantern" else Color(1, 0.9, 0.6)
+		var glint := Color(1, 0.7, 0.4) if style == "lantern" else Color(0.72, 1.0, 0.82)
 		q.material = Mats.additive(glint, TexGen.get_tex("star_glint"), true)
 	p.process_material = pm
 	p.draw_pass_1 = q
@@ -201,7 +203,7 @@ func _build_swirl(h: float) -> void:
 	mm.use_colors = true
 	mm.mesh = q
 	mm.instance_count = count
-	var cols := ["#e8873a", "#f2c14e", "#d9662f", "#f0a541", "#c9572e", "#9fbf5a"]
+	var cols := ["#7fc98f", "#a6dba0", "#5fb37a", "#c6e8a8", "#8fd3a8", "#e8873a"]
 	for i in count:
 		_leaves.append([rng.randf() * TAU, rng.randf() * h, rng.randf_range(0.35, 0.8),
 			rng.randf_range(1.4, 2.4), rng.randf_range(-6.0, 6.0), rng.randf() * TAU])

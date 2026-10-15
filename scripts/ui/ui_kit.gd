@@ -11,6 +11,12 @@ const RULE := Color("#a9c8e8")
 const MARGIN := Color("#e27a72")
 const GOLD := Color("#f2c14e")
 const GOLD_DEEP := Color("#d99a2b")
+## Gameplay colors: the route (rings, dotted line, guide arrow) is sky blue, rising air is mint,
+## stars stay gold and bonus rings pink.
+const ROUTE := Color("#6ec6ff")
+const ROUTE_GLOW := Color("#a8dcff")
+const LIFT := Color("#8fe3b0")
+const BONUS := Color("#ff7eb6")
 const PILL := Color(0.09, 0.08, 0.07, 0.5)
 const CLIMB := Color("#6fd08c")
 const SINK := Color("#6fb4e8")

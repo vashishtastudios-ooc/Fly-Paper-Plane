@@ -69,7 +69,7 @@ func _show_loading() -> void:
 
 func _wire() -> void:
 	plane.stall_entered.connect(func(): hud.banner("Stall! Nose down", Color("#ffb3a1"), 1.2))
-	plane.rising_air.connect(func(): hud.banner("Rising air", UIKit.GOLD, 1.2))
+	plane.rising_air.connect(func(): hud.banner("Rising air", UIKit.LIFT, 1.2))
 	plane.barrel_roll_done.connect(func(): hud.float_text(plane.state.pos, "+50"))
 	plane.landed.connect(_on_landed)
 	plane.skipped.connect(func(): hud.banner("Skip!", Color("#bfe3ff"), 0.9))
@@ -88,11 +88,11 @@ func _wire() -> void:
 		hud.float_text(p, "+100"))
 	level.ring_passed.connect(func(p: Vector3):
 		Audio.play("ring", -3.0)
-		hud.float_text(p, "+25", Color.WHITE))
+		hud.float_text(p, "+25", UIKit.ROUTE_GLOW))
 	level.bonus_ring_passed.connect(func(p: Vector3, _pts: int, msg: String):
 		Audio.play("bonus", 0.0)
-		hud.banner(msg, UIKit.GOLD, 1.8)
-		hud.float_text(p, "+%d" % _pts))
+		hud.banner(msg, UIKit.BONUS, 1.8)
+		hud.float_text(p, "+%d" % _pts, UIKit.BONUS))
 	kid.released.connect(_on_released)
 	touch.gust_pressed.connect(func(): plane.use_gust())
 	touch.roll_pressed.connect(func(d: float): plane.barrel_roll(d))

@@ -105,7 +105,7 @@ class HeadingArrow extends Control:
 		var c := size * 0.5
 		var pts := PackedVector2Array([Vector2(0, -10), Vector2(7, 7), Vector2(0, 3), Vector2(-7, 7)])
 		var t := Transform2D(angle, c)
-		draw_colored_polygon(t * pts, UIKit.GOLD)
+		draw_colored_polygon(t * pts, UIKit.ROUTE)
 
 
 ## The gold circular arrow clamped to the screen edge when the target is off-screen.
