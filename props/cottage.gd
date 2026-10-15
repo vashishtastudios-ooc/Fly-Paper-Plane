@@ -22,6 +22,9 @@ const UPPER_H := 2.9
 const JETTY := 0.3
 const RISE := 3.8
 const TRIM := Color("#f6eedc")
+## Faces a soft box can leave out when they are hidden (against the ground or a wall).
+const BOTTOM := 4
+const BACK := 16
 
 var _rng := RandomNumberGenerator.new()
 var _piece := 0
@@ -40,8 +43,8 @@ func _build(b: MeshBuilder) -> void:
 	var top := y1 + UPPER_H + 0.1
 
 	# Stone plinth, plastered ground floor, the timber beam and the jutting upper floor.
-	_soft(b, stone, _at(0, PLINTH * 0.5 - 0.05, zc), Vector3(width + 0.35, PLINTH + 0.1, depth + 0.35), 0.2, Color("#cdbfa9"), 0.0, 0.0, 0.05)
-	_soft(b, Mats.get_mat("plaster"), _at(0, PLINTH + LOWER_H * 0.5 - 0.05, zc), Vector3(width, LOWER_H + 0.1, depth), 0.25, lower_color, 0.015, 0.0, 0.03)
+	_soft(b, stone, _at(0, PLINTH * 0.5 - 0.05, zc), Vector3(width + 0.35, PLINTH + 0.1, depth + 0.35), 0.2, Color("#cdbfa9"), 0.0, 0.0, 0.05, 2, BOTTOM)
+	_soft(b, Mats.get_mat("plaster"), _at(0, PLINTH + LOWER_H * 0.5 - 0.05, zc), Vector3(width, LOWER_H + 0.1, depth), 0.25, lower_color, 0.015, 0.0, 0.03, 2, BOTTOM)
 	_soft(b, wood, _at(0, y1, zc), Vector3(width + 0.5, 0.32, depth + 0.5), 0.12, Color("#8a5a3c"), 0.0, 0.04, 0.03)
 	_soft(b, Mats.get_mat("paint"), _at(0, y1 + 0.1 + UPPER_H * 0.5, zc), Vector3(uw, UPPER_H, ud), 0.22, wall_color, -0.012, 0.0, 0.03)
 
@@ -95,12 +98,13 @@ func _build(b: MeshBuilder) -> void:
 		_window(b, _at(x, uy, JETTY), true)
 	for s in [-1.0, 1.0]:
 		var side := Basis(Vector3.UP, s * PI * 0.5)
-		_window(b, Transform3D(side, Vector3(s * hw, ly, zc)), false)
-		_window(b, Transform3D(side, Vector3(s * uw * 0.5, uy, zc)), false)
+		inst("window", Transform3D(side, Vector3(s * (hw + 0.04), ly, zc)))
+		inst("window", Transform3D(side, Vector3(s * (uw * 0.5 + 0.04), uy, zc)))
 	var back := Basis(Vector3.UP, PI)
 	for x in [-2.4, 2.4]:
-		_window(b, Transform3D(back, Vector3(x, ly, -depth)), false)
-		_window(b, Transform3D(back, Vector3(x, uy, -depth - JETTY)), false)
+		# The sides and back are rarely seen up close: the plain shared window model.
+		inst("window", Transform3D(back, Vector3(x, ly, -depth - 0.04)))
+		inst("window", Transform3D(back, Vector3(x, uy, -depth - JETTY - 0.04)))
 
 	_path_and_fence(b)
 
@@ -134,7 +138,7 @@ func _door(b: MeshBuilder) -> void:
 	var stone := Mats.get_mat("stone")
 	var dx := door_offset
 	var dy := PLINTH
-	_soft(b, solid, _at(dx, dy + 1.0, 0.02), Vector3(1.1, 2.0, 0.14), 0.04, door_color, 0.0, 0.0, 0.006, false)
+	_soft(b, solid, _at(dx, dy + 1.0, 0.02), Vector3(1.1, 2.0, 0.14), 0.04, door_color, 0.0, 0.0, 0.006, 0, BACK)
 	b.cylinder(solid, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(dx, dy + 2.0, -0.05)), 0.55, 0.55, 0.14, 16, door_color)
 	# Plank grooves and a brass knob.
 	for gx in [-0.27, 0.0, 0.27]:
@@ -147,7 +151,7 @@ func _door(b: MeshBuilder) -> void:
 		var a := PI * (i + 0.5) / n
 		var p := Vector3(dx + cos(a) * 0.76, dy + 2.0 + sin(a) * 0.76, 0.06)
 		var col := Color("#d9cdb8").darkened(_rng.randf_range(0.0, 0.12))
-		_soft(b, stone, Transform3D(Basis(Vector3.BACK, a - PI * 0.5), p), Vector3(0.27, 0.36, 0.22), 0.06, col, 0.0, 0.0, 0.015, false)
+		_soft(b, stone, Transform3D(Basis(Vector3.BACK, a - PI * 0.5), p), Vector3(0.27, 0.36, 0.22), 0.06, col, 0.0, 0.0, 0.015, 0, BACK)
 	for s in [-1.0, 1.0]:
 		var y := dy
 		var k := 0
@@ -155,16 +159,16 @@ func _door(b: MeshBuilder) -> void:
 			var hh := _rng.randf_range(0.34, 0.44)
 			var ww := 0.38 if k % 2 == 0 else 0.28
 			var col := Color("#d9cdb8").darkened(_rng.randf_range(0.0, 0.12))
-			_soft(b, stone, _at(dx + s * (0.58 + ww * 0.5), y + hh * 0.5, 0.06), Vector3(ww, hh - 0.03, 0.22), 0.06, col, 0.0, 0.0, 0.015, false)
+			_soft(b, stone, _at(dx + s * (0.58 + ww * 0.5), y + hh * 0.5, 0.06), Vector3(ww, hh - 0.03, 0.22), 0.06, col, 0.0, 0.0, 0.015, 0, BACK)
 			y += hh
 			k += 1
 	# Steps and a little shingled canopy on brackets.
-	_soft(b, stone, _at(dx, 0.16, 0.7), Vector3(1.9, 0.32, 0.8), 0.1, Color("#cfc3ae"), 0.0, 0.0, 0.025, false)
-	_soft(b, stone, _at(dx, 0.44, 0.32), Vector3(1.6, 0.3, 0.55), 0.1, Color("#d6cab6"), 0.0, 0.0, 0.025, false)
+	_soft(b, stone, _at(dx, 0.16, 0.7), Vector3(1.9, 0.32, 0.8), 0.1, Color("#cfc3ae"), 0.0, 0.0, 0.025, 1, BOTTOM | BACK)
+	_soft(b, stone, _at(dx, 0.44, 0.32), Vector3(1.6, 0.3, 0.55), 0.1, Color("#d6cab6"), 0.0, 0.0, 0.025, 1, BOTTOM | BACK)
 	var cy := dy + 2.95
 	_soft(b, Mats.get_mat("shingle"), Transform3D(Basis(Vector3.RIGHT, 0.32), Vector3(dx, cy, 0.5)), Vector3(2.2, 0.18, 1.15), 0.08, roof_color, 0.0, 0.05, 0.02)
 	for s in [-1.0, 1.0]:
-		_soft(b, Mats.get_mat("wood"), Transform3D(Basis(Vector3.RIGHT, -0.75), Vector3(dx + s * 0.95, cy - 0.35, 0.28)), Vector3(0.12, 0.7, 0.12), 0.04, Color("#8a5a3c"), 0.0, 0.0, 0.0, false)
+		_soft(b, Mats.get_mat("wood"), Transform3D(Basis(Vector3.RIGHT, -0.75), Vector3(dx + s * 0.95, cy - 0.35, 0.28)), Vector3(0.12, 0.7, 0.12), 0.04, Color("#8a5a3c"), 0.0, 0.0, 0.0, 0)
 
 
 ## A window on a wall surface; `xf` faces local +Z at the wall surface.
@@ -173,25 +177,25 @@ func _window(b: MeshBuilder, xf: Transform3D, flowers: bool, scale := 1.0) -> vo
 	var w := 1.0 * scale
 	var h := 1.3 * scale
 	b.box(Mats.get_mat("window_lit"), xf * Transform3D(Basis(), Vector3(0, 0, 0.05)), Vector3(w, h, 0.06), Color("#3d5a78"))
-	_soft(b, solid, xf * _at(0, h * 0.5 + 0.06, 0.1), Vector3(w + 0.32, 0.16, 0.18), 0.06, TRIM, 0.0, 0.0, 0.012, false)
+	_soft(b, solid, xf * _at(0, h * 0.5 + 0.06, 0.1), Vector3(w + 0.32, 0.16, 0.18), 0.06, TRIM, 0.0, 0.0, 0.012, 0, BACK)
 	for s in [-1.0, 1.0]:
-		_soft(b, solid, xf * _at(s * (w * 0.5 + 0.06), 0, 0.1), Vector3(0.14, h + 0.18, 0.17), 0.05, TRIM, 0.0, 0.0, 0.01, false)
+		_soft(b, solid, xf * _at(s * (w * 0.5 + 0.06), 0, 0.1), Vector3(0.14, h + 0.18, 0.17), 0.05, TRIM, 0.0, 0.0, 0.01, 0, BACK)
 	var tilt := Basis(Vector3.BACK, _rng.randf_range(-0.03, 0.03))
-	_soft(b, solid, xf * Transform3D(tilt, Vector3(0, -h * 0.5 - 0.07, 0.15)), Vector3(w + 0.5, 0.14, 0.34), 0.05, TRIM, 0.0, 0.0, 0.012, false)
+	_soft(b, solid, xf * Transform3D(tilt, Vector3(0, -h * 0.5 - 0.07, 0.15)), Vector3(w + 0.5, 0.14, 0.34), 0.05, TRIM, 0.0, 0.0, 0.012, 0, BACK)
 	b.box(solid, xf * Transform3D(Basis(), Vector3(0, 0, 0.09)), Vector3(0.06, h, 0.05), TRIM)
 	b.box(solid, xf * Transform3D(Basis(), Vector3(0, 0.05 * scale, 0.09)), Vector3(w, 0.06, 0.05), TRIM)
 	# Shutters, each hung a little crooked.
 	for s in [-1.0, 1.0]:
 		var sb := Basis(Vector3.UP, s * _rng.randf_range(0.04, 0.16)) * Basis(Vector3.BACK, _rng.randf_range(-0.02, 0.02))
 		var col := shutter_color.lightened(_rng.randf_range(-0.05, 0.08))
-		_soft(b, solid, xf * Transform3D(sb, Vector3(s * (w * 0.5 + 0.38 * scale), 0, 0.1)), Vector3(0.46 * scale, h + 0.04, 0.08), 0.05, col, 0.0, 0.0, 0.01, false)
+		_soft(b, solid, xf * Transform3D(sb, Vector3(s * (w * 0.5 + 0.38 * scale), 0, 0.1)), Vector3(0.46 * scale, h + 0.04, 0.08), 0.05, col, 0.0, 0.0, 0.01, 0, BACK)
 	if flowers:
-		_soft(b, Mats.get_mat("wood"), xf * _at(0, -h * 0.5 - 0.3, 0.3), Vector3(w + 0.25, 0.28, 0.3), 0.06, Color("#9c6b4a"), 0.0, 0.0, 0.015, false)
+		_soft(b, Mats.get_mat("wood"), xf * _at(0, -h * 0.5 - 0.3, 0.3), Vector3(w + 0.25, 0.28, 0.3), 0.06, Color("#9c6b4a"), 0.0, 0.0, 0.015, 0, BACK)
 		for i in 3:
-			var fx := (i - 1) * (w + 0.1) * 0.33
+			var fx := (i - 1) * (w + 0.1) * 0.3
 			var col := Mats.pick(_rng, Mats.FLOWER_COLORS)
 			var lx := xf * _at(fx, -h * 0.5 - 0.22, 0.3)
-			inst("bush", Transform3D(lx.basis.scaled(Vector3(0.42, 0.42, 0.42)), lx.origin), col.lerp(Color("#6f9e4c"), 0.25))
+			inst("flower", Transform3D(lx.basis.scaled(Vector3(2.6, 2.2, 1.6)), lx.origin), col)
 
 
 func _path_and_fence(b: MeshBuilder) -> void:
@@ -205,7 +209,7 @@ func _path_and_fence(b: MeshBuilder) -> void:
 	while z < yard_depth - 0.2:
 		var px := dx + (0.22 if k % 2 == 0 else -0.2) + _rng.randf_range(-0.08, 0.08)
 		var col := Color("#d4c9b6").darkened(_rng.randf_range(0.0, 0.1))
-		_soft(b, stone, Transform3D(Basis(Vector3.UP, _rng.randf_range(-0.4, 0.4)), Vector3(px, 0.0, z)), Vector3(_rng.randf_range(0.75, 0.95), 0.14, _rng.randf_range(0.55, 0.7)), 0.07, col, 0.0, 0.0, 0.02, false)
+		_soft(b, stone, Transform3D(Basis(Vector3.UP, _rng.randf_range(-0.4, 0.4)), Vector3(px, 0.0, z)), Vector3(_rng.randf_range(0.75, 0.95), 0.14, _rng.randf_range(0.55, 0.7)), 0.07, col, 0.0, 0.0, 0.02, 0, BOTTOM)
 		z += 0.78
 		k += 1
 	# Crooked picket fence.
@@ -215,13 +219,13 @@ func _path_and_fence(b: MeshBuilder) -> void:
 		while x < seg.y - 0.1:
 			var ph := _rng.randf_range(0.86, 1.0)
 			var lean := Basis(Vector3.BACK, _rng.randf_range(-0.06, 0.06)) * Basis(Vector3.RIGHT, _rng.randf_range(-0.04, 0.04))
-			_soft(b, solid, Transform3D(lean, Vector3(x, ph * 0.5, fz)), Vector3(0.11, ph, 0.05), 0.045, TRIM.darkened(_rng.randf_range(0.0, 0.08)), 0.2, 0.0, 0.0, false)
+			inst("picket", Transform3D(lean.scaled(Vector3(1.15, ph, 1.6)), Vector3(x, 0.0, fz)), TRIM.darkened(_rng.randf_range(0.0, 0.08)))
 			x += 0.24
 		var mid := (seg.x + seg.y) * 0.5
 		for ry in [0.32, 0.7]:
-			_soft(b, solid, _at(mid, ry, fz - 0.05), Vector3(seg.y - seg.x, 0.08, 0.05), 0.03, TRIM.darkened(0.06), 0.0, 0.03, 0.01, false)
+			_soft(b, solid, _at(mid, ry, fz - 0.05), Vector3(seg.y - seg.x, 0.08, 0.05), 0.03, TRIM.darkened(0.06), 0.0, 0.03, 0.01, 0, BOTTOM)
 		for px in [seg.x, seg.y]:
-			_soft(b, solid, _at(px, 0.58, fz), Vector3(0.17, 1.16, 0.17), 0.06, TRIM, 0.08, 0.0, 0.01, false)
+			_soft(b, solid, _at(px, 0.58, fz), Vector3(0.17, 1.16, 0.17), 0.06, TRIM, 0.08, 0.0, 0.01, 0, BOTTOM)
 
 
 func _after_build() -> void:
@@ -234,10 +238,9 @@ func _after_build() -> void:
 		var s := lerpf(1.25, 0.7, t) * _rng.randf_range(0.85, 1.1)
 		var xo := -hw + (0.2 if y > PLINTH + LOWER_H else 0.0)
 		var spread := lerpf(1.4, 0.5, t)
-		for k in 2:
-			inst("bush", Transform3D(Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s * 0.8, s * 0.45)), Vector3(xo + _rng.randf_range(0.0, spread), y - 0.35, 0.12)), greens[_rng.randi() % 4])
-			inst("bush", Transform3D(Basis(Vector3.UP, PI * 0.5).scaled(Vector3(s, s * 0.8, s * 0.45)), Vector3(xo - 0.12, y - 0.35, -_rng.randf_range(0.0, spread))), greens[_rng.randi() % 4])
-		y += 0.45
+		inst("bush", Transform3D(Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s * 1.2, s, s * 0.5)), Vector3(xo + _rng.randf_range(0.1, spread), y - 0.35, 0.12)), greens[_rng.randi() % 4])
+		inst("bush", Transform3D(Basis(Vector3.UP, PI * 0.5).scaled(Vector3(s * 1.2, s, s * 0.5)), Vector3(xo - 0.12, y - 0.35, -_rng.randf_range(0.1, spread))), greens[_rng.randi() % 4])
+		y += 1.0
 	# Big bushes and flowering shrubs along the front.
 	for bx in [-4.3, -2.1, 1.2, 4.2]:
 		var s := _rng.randf_range(1.5, 1.9)
@@ -282,22 +285,23 @@ func _poly_out(b: MeshBuilder, mat: Material, pts: Array, col: Color, outward: V
 ## A soft rounded box in the frame `xf`: edges rounded with radius `r`, `taper` narrows the top
 ## (fraction of the width), `sag` bows the top down along local X, and `wobble` pushes the surface
 ## in and out a little so nothing is perfectly straight. Slightly darker toward the bottom.
-## `fine` uses more rounding steps and splits long flat sides so the wobble shows.
+## `detail`: 0 = a plain bevel (small parts), 1 = one rounding step, 2 = also splits long flat
+## sides every 2.5 m so the wobble shows. `skip` leaves out hidden faces (BOTTOM, BACK, ...).
 func _soft(b: MeshBuilder, mat: Material, xf: Transform3D, size: Vector3, r: float, col: Color,
-		taper := 0.0, sag := 0.0, wobble := 0.025, fine := true) -> void:
+		taper := 0.0, sag := 0.0, wobble := 0.025, detail := 2, skip := 0) -> void:
 	_piece += 1
 	var ph := float(_piece) * 1.37 + seed_value
 	var h := size * 0.5
 	r = minf(r, minf(h.x, minf(h.y, h.z)) * 0.9)
 	var inner := h - Vector3.ONE * r
-	var band: Array = [0.268, 0.577] if fine else [0.414]
+	var band: Array = [] if detail == 0 else [0.414]
 	var coords: Array = []
 	for ax in 3:
 		var c := PackedFloat32Array()
 		c.append(-h[ax])
 		for k in range(band.size() - 1, -1, -1):
 			c.append(-inner[ax] - r * band[k])
-		var n := clampi(int(inner[ax] * 2.0 / 1.2), 1, 10) if fine else 1
+		var n := clampi(int(inner[ax] * 2.0 / 2.5), 1, 4) if detail >= 2 else 1
 		for i in n + 1:
 			c.append(lerpf(-inner[ax], inner[ax], float(i) / n))
 		for k in band.size():
@@ -310,6 +314,8 @@ func _soft(b: MeshBuilder, mat: Material, xf: Transform3D, size: Vector3, r: flo
 		var cu: PackedFloat32Array = coords[u]
 		var cv: PackedFloat32Array = coords[v]
 		for s in [-1.0, 1.0]:
+			if skip & (1 << (ax * 2 + (1 if s > 0.0 else 0))):
+				continue
 			var grid := []
 			for j in cv.size():
 				var row := []
