@@ -1,4 +1,4 @@
-# Glide Home
+# Paper Plane Playground
 
 A calm 3D paper-plane gliding game for Godot 4.4 (GDScript). A kid throws a folded notebook-paper plane from a balcony and you glide it across a golden-hour town to land softly on a target.
 
@@ -72,6 +72,12 @@ Other places to tune:
 - Rising air for river sink lives in `scripts/level/level_runtime.gd` (`lift_at`). Each thermal's lift is in `scenes/gameplay/thermal.gd`.
 - Camera framing, damping and FOV are exported on `scenes/camera/chase_camera.gd`.
 - Scoring rules are in `autoload/game.gd` (`compute_landing_score`).
+
+## Title screen
+
+The menu is a torn scrapbook page: the title *Paper Plane Playground* with the subtitle *Fun paper plane flying challenges*, a photo card per flight, a yellow Play button and paper chips for the Hangar, Settings and Credits (`scenes/ui/menu.gd`). Tap a card to pick it, then Play (or tap the picked card again). Keyboard and gamepad focus picks a card directly.
+
+The card photos in `ui/thumbs/` are snapshots of each flight's key moment, rendered by the game itself (HUD hidden) and saved as small JPEGs. Re-capture them if a flight's look changes.
 
 ## Levels
 

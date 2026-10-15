@@ -1,10 +1,10 @@
-# Privacy Policy: Glide Home
+# Privacy Policy: Paper Plane Playground
 
 _Last updated: 14 October 2026_
 
-Glide Home is a game by Vashishta Studios.
+Paper Plane Playground is a game by Vashishta Studios.
 
-**Glide Home does not collect, store or share any personal information.**
+**Paper Plane Playground does not collect, store or share any personal information.**
 
 - The game has no accounts, ads, analytics, tracking or in-app purchases.
 - The game makes no network connections.
@@ -16,7 +16,7 @@ Glide Home is a game by Vashishta Studios.
 
 ## Children
 
-Glide Home is suitable for all ages. Because it collects no data at all, it collects no data from children.
+Paper Plane Playground is suitable for all ages. Because it collects no data at all, it collects no data from children.
 
 ## Changes
 

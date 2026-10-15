@@ -5,6 +5,8 @@ signal layout_changed(portrait: bool)
 signal quality_changed(quality: int)
 
 const SETTINGS_PATH := "user://settings.cfg"
+## The game used to be called "Glide Home"; on desktop its save folder was named after it.
+const OLD_USER_DIR_NAME := "Glide Home"
 
 var is_mobile := false
 var touch_ui := false
@@ -33,6 +35,7 @@ var _sun: DirectionalLight3D
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_migrate_old_saves()
 	is_mobile = OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("ios") \
 		or OS.has_feature("web_android") or OS.has_feature("web_ios")
 	var args := OS.get_cmdline_user_args()
@@ -251,3 +254,15 @@ func _action(name: String, keys: Array, buttons: Array, axes: Array) -> void:
 		jm.axis = a[0]
 		jm.axis_value = a[1]
 		InputMap.action_add_event(name, jm)
+
+
+## Copies settings and progress from the old "Glide Home" save folder (desktop) the first time
+## the renamed game runs. On phones the save folder belongs to the app and is unaffected.
+func _migrate_old_saves() -> void:
+	if FileAccess.file_exists(SETTINGS_PATH) or FileAccess.file_exists("user://save.cfg"):
+		return
+	var old_dir := OS.get_user_data_dir().get_base_dir().path_join(OLD_USER_DIR_NAME)
+	for f in ["settings.cfg", "save.cfg"]:
+		var src := old_dir.path_join(f)
+		if FileAccess.file_exists(src):
+			DirAccess.copy_absolute(src, "user://" + f)

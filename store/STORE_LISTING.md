@@ -1,9 +1,9 @@
-# Google Play listing: Glide Home
+# Google Play listing: Paper Plane Playground
 
 ## App details
 
-- **App name** (30 characters max): `Glide Home: Paper Plane`
-- **Short description** (80 characters max): `Fold, throw and glide a paper plane across a cozy golden-hour town.`
+- **App name** (30 characters max): `Paper Plane Playground`
+- **Short description** (80 characters max): `Fun paper plane flying challenges across a cozy golden-hour town.`
 - **Category:** Games > Casual
 - **Tags:** Casual, Flight, Relaxing, Single player, Offline
 - **Price:** Free. No ads and no in-app purchases.
@@ -12,7 +12,7 @@
 
 > A kid on a balcony folds a sheet of notebook paper, takes aim, and throws.
 >
-> Glide Home is a calm flying game about one paper plane and a sleepy golden-hour town. Your plane is always sinking slowly, so the skill is in reading the air:
+> Paper Plane Playground is a calm flying game about one paper plane and a sleepy golden-hour town. Your plane is always sinking slowly, so the skill is in reading the air:
 >
 > • Dive to pick up speed, then pull up to trade it for height
 > • Find shimmering green rising air and ride it to climb
