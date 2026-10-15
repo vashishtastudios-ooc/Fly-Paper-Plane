@@ -75,21 +75,19 @@ Other places to tune:
 
 ## Pets on the landing spots
 
-Smooth, rounded pets (`props/pet.gd`, built from merged primitive shapes) sit in the middle of every flight's landing spot, facing the way the plane comes in (`LEVEL_PETS` in `scripts/town/town_builder.gd`; flight 5's raft cat comes with the lantern festival decor):
+Smooth, rounded pets (`props/pet.gd`, built from merged primitive shapes) sit beside every flight's landing spot, just outside the landing circle, watching the middle of it (`LEVEL_PETS` in `scripts/town/town_builder.gd`; flight 5's cat watches from the river bank and comes with the lantern festival decor). The landing circles behave exactly as they did before the pets.
 
-| Flight | Landing spot | Pet |
+| Flight | Pet | Where |
 |---|---|---|
-| 1 | Picnic blanket | Pickle, ginger tabby cat |
-| 2 | Fishing jetty | Pepper, black-and-white collie |
-| 3 | Clock tower balcony | Smokey, grey tabby cat |
-| 4 | Friend's backpack | Bramble, beagle |
-| 5 | Lantern raft | Snow, white cat |
-| 6 | The cat's rug | Domino, tuxedo cat |
-| 7 | Biscuit's bed | Biscuit, golden dog |
+| 1 | Pickle, ginger tabby cat | On the grass past the picnic blanket |
+| 2 | Pepper, black-and-white collie | At the river end of the jetty |
+| 3 | Smokey, grey tabby cat | In the back corner of the tower balcony |
+| 4 | Bramble, beagle | On the grass beside the backpack mat |
+| 5 | Snow, white cat | On the river bank, watching the lantern raft |
+| 6 | Domino, tuxedo cat | By the fireplace, next to the rug |
+| 7 | Biscuit, golden dog | On the floor beside his bed |
 
-Cats (`props/cat`, `variant`): a lazy tail-tip flick, ear twitches and slow head turns; when touched, a tail swish, flicked ears, a little hop and pink sparkles. Dogs (`props/dog`, `variant`): a gentle wag and breathing; when touched, a big happy wag, a bounce and pink sparkles.
-
-A pet only reacts when the plane touches it: bumping into it or coming to rest against it. A pet is part of the landing spot (pad layer, collider kind `buddy`), so touching it counts as arriving and stops the plane there instead of crashing. A landing elsewhere on the spot leaves the pet alone.
+When you land, the pet watching that spot reacts. Cats (`props/cat`, `variant`) swish their tail, flick their ears, hop and sparkle; idle, they flick their tail tip, twitch their ears and turn their head. Dogs (`props/dog`, `variant`) wag hard, bounce and sparkle; idle, they wag gently and breathe. Pets are solid (collider kind `pet`): a plane that runs into one comes to a gentle stop ("Bumped into a pet") with no crash.
 
 ## Plane trails
 

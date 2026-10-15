@@ -118,11 +118,14 @@ func _build_raft(glow: Material) -> void:
 		b.cylinder(wood, Transform3D(Basis(), base), 0.05, 0.04, 1.5, 6, Color("#5a3f2e"))
 		spots.append(base + Vector3(0, 1.3, 0))
 	add_child(b.build_instance("LanternRaft", true))
-	# Snow the white cat sits in the middle of the raft, facing the bridge the plane comes under.
+	# Snow the white cat watches the raft from the river bank (outside the landing circle).
 	var cat: Node3D = load("res://props/cat.tscn").instantiate()
 	cat.variant = "white"
-	cat.position = Vector3(c.x, top, c.z)
-	cat.rotation.y = PI * 0.5
+	cat.watch_radius = 14.0
+	var bank := Vector3(c.x, 0.0, Terrain.RIVER_Z - 12.6)
+	bank.y = Terrain.ground_height(bank.x, bank.z)
+	cat.position = bank
+	cat.rotation.y = 0.0
 	add_child(cat)
 	var lanterns := MultiMesh.new()
 	lanterns.transform_format = MultiMesh.TRANSFORM_3D

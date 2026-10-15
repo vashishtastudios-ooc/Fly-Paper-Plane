@@ -386,12 +386,6 @@ func _check_collisions(prev: Vector3, prev_vy: float) -> void:
 		if collider and collider is CollisionObject3D and (collider as CollisionObject3D).collision_layer & 2:
 			if level and prev.y >= level.pad_top() - 0.15:
 				_land(level.pad_contact_point(safe))
-				if collider.get_meta("kind", "") == "buddy":
-					# Bumped gently into the pet waiting on the spot: stop right there, and it reacts.
-					state.v = 0.0
-					var pet: Node = (collider as Node).get_parent()
-					if pet and pet.has_method("react"):
-						pet.react()
 				return
 		# Clipping the edge of the target itself (a raft or jetty) at deck height: hop up onto it.
 		if level and level.horizontal_distance_to_pad(contact) < level.pad_radius() + 0.4 				and absf(contact.y - level.pad_top()) < 0.35:
@@ -401,6 +395,10 @@ func _check_collisions(prev: Vector3, prev_vy: float) -> void:
 		if collider and collider.has_meta("kind"):
 			kind = collider.get_meta("kind")
 		var touch: Vector3 = info.get("point", contact)
+		if kind == "pet":
+			# Ran into one of the pets sitting by the landing spot: a gentle stop, no crash.
+			_crash("Bumped into a pet", "stopped", safe)
+			return
 		if _can_slide(info.get("normal", Vector3.ZERO)):
 			_start_slide(Vector3(safe.x, touch.y, safe.z))
 			return
@@ -570,6 +568,9 @@ func _slide(dt: float) -> void:
 		var col: Object = instance_from_id(info.collider_id) if info.has("collider_id") else null
 		if col and col.has_meta("kind"):
 			kind = col.get_meta("kind")
+		if kind == "pet":
+			_crash("Bumped into a pet", "stopped", state.pos)
+			return
 		_crash(_message_for(kind, state.pos), kind, state.pos, info.get("point", state.pos))
 		return
 	var next := state.pos + step

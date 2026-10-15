@@ -208,7 +208,7 @@ func _avoid_walls(focus: Vector3, desired: Vector3) -> Vector3:
 	while not hit.is_empty() and tries < 4:
 		var col: Object = hit.get("collider")
 		var kind: String = col.get_meta("kind", "wall") if col else "wall"
-		if kind in ["tree", "post", "fence", "desk", "furniture", "lamp", "greenhouse", "banister"]:
+		if kind in ["tree", "post", "fence", "desk", "furniture", "lamp", "greenhouse", "banister", "pet"]:
 			var ex := q.exclude
 			ex.append(hit.rid)
 			q.exclude = ex

@@ -1,12 +1,12 @@
 class_name Pet
 extends Prop
-## Base for the smooth, rounded pets that sit on landing spots (Biscuit the dog, the picnic
-## cat). Pets are part of the landing spot (pad layer, kind "buddy"): when the paper plane
-## touches one, it stops right there and the pet reacts (react()). A landing elsewhere on the
-## spot leaves the pet alone. Origin = the ground under the pet; it faces local +Z.
+## Base for the smooth, rounded pets that sit beside each landing spot (just outside the
+## landing circle), watching the plane come in. When the plane lands on the spot, the pet
+## nearby reacts happily (react()). Pets are solid (kind "pet"): a plane that runs into one
+## comes to a gentle stop, without a crash. Origin = the ground under the pet; it faces local +Z.
 
-## How close the plane must come to rest for it to count as touching the pet.
-@export var touch_radius := 0.6
+## A landing this close to the pet (horizontally) makes it react.
+@export var watch_radius := 5.0
 
 var _t := 0.0
 var _happy := 0.0
@@ -64,11 +64,6 @@ func react() -> void:
 		_sparkles.emitting = true
 
 
-## True when a plane resting at `p` is touching the pet.
-func is_touching(p: Vector3) -> bool:
-	return Vector2(p.x - global_position.x, p.z - global_position.z).length() < touch_radius
-
-
 func _process(delta: float) -> void:
 	_t += delta
 	_happy = maxf(0.0, _happy - delta)
@@ -82,7 +77,7 @@ func _animate(_h: float) -> void:
 
 func _build_colliders() -> void:
 	var r := _collider_size()
-	add_cylinder("buddy", Vector3(0, 0, 0.02), r.x, r.y, LAYER_PADS)
+	add_cylinder("pet", Vector3(0, 0, 0.02), r.x, r.y)
 
 
 ## Override: collider radius and height.

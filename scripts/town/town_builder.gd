@@ -1155,15 +1155,16 @@ func _ponds() -> void:
 
 # --- Pets on the landing spots -----------------------------------------------------------------
 
-## A pet sits on each flight's landing spot: [kind, variant, offset from the pad center].
-## (Flight 5's lantern raft is part of its decor, which brings its own cat.)
+## A pet sits beside each flight's landing spot, just outside the landing circle, watching
+## the middle of it: [kind, variant, position]. (Flight 5's cat watches from the river bank and
+## comes with the lantern festival decor.)
 const LEVEL_PETS := {
-	0: ["cat", "ginger", Vector3.ZERO],
-	1: ["dog", "collie", Vector3.ZERO],
-	2: ["cat", "grey", Vector3.ZERO],
-	3: ["dog", "beagle", Vector3(0.0, -0.01, -0.1)],
-	5: ["cat", "tuxedo", Vector3.ZERO],
-	6: ["dog", "golden", Vector3.ZERO],
+	0: ["cat", "ginger", Vector3(-31.9, 0.0, -130.8)],
+	1: ["dog", "collie", Vector3(26.05, -0.62, -305.75)],
+	2: ["cat", "grey", Vector3(2.1, 14.05, -599.15)],
+	3: ["dog", "beagle", Vector3(14.45, 0.0, -79.4)],
+	5: ["cat", "tuxedo", Vector3(33.0, 0.4, -420.1)],
+	6: ["dog", "golden", Vector3(36.8, 0.4, -171.4)],
 }
 
 
@@ -1176,18 +1177,10 @@ func _pets() -> void:
 		var pet: Node3D = (CAT_SCENE if d[0] == "cat" else DOG_SCENE).instantiate()
 		pet.batcher = batcher
 		pet.variant = d[1]
-		pet.position = data.pad_position + d[2]
-		pet.rotation.y = facing_route_end(data)
+		pet.position = d[2]
+		var to_pad: Vector3 = data.pad_position - pet.position
+		pet.rotation.y = atan2(to_pad.x, to_pad.z)
 		add_child(pet)
-
-
-## Yaw that faces back along the end of a level's route (toward the plane as it comes in).
-static func facing_route_end(data: LevelData) -> float:
-	var pts := data.route_points()
-	if pts.size() < 2:
-		return 0.0
-	var back := pts[pts.size() - 2] - pts[pts.size() - 1]
-	return atan2(back.x, back.z)
 
 
 # --- Willow Close -----------------------------------------------------------------------------
