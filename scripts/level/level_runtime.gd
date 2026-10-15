@@ -112,7 +112,7 @@ func build(level_data: LevelData, town_builder: TownBuilder) -> void:
 		# The golden bonus ring replaces route rings right next to it (e.g. under the arch).
 		if not (data.has_bonus_ring and gp.distance_to(data.bonus_ring_position) < 7.5):
 			var g: Gate = GATE_SCENE.instantiate()
-			g.ring_radius = data.small_gate_radius if data.small_gate_box.has_point(gp) else data.gate_radius
+			g.ring_radius = data.small_gate_radius if _in_small_box(gp) else data.gate_radius
 			g.lantern = data.gate_style == "lantern"
 			g.axis = _tangent(off_g)
 			g.position = gp
@@ -157,6 +157,15 @@ func build(level_data: LevelData, town_builder: TownBuilder) -> void:
 ## Color of the dotted line and guide arrow: blue, or lantern orange with lantern hoops.
 func _route_color() -> Color:
 	return Color("#ffb066") if data and data.gate_style == "lantern" else UIKit.ROUTE
+
+
+func _in_small_box(p: Vector3) -> bool:
+	if data.small_gate_box.has_point(p):
+		return true
+	for box in data.small_gate_boxes:
+		if box.has_point(p):
+			return true
+	return false
 
 
 func _add_star(p: Vector3, is_bonus: bool) -> void:

@@ -25,6 +25,8 @@ extends Resource
 ## Rings inside this box use small_gate_radius (e.g. inside a classroom).
 @export var small_gate_box := AABB()
 @export var small_gate_radius := 1.0
+## More boxes with small rings (e.g. an archway and a window in the same flight).
+@export var small_gate_boxes: Array[AABB] = []
 ## "gold" rings or "lantern" hoops of paper lanterns.
 @export var gate_style := "gold"
 

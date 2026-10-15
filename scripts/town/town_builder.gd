@@ -796,6 +796,11 @@ func _market() -> void:
 			s.shutter_color = Mats.pick(rng, Mats.SHUTTER_COLORS)
 			s.seed_value = name_i + 11
 			name_i += 1
+			# Flight 3 flies through one shop and over the three across the street: two storeys.
+			if (side < 0 and k == 7) or (side > 0 and k in [6, 7, 8]):
+				s.storeys = 2
+			if side < 0 and k == 7:
+				s.open_upstairs = true
 			if side < 0 and k == 1:
 				# Mill Lane: an arched passage through to the millpond (flight 3).
 				s.free()

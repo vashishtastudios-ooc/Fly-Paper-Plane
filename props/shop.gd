@@ -17,6 +17,15 @@ extends Prop
 @export var sign_text_color := Color("#fbf3dc")
 @export var shutter_color := Color("#3f6f8f")
 @export var seed_value := 1
+## Upstairs is an open flower room with a wide window in the front and back walls, so the plane
+## can fly straight through (flight 3). Only for two-storey shops.
+@export var open_upstairs := false
+
+## Open upstairs: half width of the windows, their sill and head above the upper floor.
+const OPEN_HALF_W := 1.3
+const OPEN_SILL := 0.4
+const OPEN_HEAD := 2.7
+const WALL_T := 0.25
 
 
 func roof_height() -> float:
@@ -30,7 +39,10 @@ func _build(b: MeshBuilder) -> void:
 	var trim := Mats.TRIM
 	var wall_mat := Mats.get_mat(wall_kind)
 	var wc := wall_color if wall_kind != "brick" else Color.WHITE
-	b.box_mm(wall_mat, Vector3(-hw, 0, -depth), Vector3(hw, rh, 0), wc, 63 - 8 - 4)
+	if open_upstairs:
+		_build_open_upstairs(b, wall_mat, wc)
+	else:
+		b.box_mm(wall_mat, Vector3(-hw, 0, -depth), Vector3(hw, rh, 0), wc, 63 - 8 - 4)
 	# Parapet, cornice and flat roof.
 	b.box_mm(wall_mat, Vector3(-hw, rh, -0.3), Vector3(hw, rh + 0.55, 0), wc, 63 - 8)
 	b.box_mm(wall_mat, Vector3(-hw, rh, -depth), Vector3(hw, rh + 0.55, -depth + 0.3), wc, 63 - 8)
@@ -81,6 +93,77 @@ func _build(b: MeshBuilder) -> void:
 		b.box_mm(Mats.get_mat("metal"), Vector3(sx - 0.02, low_y, 0.1), Vector3(sx + 0.02, top_y, out), Color("#3a3a3a"))
 
 
+## Pieces of the upper storey around the two open windows: [min corner, max corner].
+func _open_shell() -> Array:
+	var hw := width * 0.5
+	var g := ground_height
+	var rh := roof_height()
+	var sill := g + OPEN_SILL
+	var head := g + OPEN_HEAD
+	var pieces := []
+	for z in [[-WALL_T, 0.0], [-depth, -depth + WALL_T]]:
+		var z0: float = z[0]
+		var z1: float = z[1]
+		pieces.append([Vector3(-hw, g, z0), Vector3(-OPEN_HALF_W, rh, z1)])
+		pieces.append([Vector3(OPEN_HALF_W, g, z0), Vector3(hw, rh, z1)])
+		pieces.append([Vector3(-OPEN_HALF_W, g, z0), Vector3(OPEN_HALF_W, sill, z1)])
+		pieces.append([Vector3(-OPEN_HALF_W, head, z0), Vector3(OPEN_HALF_W, rh, z1)])
+	pieces.append([Vector3(-hw, g, -depth), Vector3(-hw + WALL_T, rh, 0)])
+	pieces.append([Vector3(hw - WALL_T, g, -depth), Vector3(hw, rh, 0)])
+	pieces.append([Vector3(-hw, rh - 0.2, -depth), Vector3(hw, rh, 0)])
+	return pieces
+
+
+## Flower shelves along both side walls of the open upstairs room: [min, max].
+func _open_shelves() -> Array:
+	var hw := width * 0.5
+	var g := ground_height
+	return [[Vector3(-hw + WALL_T, g, -depth + 1.5), Vector3(-hw + WALL_T + 0.55, g + 1.0, -1.5)],
+		[Vector3(hw - WALL_T - 0.55, g, -depth + 1.5), Vector3(hw - WALL_T, g + 1.0, -1.5)]]
+
+
+func _build_open_upstairs(b: MeshBuilder, wall_mat: Material, wc: Color) -> void:
+	var hw := width * 0.5
+	var g := ground_height
+	var rh := roof_height()
+	var solid := Mats.get_mat("solid")
+	var wood := Mats.get_mat("wood")
+	b.box_mm(wall_mat, Vector3(-hw, 0, -depth), Vector3(hw, g, 0), wc, 63 - 8)
+	for p in _open_shell():
+		b.box_mm(wall_mat, p[0], p[1], wc)
+	# Inside: plank floor, cream walls and ceiling, white window frames.
+	var cream := Color("#f6ead2")
+	b.box_mm(wood, Vector3(-hw + WALL_T, g, -depth + WALL_T), Vector3(hw - WALL_T, g + 0.03, -WALL_T), Color("#c49a6c"), 4)
+	b.box_mm(solid, Vector3(-hw + WALL_T, rh - 0.21, -depth + WALL_T), Vector3(hw - WALL_T, rh - 0.2, -WALL_T), cream, 8)
+	b.box_mm(solid, Vector3(-hw + WALL_T, g, -depth + WALL_T), Vector3(-hw + WALL_T + 0.01, rh - 0.2, -WALL_T), cream)
+	b.box_mm(solid, Vector3(hw - WALL_T - 0.01, g, -depth + WALL_T), Vector3(hw - WALL_T, rh - 0.2, -WALL_T), cream)
+	var sill := g + OPEN_SILL
+	var head := g + OPEN_HEAD
+	for face in [1.0, -1.0]:
+		var z0: float = 0.0 if face > 0 else -depth - 0.06
+		var z1: float = 0.06 if face > 0 else -depth
+		b.box_mm(solid, Vector3(-OPEN_HALF_W - 0.12, sill - 0.08, z0 - 0.06 if face > 0 else z0), Vector3(OPEN_HALF_W + 0.12, sill, z1 + 0.06 if face < 0 else z1), Mats.TRIM)
+		b.box_mm(solid, Vector3(-OPEN_HALF_W - 0.12, head, z0), Vector3(OPEN_HALF_W + 0.12, head + 0.12, z1), Mats.TRIM)
+		for sx in [-1.0, 1.0]:
+			var x: float = sx * (OPEN_HALF_W + 0.06)
+			b.box_mm(solid, Vector3(x - 0.06, sill, z0), Vector3(x + 0.06, head, z1), Mats.TRIM)
+	# Shelves of flower pots along the side walls.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value * 5 + 1
+	var flowers := [Color("#e8546a"), Color("#f2c14e"), Color("#ff9ec4"), Color("#fbf8f0"), Color("#c46ad9")]
+	for sh in _open_shelves():
+		var a: Vector3 = sh[0]
+		var c: Vector3 = sh[1]
+		b.box_mm(wood, a, c, Color("#8a6a52"))
+		var z := a.z + 0.4
+		while z < c.z - 0.3:
+			var p := Vector3((a.x + c.x) * 0.5, c.y, z)
+			b.cylinder(solid, Transform3D(Basis(), p), 0.12, 0.16, 0.24, 8, Color("#c9572e"))
+			b.sphere(solid, p + Vector3(0, 0.36, 0), Vector3(0.2, 0.17, 0.2), 4, 7, Color("#6f9e4c"))
+			b.sphere(solid, p + Vector3(rng.randf_range(-0.06, 0.06), 0.45, rng.randf_range(-0.06, 0.06)), Vector3(0.1, 0.08, 0.1), 3, 6, flowers[rng.randi() % flowers.size()])
+			z += 0.7
+
+
 func _after_build() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value * 17 + 3
@@ -90,10 +173,13 @@ func _after_build() -> void:
 		var count := 3 if width > 9.0 else 2
 		for i in count:
 			var x := lerpf(-hw + 1.8, hw - 1.8, float(i) / (count - 1))
-			inst("window", Transform3D(Basis(), Vector3(x, y, 0.02)))
-			if rng.randf() < 0.7:
+			# The open flower room has its big window in the middle instead.
+			var skip := open_upstairs and absf(x) < OPEN_HALF_W + 1.0
+			if not skip:
+				inst("window", Transform3D(Basis(), Vector3(x, y, 0.02)))
+			if rng.randf() < 0.7 and not skip:
 				inst("flowerbox", Transform3D(Basis(), Vector3(x, y - 0.95, 0.14)))
-			if rng.randf() < 0.5:
+			if rng.randf() < 0.5 and not skip:
 				inst("shutter", Transform3D(Basis(), Vector3(x - 0.76, y, 0.06)), shutter_color)
 				inst("shutter", Transform3D(Basis(), Vector3(x + 0.76, y, 0.06)), shutter_color)
 	# Signboard text.
@@ -116,7 +202,22 @@ func _after_build() -> void:
 
 func _build_colliders() -> void:
 	var rh := roof_height()
-	add_box("wall", Vector3(0, (rh + 0.55) * 0.5, -depth * 0.5), Vector3(width, rh + 0.55, depth))
+	if open_upstairs:
+		var hw := width * 0.5
+		add_box("wall", Vector3(0, ground_height * 0.5, -depth * 0.5), Vector3(width, ground_height, depth))
+		for p in _open_shell():
+			add_box("wall", (p[0] + p[1]) * 0.5, p[1] - p[0])
+		# Parapet around the roof.
+		add_box("wall", Vector3(0, rh + 0.275, -0.15), Vector3(width, 0.55, 0.3))
+		add_box("wall", Vector3(0, rh + 0.275, -depth + 0.15), Vector3(width, 0.55, 0.3))
+		add_box("wall", Vector3(-hw + 0.15, rh + 0.275, -depth * 0.5), Vector3(0.3, 0.55, depth))
+		add_box("wall", Vector3(hw - 0.15, rh + 0.275, -depth * 0.5), Vector3(0.3, 0.55, depth))
+		for sh in _open_shelves():
+			var a: Vector3 = sh[0]
+			var c: Vector3 = sh[1]
+			add_box("furniture", (a + c) * 0.5 + Vector3(0, 0.3, 0), c - a + Vector3(0, 0.6, 0))
+	else:
+		add_box("wall", Vector3(0, (rh + 0.55) * 0.5, -depth * 0.5), Vector3(width, rh + 0.55, depth))
 	var top_y := ground_height - 1.15
 	var low_y := ground_height - 2.05
 	var a := Vector3(0, top_y, 0.15)
