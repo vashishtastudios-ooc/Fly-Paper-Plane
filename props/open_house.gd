@@ -8,6 +8,11 @@ extends Prop
 ## - "stairwell": upstairs landing over a double-height stairwell, french doors below
 ## - "cottage": one storey, kitchen and sitting room joined by an archway (the landing rug)
 ## - "greenhouse": a glass greenhouse with open doors at both ends
+## Willow Close (flight 7):
+## - "library": double-height library, in high on one side and out low on the other
+## - "garage": one storey, in through the roller door, over a little car, out the back window
+## - "stair_up": in under the landing, up the stairwell on warm air, out an upstairs window
+## - "den": one storey, in through the garden doors to the dog's bed (the landing spot)
 
 const T := 0.25
 const GF := 0.4
@@ -18,6 +23,10 @@ const AF := 6.8
 const COTTAGE_CEIL := 3.6
 const COTTAGE_EAVE := 3.8
 const GH_WALL := 2.3
+const GARAGE_EAVE := 3.4
+const GARAGE_CEIL := 3.2
+## Center of the dog's bed in the den (local), the landing spot of flight 7.
+const DOG_BED := Vector3(0.4, 0.0, -2.2)
 
 @export var layout := "bedroom"
 @export var width := 11.0
@@ -67,6 +76,10 @@ func _layout(b: MeshBuilder) -> void:
 		"stairwell": _stairwell(b)
 		"cottage": _cottage(b)
 		"greenhouse": _greenhouse(b)
+		"library": _library(b)
+		"garage": _garage(b)
+		"stair_up": _stair_up(b)
+		"den": _den(b)
 		_: _bedroom(b)
 
 
@@ -458,6 +471,271 @@ func _greenhouse(b: MeshBuilder) -> void:
 			z += 0.62
 	b.cylinder(_m("metal"), Transform3D(Basis(), Vector3(0.75, 0.04, 1.8)), 0.12, 0.11, 0.25, 10, Color("#3f7d4f"))
 	b.tube(_m("metal"), PackedVector3Array([Vector3(0.85, 0.2, 1.8), Vector3(1.05, 0.34, 1.8)]), 0.015, 4, Color("#3f7d4f"))
+
+
+# --- Willow Close (flight 7) --------------------------------------------------------------------
+
+## Double-height library: in through an open upstairs window (north, east of center), down past
+## tall bookshelves and a chandelier, out through a low window (south, west of center).
+func _library(b: MeshBuilder) -> void:
+	var in_col := Color("#efe3cc")
+	var solid := _m("solid")
+	var wood := _m("wood")
+	_plinth(b)
+	_trims(b, AF)
+	_floor(b, GF, -hd + T, hd - T, Color("#a87a4f"))
+	for s in [-1.0, 1.0]:
+		for z in [-2.6, 2.6]:
+			_win(Vector3(s, 0, 0), z, 2.0)
+			_win(Vector3(s, 0, 0), z, 5.1)
+	var north := [_hole(0.6, 3.0, 4.0, 6.2), _hole(-3.9, -1.7, 1.2, 2.8, "glass"), _hole(1.7, 3.9, 1.2, 2.8, "glass"),
+		_hole(-3.9, -1.7, 4.3, 6.1, "glass")]
+	_cross_wall(b, hd, 1.0, -hw, hw, 0.0, AF, north, wall_color, in_col)
+	var south := [_hole(-3.0, -0.6, 1.2, 3.2), _hole(1.7, 3.9, 1.2, 2.8, "glass"), _hole(1.7, 3.9, 4.3, 6.1, "glass"),
+		_hole(-3.9, -1.7, 4.3, 6.1, "glass")]
+	_cross_wall(b, -hd, -1.0, -hw, hw, 0.0, AF, south, wall_color, in_col)
+	_side_walls(b, 0.0, AF)
+	_side_plaster(b, GF, UC, -hd + T, hd - T, in_col)
+	_ceiling(b, UC, AF, -hd + T, hd - T)
+	_roof(b, AF, 4.0)
+
+	# Tall bookshelves on both walls, with a gap in the middle for a reading nook and a ladder.
+	for s in [-1.0, 1.0]:
+		var x0: float = s * (hw - T)
+		var x1: float = s * (hw - T - 0.45)
+		var normal := Vector3.RIGHT if s < 0 else Vector3.LEFT
+		for zr in [[0.7, hd - T - 0.3], [-hd + T + 0.3, -0.7]]:
+			_bookshelf(b, Vector3(minf(x0, x1), GF, zr[0]), Vector3(maxf(x0, x1), 4.2, zr[1]), normal)
+	# Rolling ladder against the east shelves.
+	var lx := hw - T - 0.55
+	for dz in [-0.22, 0.22]:
+		b.tube(wood, PackedVector3Array([Vector3(lx - 0.45, GF, 2.4 + dz), Vector3(lx, 4.1, 2.4 + dz)]), 0.03, 4, Color("#7a5236"))
+	for k in 9:
+		var t := (k + 0.5) / 9.0
+		b.box_mm(wood, Vector3(lx - 0.45 * (1.0 - t) - 0.02, GF + 3.7 * t, 2.16), Vector3(lx - 0.45 * (1.0 - t) + 0.02, GF + 3.7 * t + 0.03, 2.64), Color("#a87a4f"))
+	add_box_xf("furniture", Transform3D(Basis(Vector3.BACK, -atan2(0.45, 3.7)), Vector3(lx - 0.22, (GF + 4.1) * 0.5, 2.4)), Vector3(0.08, 3.75, 0.55))
+	# Reading table, chairs, desk lamp, armchair and a globe on a stand.
+	_rug(b, Vector2(-2.6, -2.6), Vector2(2.6, 2.6), GF, Color("#2f5560"), Color("#e0a13a"))
+	_furn(b, "wood", Vector3(-1.0, GF, -0.9), Vector3(1.0, GF + 0.76, 0.9), Color("#8a6a52"))
+	for cz in [-1.3, 1.3]:
+		_chair(b, Vector3(0.0, GF, cz), Color("#c8423b"))
+	_desk_lamp(b, Vector3(0.5, GF + 0.76, 0.3))
+	b.box_mm(solid, Vector3(-0.6, GF + 0.76, -0.4), Vector3(-0.1, GF + 0.82, 0.0), Color("#3f7d4f"))
+	_armchair(b, Vector3(-3.6, GF, 0.0), Vector3.RIGHT, Color("#7c4f9e"))
+	_floor_lamp(b, Vector3(-3.7, GF, -1.0))
+	_furn(b, "wood", Vector3(3.3, GF, -3.6), Vector3(3.7, GF + 0.6, -3.2), Color("#7a5236"))
+	_globe(b, Vector3(3.5, GF + 0.6, -3.4))
+	_chandelier(b, Vector3(-0.2, 5.6, 1.2), UC)
+	_pendant(b, Vector3(-3.1, 3.6, -3.0), UC, Color("#2f6f8f"))
+	_picture(b, Vector3(0, 3.6, hd - T - 0.01), Vector3.FORWARD, Vector2(1.4, 0.9), Color("#b9d6a8"))
+	_lights.append([Vector3(0, 5.2, 1.0), Color("#ffe2b8"), 1.0, 8.0])
+	_lights.append([Vector3(0, 2.8, -2.5), Color("#ffe2b8"), 0.7, 6.0])
+
+
+## One-storey garage: in through the open roller door (west of center), over a little car, out
+## through the open back window (east of center). Workbench and bikes along the walls.
+func _garage(b: MeshBuilder) -> void:
+	var in_col := Color("#e6e0d2")
+	var solid := _m("solid")
+	var wood := _m("wood")
+	var metal := _m("metal")
+	_plinth(b)
+	_trims(b, GARAGE_EAVE)
+	b.box_mm(_m("stone"), Vector3(-hw + T, GF - 0.04, -hd + T), Vector3(hw - T, GF, hd - T), Color("#bdb8ae"), 4)
+	add_box("floor", Vector3(0, GF * 0.5, 0), Vector3(width - T * 2.0, GF, depth - T * 2.0))
+	for s in [-1.0, 1.0]:
+		_win(Vector3(s, 0, 0), 0.0, 2.0)
+	var north := [_hole(-2.8, 0.4, GF, 2.9, "french"), _hole(1.4, 3.4, 1.4, 2.6, "glass")]
+	_cross_wall(b, hd, 1.0, -hw, hw, 0.0, GARAGE_EAVE, north, wall_color, in_col)
+	var south := [_hole(-0.6, 1.8, 1.0, 2.8), _hole(-3.4, -1.6, 1.4, 2.6, "glass")]
+	_cross_wall(b, -hd, -1.0, -hw, hw, 0.0, GARAGE_EAVE, south, wall_color, in_col)
+	_side_walls(b, 0.0, GARAGE_EAVE)
+	_side_plaster(b, GF, GARAGE_CEIL, -hd + T, hd - T, in_col)
+	_ceiling(b, GARAGE_CEIL, GARAGE_EAVE, -hd + T, hd - T)
+	_roof(b, GARAGE_EAVE, 2.6)
+	# The roller door, rolled up above the opening.
+	b.cylinder(metal, Transform3D(Basis(Vector3.BACK, PI * 0.5), Vector3(0.45, 3.05, hd - T - 0.2)), 0.15, 0.15, 3.3, 10, Color("#c9ced2"))
+	add_box("lamp", Vector3(-1.2, 3.05, hd - T - 0.2), Vector3(3.3, 0.3, 0.3))
+	# A little car (low, so there's room to skim over it).
+	var cc := Vector3(-0.6, GF, -0.3)
+	var paint := Color("#e8546a")
+	b.box_mm(solid, cc + Vector3(-0.85, 0.2, -2.1), cc + Vector3(0.85, 0.72, 2.1), paint)
+	b.box_mm(solid, cc + Vector3(-0.75, 0.72, -1.1), cc + Vector3(0.75, 1.12, 0.9), paint.lightened(0.05))
+	b.box_mm(_m("glass"), cc + Vector3(-0.72, 0.74, -1.12), cc + Vector3(0.72, 1.08, 0.92), Color("#a9c9db"))
+	b.box_mm(solid, cc + Vector3(-0.77, 1.1, -1.12), cc + Vector3(0.77, 1.15, 0.92), Color("#fbf8f0"))
+	for wx in [-0.8, 0.8]:
+		for wz in [-1.35, 1.35]:
+			b.cylinder(solid, Transform3D(Basis(Vector3.BACK, PI * 0.5), cc + Vector3(wx + 0.1, 0.27, wz)), 0.27, 0.27, 0.2, 12, Color("#2a2522"))
+	for lz in [-2.11, 2.11]:
+		for lx in [-0.55, 0.55]:
+			b.box_mm(_m("glow"), cc + Vector3(lx - 0.15, 0.45, lz - 0.01), cc + Vector3(lx + 0.15, 0.58, lz + 0.01), Color("#fff1c9") if lz < 0 else Color("#ff6b5a"))
+	add_box("furniture", cc + Vector3(0, 0.46, 0), Vector3(1.9, 0.72, 4.2))
+	add_box("furniture", cc + Vector3(0, 0.935, -0.1), Vector3(1.54, 0.43, 2.04))
+	# Workbench with a pegboard of tools along the east wall.
+	var wx := hw - T
+	_furn(b, "wood", Vector3(wx - 0.7, GF, -2.6), Vector3(wx, GF + 0.9, 1.2), Color("#a87a4f"))
+	b.box_mm(wood, Vector3(wx - 0.03, GF + 1.2, -2.4), Vector3(wx, GF + 2.2, 1.0), Color("#c9a27e"))
+	var tools := [Color("#c8423b"), Color("#2f6f8f"), Color("#e0a13a"), Color("#3f7d4f"), Color("#5b6270")]
+	for k in 7:
+		var tz := -2.1 + k * 0.45
+		b.box_mm(metal, Vector3(wx - 0.06, GF + 1.4 + (k % 2) * 0.25, tz - 0.04), Vector3(wx - 0.02, GF + 1.85 + (k % 2) * 0.25, tz + 0.04), tools[k % tools.size()])
+	b.cylinder(metal, Transform3D(Basis(), Vector3(wx - 0.4, GF + 0.9, -1.8)), 0.12, 0.12, 0.18, 8, Color("#5e9ac8"))
+	# Two bikes hanging on the west wall.
+	var bx := -hw + T + 0.15
+	for k in 2:
+		var bz := 1.3 - k * 2.2
+		for wz in [-0.5, 0.5]:
+			b.cylinder(solid, Transform3D(Basis(Vector3.BACK, PI * 0.5), Vector3(bx - 0.02, 1.9, bz + wz)), 0.33, 0.33, 0.04, 14, Color("#2a2522"))
+		b.tube(metal, PackedVector3Array([Vector3(bx, 1.9, bz - 0.5), Vector3(bx, 2.25, bz), Vector3(bx, 1.9, bz + 0.5), Vector3(bx, 1.9, bz - 0.5)]), 0.025, 4, [Color("#6fb4e8"), Color("#e8873a")][k])
+		add_box("furniture", Vector3(bx, 1.95, bz), Vector3(0.12, 0.75, 1.7))
+	# Shelves of paint tins, a lawnmower and a ball.
+	_furn(b, "wood", Vector3(-hw + T, GF, -hd + T), Vector3(-hw + T + 0.5, GF + 1.6, -hd + T + 1.8), Color("#8a6a52"))
+	for k in 6:
+		b.cylinder(metal, Transform3D(Basis(), Vector3(-hw + T + 0.25, GF + 0.55 + (k / 3) * 0.6, -hd + T + 0.3 + (k % 3) * 0.55)), 0.13, 0.13, 0.22, 8, tools[k % tools.size()])
+	_furn(b, "solid", Vector3(2.4, GF, -hd + T + 0.3), Vector3(3.2, GF + 0.5, -hd + T + 1.3), Color("#3f7d4f"))
+	b.sphere(solid, Vector3(2.0, GF + 0.18, 2.6), Vector3(0.18, 0.18, 0.18), 4, 8, Color("#f2c14e"))
+	_lights.append([Vector3(0, 2.9, 0.0), Color("#fff1d8"), 0.9, 6.0])
+
+
+## Two-storey hall with a landing over the north part. In through the french doors under the
+## landing, then warm air from the floor grate lifts the plane up the open stairwell and out
+## through the open upstairs window in the south wall (the reverse of the stairwell house).
+func _stair_up(b: MeshBuilder) -> void:
+	var hall_col := Color("#f4ead8")
+	var solid := _m("solid")
+	var wood := _m("wood")
+	var slab_z := 2.5
+	_plinth(b)
+	_trims(b, AF)
+	_floor(b, GF, -hd + T, hd - T, Color("#b98f68"))
+	for s in [-1.0, 1.0]:
+		for z in [-4.5, 0.0, 4.5]:
+			_win(Vector3(s, 0, 0), z, 2.0)
+			_win(Vector3(s, 0, 0), z, 5.1)
+	var north := [_hole(-1.4, 1.4, GF, 2.8, "french"), _hole(-4.4, -2.6, 1.2, 2.8, "glass"), _hole(2.6, 4.4, 1.2, 2.8, "glass"),
+		_hole(-4.4, -2.6, 4.4, 6.1, "glass"), _hole(2.6, 4.4, 4.4, 6.1, "glass")]
+	_cross_wall(b, hd, 1.0, -hw, hw, 0.0, AF, north, wall_color, hall_col)
+	var south := [_hole(-1.2, 1.2, 3.9, 6.1), _hole(-4.4, -2.6, 1.2, 2.8, "glass"), _hole(2.6, 4.4, 1.2, 2.8, "glass"),
+		_hole(-4.4, -2.6, 4.4, 6.1, "glass"), _hole(2.6, 4.4, 4.4, 6.1, "glass")]
+	_cross_wall(b, -hd, -1.0, -hw, hw, 0.0, AF, south, wall_color, hall_col)
+	_side_walls(b, 0.0, AF)
+	_side_plaster(b, GF, UC, -hd + T, hd - T, hall_col)
+	_ceiling(b, UC, AF, -hd + T, hd - T)
+	_roof(b, AF, 4.0)
+	# Landing slab over the north part, with a banister along its edge.
+	b.box_mm(_m("plaster"), Vector3(-hw + T, GC, slab_z), Vector3(hw - T, UF - 0.04, hd - T), Color("#fbf7ee"))
+	b.box_mm(wood, Vector3(-hw + T, UF - 0.04, slab_z), Vector3(hw - T, UF, hd - T), Color("#c9a27e"))
+	add_box("wall", Vector3(0, (GC + UF) * 0.5, (slab_z + hd - T) * 0.5), Vector3(width - T * 2.0, UF - GC, hd - T - slab_z))
+	var x := -hw + T + 1.6
+	while x <= hw - T:
+		b.box_mm(solid, Vector3(x - 0.025, UF, slab_z - 0.02), Vector3(x + 0.025, UF + 0.72, slab_z + 0.03), Mats.TRIM)
+		x += 0.22
+	b.box_mm(wood, Vector3(-hw + T + 1.6, UF + 0.7, slab_z - 0.05), Vector3(hw - T, UF + 0.78, slab_z + 0.06), Color("#7a5236"))
+	add_box("banister", Vector3((-hw + T + 1.6 + hw - T) * 0.5, UF + 0.4, slab_z), Vector3(width - T * 2.0 - 1.6, 0.8, 0.2))
+	# Stairs along the west wall, rising north up to the landing.
+	var steps := 13
+	var run := 0.6
+	var rise := (UF - GF) / steps
+	var z0 := slab_z - steps * run
+	for k in steps:
+		var za := z0 + k * run
+		var top := GF + (k + 1) * rise
+		b.box_mm(wood, Vector3(-hw + T, GF, za), Vector3(-hw + T + 1.5, top, za + run), Color("#a87a4f"))
+		b.box_mm(solid, Vector3(-hw + T, top - 0.02, za), Vector3(-hw + T + 1.5, top + 0.01, za + run * 0.4), Color("#2f6f8f"))
+		add_box("furniture", Vector3(-hw + T + 0.75, (GF + top) * 0.5, za + run * 0.5), Vector3(1.5, top - GF, run))
+	b.tube(wood, PackedVector3Array([Vector3(-hw + T + 1.52, GF + 0.95, z0), Vector3(-hw + T + 1.52, UF + 0.95, slab_z)]), 0.035, 5, Color("#7a5236"))
+	for k in steps:
+		var zz := z0 + (k + 0.5) * run
+		var ty := GF + (k + 1) * rise
+		b.box_mm(solid, Vector3(-hw + T + 1.5, ty, zz - 0.02), Vector3(-hw + T + 1.55, ty + 0.95 - rise * 0.5, zz + 0.02), Mats.TRIM)
+	# The warm-air floor grate in the middle of the hall, with radiators on the east wall.
+	b.box_mm(_m("metal"), Vector3(-0.9, GF, -2.9), Vector3(0.9, GF + 0.015, -1.1), Color("#4a4640"))
+	for k in 8:
+		var gz := -2.8 + k * 0.22
+		b.box_mm(_m("metal"), Vector3(-0.85, GF + 0.015, gz), Vector3(0.85, GF + 0.03, gz + 0.06), Color("#8a8f94"))
+	# Under the landing: a piano and a coat stand; in the hall: a plant, a clock and pictures.
+	_furn(b, "solid", Vector3(2.4, GF, 5.6), Vector3(hw - T, GF + 1.3, hd - T), Color("#2a2522"))
+	b.box_mm(solid, Vector3(2.4, GF + 0.75, 5.4), Vector3(hw - T, GF + 0.8, 5.6), Color("#fbf8f0"))
+	_furn(b, "wood", Vector3(-hw + T + 2.0, GF, 5.8), Vector3(-hw + T + 2.4, GF + 1.8, 6.2), Color("#7a5236"))
+	_plant(b, Vector3(3.8, GF, -hd + T + 0.6), 1.3)
+	_grandfather_clock(b, Vector3(4.6, UF, 4.4))
+	_plant(b, Vector3(-3.2, UF, 5.8), 1.0)
+	for k in 4:
+		_picture(b, Vector3(-hw + T + 0.01, 2.6 + k * 0.6, -3.2 + k * 1.6), Vector3.RIGHT, Vector2(0.5, 0.6), [Color("#e9b7a1"), Color("#a9c9db"), Color("#f2d58f"), Color("#b9d6a8")][k])
+	_pendant(b, Vector3(3.2, 5.4, -4.4), UC, Color("#e0a13a"))
+	_lights.append([Vector3(0, 5.6, -2.5), Color("#ffe2b8"), 1.0, 8.0])
+	_lights.append([Vector3(0, 2.9, 4.6), Color("#ffe2b8"), 0.7, 5.5])
+
+
+## One-storey den: in through the open garden doors (east of center) and land in the dog's big
+## round bed. Biscuit the dog sits beside it with a ball.
+func _den(b: MeshBuilder) -> void:
+	var in_col := Color("#f3e6d3")
+	var solid := _m("solid")
+	_plinth(b)
+	_trims(b, COTTAGE_EAVE)
+	_floor(b, GF, -hd + T, hd - T, Color("#b98f68"))
+	for s in [-1.0, 1.0]:
+		for z in [-3.0, 3.0]:
+			_win(Vector3(s, 0, 0), z, 2.1)
+	var north := [_hole(-0.4, 2.6, GF, 3.1, "french"), _hole(-4.4, -2.6, 1.4, 3.0, "glass")]
+	_cross_wall(b, hd, 1.0, -hw, hw, 0.0, COTTAGE_EAVE, north, wall_color, in_col)
+	var south := [_hole(-4.4, -2.8, 1.4, 3.0, "glass"), _hole(-1.0, 1.0, 1.4, 3.0, "glass"), _hole(2.8, 4.4, 1.4, 3.0, "glass")]
+	_cross_wall(b, -hd, -1.0, -hw, hw, 0.0, COTTAGE_EAVE, south, wall_color, in_col)
+	_side_walls(b, 0.0, COTTAGE_EAVE)
+	_side_plaster(b, GF, COTTAGE_CEIL, -hd + T, hd - T, in_col)
+	_ceiling(b, COTTAGE_CEIL, COTTAGE_EAVE, -hd + T, hd - T)
+	_roof(b, COTTAGE_EAVE, 4.0)
+	# The dog's bed (the landing spot): a big round cushion with a rim and a toy bone.
+	var bed := Vector3(DOG_BED.x, GF, DOG_BED.z)
+	b.cylinder(solid, Transform3D(Basis(), bed), 1.45, 1.45, 0.1, 28, Color("#7c4f9e"))
+	b.cylinder(solid, Transform3D(Basis(), bed + Vector3(0, 0.1, 0)), 1.3, 1.3, 0.04, 28, Color("#f2d58f"))
+	b.tube(solid, _ring(bed + Vector3(0, 0.16, 0), 1.38, 24), 0.08, 6, Color("#7c4f9e"))
+	for s in [-1.0, 1.0]:
+		b.sphere(solid, bed + Vector3(-0.4 + s * 0.16, 0.18, 0.5), Vector3(0.07, 0.05, 0.07), 3, 6, Color("#fbf8f0"))
+	b.box_mm(solid, bed + Vector3(-0.42, 0.15, 0.47), bed + Vector3(-0.38, 0.19, 0.53), Color("#fbf8f0"))
+	_sitting_dog(b, Vector3(3.3, GF, -3.4))
+	b.sphere(solid, Vector3(2.5, GF + 0.12, -2.4), Vector3(0.12, 0.12, 0.12), 4, 8, Color("#c8423b"))
+	# Sofa, TV cabinet, bookshelf, a floor lamp and a window seat.
+	_rug(b, Vector2(-2.6, -4.4), Vector2(2.2, 1.2), GF, Color("#e0a13a"), Color("#3f7d4f"))
+	_sofa(b, Vector3(-hw + T, GF, -3.8), Vector3(-hw + T + 0.9, GF, 0.2), Vector3.RIGHT, Color("#3f7d4f"))
+	_furn(b, "wood", Vector3(hw - T - 0.5, GF, -1.4), Vector3(hw - T, GF + 0.6, 1.4), Color("#7a5236"))
+	b.box_mm(solid, Vector3(hw - T - 0.3, GF + 0.6, -0.9), Vector3(hw - T - 0.2, GF + 1.35, 0.9), Color("#24324f"))
+	add_box("furniture", Vector3(hw - T - 0.25, GF + 0.98, 0), Vector3(0.1, 0.75, 1.8))
+	_bookshelf(b, Vector3(-hw + T, GF, 1.2), Vector3(-hw + T + 0.4, GF + 2.0, 4.0), Vector3.RIGHT)
+	_floor_lamp(b, Vector3(-4.6, GF, -4.6))
+	_furn(b, "solid", Vector3(-1.0, GF, -hd + T), Vector3(1.0, GF + 0.5, -hd + T + 0.55), Color("#c8423b"))
+	_plant(b, Vector3(4.6, GF, 4.2), 1.2)
+	_picture(b, Vector3(hw - T - 0.01, 2.3, 2.6), Vector3.LEFT, Vector2(0.9, 0.7), Color("#a9c9db"))
+	_picture(b, Vector3(-2.0, 2.3, hd - T - 0.01), Vector3.FORWARD, Vector2(0.7, 0.9), Color("#e9b7a1"))
+	_pendant(b, Vector3(-2.6, 2.9, 2.6), COTTAGE_CEIL, Color("#f2c14e"))
+	_lights.append([Vector3(0, 3.0, 2.0), Color("#ffe2b8"), 0.8, 6.5])
+	_lights.append([Vector3(0, 3.0, -2.6), Color("#ffe2b8"), 0.8, 6.5])
+
+
+static func _ring(c: Vector3, r: float, n: int) -> PackedVector3Array:
+	var pts := PackedVector3Array()
+	for i in n + 1:
+		var a := TAU * i / n
+		pts.append(c + Vector3(cos(a) * r, 0, sin(a) * r))
+	return pts
+
+
+func _sitting_dog(b: MeshBuilder, at: Vector3) -> void:
+	var solid := _m("solid")
+	var fur := Color("#d9a066")
+	var dark := Color("#8a5a32")
+	b.sphere(solid, at + Vector3(0, 0.32, 0.05), Vector3(0.24, 0.3, 0.26), 5, 8, fur)
+	b.sphere(solid, at + Vector3(0, 0.62, -0.08), Vector3(0.17, 0.17, 0.18), 5, 8, fur)
+	b.sphere(solid, at + Vector3(0, 0.58, -0.25), Vector3(0.09, 0.07, 0.1), 3, 6, fur.lightened(0.1))
+	b.sphere(solid, at + Vector3(0, 0.6, -0.34), Vector3(0.035, 0.03, 0.03), 3, 5, Color("#2a2522"))
+	for s in [-1.0, 1.0]:
+		b.sphere(solid, at + Vector3(s * 0.16, 0.6, -0.04), Vector3(0.05, 0.13, 0.08), 3, 6, dark)
+		b.sphere(solid, at + Vector3(s * 0.07, 0.68, -0.22), Vector3(0.025, 0.025, 0.02), 3, 5, Color("#2a2522"))
+		b.cylinder(solid, Transform3D(Basis(), at + Vector3(s * 0.1, 0, -0.1)), 0.05, 0.05, 0.22, 6, fur)
+	b.cylinder(solid, Transform3D(Basis(), at + Vector3(0, 0.46, -0.06)), 0.13, 0.13, 0.05, 10, Color("#c8423b"))
+	b.tube(solid, PackedVector3Array([at + Vector3(0, 0.15, 0.28), at + Vector3(0.12, 0.3, 0.45)]), 0.03, 4, fur)
+	add_box("furniture", at + Vector3(0, 0.4, 0), Vector3(0.5, 0.8, 0.6))
 
 
 # --- Shell helpers ------------------------------------------------------------------------------

@@ -15,16 +15,18 @@
 > Glide Home is a calm flying game about one paper plane and a sleepy golden-hour town. Your plane is always sinking slowly, so the skill is in reading the air:
 >
 > • Dive to pick up speed, then pull up to trade it for height
-> • Find golden rising air and circle inside it to climb
-> • Follow the dotted line and fly through the gold rings
+> • Find shimmering green rising air and ride it to climb
+> • Follow the dotted line and fly through the blue rings
 > • Settle down softly on the target for a Feather landing
 >
-> FIVE HANDCRAFTED FLIGHTS
+> SEVEN HANDCRAFTED FLIGHTS
 > • **Window to the Picnic:** from an upstairs balcony to a picnic blanket in the park
 > • **Under the Old Bridge:** skim the river and thread the plane under a stone arch
-> • **Up to the Clock Tower:** slip through the Mill Lane archway, skim the millpond under a footbridge, then circle up to a tiny balcony
+> • **Up to the Clock Tower:** slip through the Mill Lane archway, skim the millpond under a footbridge, fly through a flower shop and over the rooftops to a tiny balcony
 > • **Classroom Window Escape:** launch from your desk, dodge the ceiling fan, slip out the window, under the school pond's bridge and down the lane to the bus stop
 > • **Lantern Night:** at dusk, weave over and under the lantern strings, thread the old bridge's arch and land on a lantern raft
+> • **Open House Day:** fly room to room through open windows and doors, down a stairwell and onto the cat's rug
+> • **Willow Close:** from a treehouse, swoop through a library, over a car in a garage, up a stairwell and into the dog's bed
 >
 > MAKE IT YOURS
 > Earn ribbons for soft, accurate landings and unlock new papers (graph paper, red origami, old map, newspaper and more), trails (rainbow ribbon, gold sparkles, confetti, comet glow) and wing stickers.

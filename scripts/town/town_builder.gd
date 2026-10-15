@@ -52,6 +52,19 @@ const GREENS := ["#6f9e4c", "#5d8f43", "#7fae55", "#4f8443", "#8ab45e"]
 
 @export var build_on_ready := true
 
+## Willow Close (flight 7): a garden row of open houses behind the east side of Linden Lane.
+## Each house: [layout, center z, width, depth, wall color, roof color, door color].
+const WILLOW_X := 33.5
+const WILLOW_HOUSES := [
+	["library", -110.0, 11.0, 10.0, "#f5e3c0", "slate", "#2f6f8f"],
+	["garage", -127.0, 9.0, 9.0, "#c9d8c0", "terracotta", "#c8423b"],
+	["stair_up", -146.5, 11.0, 14.0, "#e9b7a1", "slate", "#3f7d4f"],
+	["den", -168.0, 11.0, 11.0, "#a9c9db", "terracotta", "#e0a13a"],
+]
+## The whole close inside its fences, and the treehouse deck (launch spot of flight 7).
+const WILLOW_RECT := Rect2(26.5, -174.5, 14.0, 83.0)
+const TREEHOUSE := Vector3(35.3, 4.45, -98.0)
+
 var rng := RandomNumberGenerator.new()
 var batcher: Batcher
 var trees: Array = []          # Each: {pos, top, radius, handles, body}
@@ -103,6 +116,7 @@ func build() -> void:
 	# Built last so the shared random sequence (and the rest of the town) stays unchanged.
 	_rowan_row()
 	_ponds()
+	_willow_close()
 	batcher.finalize()
 	_on_quality(Settings.quality)
 	is_built = true
@@ -492,6 +506,8 @@ func _add_tree(p: Vector3, scale: float, autumn := false, conifer := false, coll
 	for pond in Terrain.PONDS:
 		if (pond[0] as Rect2).grow(1.5).has_point(Vector2(p.x, p.z)):
 			return
+	if WILLOW_RECT.grow(1.0).has_point(Vector2(p.x, p.z)):
+		return
 	var handles := []
 	handles.append(batcher.add("trunk", Transform3D(Basis().scaled(Vector3(scale, trunk_h + r * 0.6, scale)), p), Color.WHITE))
 	var cc := p + Vector3(0, trunk_h + r * 0.75, 0)
@@ -1133,6 +1149,172 @@ func _ponds() -> void:
 	add_child(ducks)
 
 
+# --- Willow Close -----------------------------------------------------------------------------
+
+func _in_willow_house(p: Vector3) -> bool:
+	for h in WILLOW_HOUSES:
+		var r := Rect2(WILLOW_X - h[2] * 0.5 - 0.5, h[1] - h[3] * 0.5 - 0.5, h[2] + 1.0, h[3] + 1.0)
+		if r.has_point(Vector2(p.x, p.z)):
+			return true
+	return false
+
+
+## Flight 7: four open houses in a row with gardens between them, and a treehouse to launch from.
+func _willow_close() -> void:
+	var wr := RandomNumberGenerator.new()
+	wr.seed = SEED + 77
+	for i in WILLOW_HOUSES.size():
+		var d: Array = WILLOW_HOUSES[i]
+		var h: Node3D = OPEN_HOUSE_SCENE.instantiate()
+		h.batcher = batcher
+		h.name = "WillowClose_%d" % (i + 1)
+		h.layout = d[0]
+		h.position = Vector3(WILLOW_X, 0, d[1])
+		h.width = d[2]
+		h.depth = d[3]
+		h.wall_color = Color(d[4])
+		h.roof_color = Mats.ROOF_SLATE if d[5] == "slate" else Mats.ROOF_TERRACOTTA
+		h.door_color = Color(d[6])
+		h.shutter_color = Color(Mats.SHUTTER_COLORS[(i * 3 + 2) % Mats.SHUTTER_COLORS.size()])
+		h.seed_value = 90 + i
+		add_child(h)
+
+	var b := MeshBuilder.new()
+	var solid := Mats.get_mat("solid")
+	var wood := Mats.get_mat("wood")
+	var metal := Mats.get_mat("metal")
+	var paving := Mats.get_mat("paving")
+	# Picket fences around the close.
+	var x0 := WILLOW_RECT.position.x
+	var x1 := WILLOW_RECT.end.x
+	var z0 := WILLOW_RECT.end.y
+	var z1 := WILLOW_RECT.position.y
+	for fx in [x0, x1]:
+		var z := z0
+		while z > z1:
+			batcher.add("picket", Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(fx, 0, z)))
+			z -= 0.17
+		for ry in [0.3, 0.7]:
+			b.box_mm(solid, Vector3(fx - 0.03, ry, z1), Vector3(fx + 0.03, ry + 0.08, z0), Mats.TRIM)
+		_static_box("fence", Vector3(fx, 0.5, (z0 + z1) * 0.5), Vector3(0.2, 1.0, z0 - z1))
+	for fz in [z0, z1]:
+		var x := x0 + 0.1
+		while x < x1:
+			batcher.add("picket", Transform3D(Basis(), Vector3(x, 0, fz)))
+			x += 0.17
+		_static_box("fence", Vector3((x0 + x1) * 0.5, 0.5, fz), Vector3(x1 - x0, 1.0, 0.2))
+	# Gardens between the houses: stepping stones, flower borders and bushes.
+	var gardens := [[z0 - 0.6, -104.8], [-115.2, -122.3], [-131.7, -139.3], [-153.7, -160.3], [-171.7, z1 + 0.6]]
+	for g in gardens:
+		var ga: float = g[0]
+		var gb: float = g[1]
+		var z := ga - 0.5
+		while z > gb + 0.3:
+			var sx := WILLOW_X - 2.2 + sin(z * 0.6) * 0.25
+			b.cylinder(paving, Transform3D(Basis(), Vector3(sx, 0.0, z)), 0.3, 0.3, 0.04, 10, Color("#e8e1d3"))
+			z -= 0.85
+		for side in [[x0 + 0.3, x0 + 1.0], [x1 - 1.0, x1 - 0.3]]:
+			for k in int((ga - gb) * 2.5):
+				var fp := Vector3(wr.randf_range(side[0], side[1]), 0, wr.randf_range(gb + 0.3, ga - 0.3))
+				batcher.add("flower", Transform3D(Basis(Vector3.UP, wr.randf() * TAU).scaled(Vector3.ONE * wr.randf_range(1.1, 1.6)), fp), Mats.pick(wr, Mats.FLOWER_COLORS))
+			var bs := wr.randf_range(0.8, 1.1)
+			batcher.add("bush", Transform3D(Basis().scaled(Vector3(bs, bs * 0.9, bs)), Vector3((side[0] + side[1]) * 0.5, 0, gb + 1.0)), Color("#5f8f45").lerp(Color("#7aa65a"), wr.randf()))
+
+	# Treehouse in the first garden: trunk and canopy behind, a deck with a little hut, railings
+	# on three sides (open toward the library), and a rope ladder.
+	var th := TREEHOUSE
+	var trunk := Vector3(th.x, 0, th.z + 1.6)
+	batcher.add("trunk", Transform3D(Basis().scaled(Vector3(1.7, 7.2, 1.7)), trunk), Color.WHITE)
+	batcher.add("canopy", Transform3D(Basis(Vector3.UP, 0.7).scaled(Vector3(3.0, 2.6, 3.0)), Vector3(th.x - 0.3, 8.7, th.z + 2.2)), Color("#6f9e4c"))
+	batcher.add("canopy", Transform3D(Basis(Vector3.UP, 2.1).scaled(Vector3(2.2, 2.0, 2.2)), Vector3(th.x + 1.8, 7.9, th.z + 3.0)), Color("#7fae55"))
+	var tb := StaticBody3D.new()
+	tb.collision_layer = 1
+	tb.collision_mask = 0
+	tb.set_meta("kind", "tree")
+	for c in [[trunk + Vector3(0, 3.6, 0), "cyl", 0.3, 7.2], [Vector3(th.x - 0.3, 8.7, th.z + 2.2), "sph", 2.6, 0.0], [Vector3(th.x + 1.8, 7.9, th.z + 3.0), "sph", 1.9, 0.0]]:
+		var cs := CollisionShape3D.new()
+		if c[1] == "cyl":
+			var cyl := CylinderShape3D.new()
+			cyl.radius = c[2]
+			cyl.height = c[3]
+			cs.shape = cyl
+		else:
+			var sph := SphereShape3D.new()
+			sph.radius = c[2]
+			cs.shape = sph
+		cs.position = c[0]
+		tb.add_child(cs)
+	add_child(tb)
+	var plank := Color("#b48a64")
+	var hw := 1.4
+	var top := th.y
+	b.box_mm(wood, Vector3(th.x - hw, top - 0.15, th.z - hw), Vector3(th.x + hw, top, th.z + hw), plank)
+	_static_box("post", Vector3(th.x, top - 0.075, th.z), Vector3(hw * 2.0, 0.15, hw * 2.0))
+	for px in [-hw + 0.1, hw - 0.1]:
+		for pz in [-hw + 0.1, hw - 0.1]:
+			b.cylinder(wood, Transform3D(Basis(), Vector3(th.x + px, 0, th.z + pz)), 0.08, 0.08, top - 0.15, 6, Color("#8a6a52"))
+			_static_cyl("post", Vector3(th.x + px, 0, th.z + pz), 0.08, top - 0.15)
+	# Railings on the east and west sides; the hut closes the north side.
+	for sx in [-1.0, 1.0]:
+		var rx: float = th.x + sx * (hw - 0.05)
+		b.box_mm(wood, Vector3(rx - 0.04, top + 0.85, th.z - hw), Vector3(rx + 0.04, top + 0.93, th.z + hw), Color("#8a6a52"))
+		for k in 7:
+			var rz: float = th.z - hw + 0.1 + k * 0.45
+			b.box_mm(wood, Vector3(rx - 0.03, top, rz - 0.03), Vector3(rx + 0.03, top + 0.85, rz + 0.03), Color("#8a6a52"))
+		_static_box("post", Vector3(rx, top + 0.46, th.z), Vector3(0.1, 0.93, hw * 2.0))
+	var hut0 := th.z + 0.35
+	b.box_mm(wood, Vector3(th.x - hw, top, hut0), Vector3(th.x + hw, top + 1.7, th.z + hw), Color("#c9a27e"))
+	b.box_mm(Mats.get_mat("window_lit"), Vector3(th.x - 0.45, top + 0.75, hut0 - 0.02), Vector3(th.x + 0.45, top + 1.35, hut0), Color("#3d5a78"))
+	b.pyramid(Mats.get_mat("shingle"), Transform3D(Basis(), Vector3(th.x, top + 1.7, (hut0 + th.z + hw) * 0.5)), Vector2(hw * 2.0 + 0.4, th.z + hw - hut0 + 0.4), 1.0, Mats.ROOF_TERRACOTTA)
+	_static_box("wall", Vector3(th.x, top + 0.85, (hut0 + th.z + hw) * 0.5), Vector3(hw * 2.0, 1.7, th.z + hw - hut0))
+	for k in 6:
+		var ry := 0.6 + k * 0.62
+		b.box_mm(wood, Vector3(th.x + hw + 0.02, ry, th.z - 0.3), Vector3(th.x + hw + 0.06, ry + 0.05, th.z + 0.3), Color("#a87a4f"))
+	for rz in [-0.3, 0.3]:
+		b.tube(Mats.get_mat("rope"), PackedVector3Array([Vector3(th.x + hw + 0.04, 0.2, th.z + rz), Vector3(th.x + hw + 0.04, top, th.z + rz)]), 0.015, 3, Color("#d8c39a"))
+	# Paddling pool on the patio after the library.
+	b.box_mm(paving, Vector3(28.0, 0.0, -121.6), Vector3(32.4, 0.04, -116.0), Color("#efe2c4"), 4)
+	var pool := Vector3(29.9, 0.04, -118.8)
+	b.cylinder(solid, Transform3D(Basis(), pool), 1.1, 1.1, 0.32, 20, Color("#6fb4e8"))
+	b.cylinder(Mats.get_mat("glass"), Transform3D(Basis(), pool), 0.98, 0.98, 0.3, 20, Color("#9fd4f0"))
+	b.sphere(solid, pool + Vector3(0.3, 0.38, -0.2), Vector3(0.16, 0.16, 0.16), 4, 8, Color("#e8546a"))
+	_static_cyl("post", pool, 1.1, 0.36)
+	# Barbecue (its smoke is the rising air) and a picnic table in the next garden.
+	var bbq := Vector3(34.8, 0, -135.5)
+	for k in 3:
+		var a := TAU * k / 3.0
+		b.tube(metal, PackedVector3Array([bbq + Vector3(cos(a) * 0.3, 0, sin(a) * 0.3), bbq + Vector3(cos(a) * 0.15, 0.7, sin(a) * 0.15)]), 0.025, 4, Color("#2a2522"))
+	b.sphere(metal, bbq + Vector3(0, 0.82, 0), Vector3(0.36, 0.2, 0.36), 4, 10, Color("#2a2522"))
+	b.sphere(metal, bbq + Vector3(0, 0.92, 0.12), Vector3(0.34, 0.18, 0.34), 4, 10, Color("#c8423b"))
+	_static_cyl("post", bbq, 0.38, 1.1)
+	var pt := Vector3(29.6, 0, -136.0)
+	b.box_mm(wood, pt + Vector3(-0.5, 0.72, -1.0), pt + Vector3(0.5, 0.78, 1.0), Color("#a87a4f"))
+	for sx in [-0.85, 0.85]:
+		b.box_mm(wood, pt + Vector3(sx - 0.15, 0.42, -1.0), pt + Vector3(sx + 0.15, 0.47, 1.0), Color("#8a6a52"))
+	for lz in [-0.8, 0.8]:
+		b.box_mm(wood, pt + Vector3(-0.9, 0, lz - 0.04), pt + Vector3(0.9, 0.06, lz + 0.04), Color("#8a6a52"))
+		b.box_mm(wood, pt + Vector3(-0.05, 0, lz - 0.04), pt + Vector3(0.05, 0.72, lz + 0.04), Color("#8a6a52"))
+	_static_box("post", pt + Vector3(0, 0.39, 0), Vector3(2.0, 0.78, 2.0))
+	add_child(b.build_instance("WillowCloseGardens", true))
+	# Street sign at the gate.
+	var sign_post := Vector3(x0 - 0.4, 0, z0 - 0.8)
+	_static_cyl("post", sign_post, 0.1, 1.9)
+	var sb := MeshBuilder.new()
+	sb.cylinder(wood, Transform3D(Basis(), sign_post), 0.06, 0.06, 1.9, 6, Color("#8a6a52"))
+	sb.box_mm(wood, sign_post + Vector3(-0.7, 1.35, -0.05), sign_post + Vector3(0.7, 1.8, 0.05), Color("#c9a27e"))
+	add_child(sb.build_instance("WillowCloseSign", true))
+	var label := Label3D.new()
+	label.text = "Willow Close"
+	label.font = UIKit.display_font()
+	label.font_size = 64
+	label.pixel_size = 0.006
+	label.modulate = Color("#3a2c28")
+	label.outline_size = 0
+	label.shaded = false
+	label.position = sign_post + Vector3(0, 1.58, 0.06)
+	add_child(label)
+
+
 # --- Background: hills, distant rows, extra trees -------------------------------------------
 
 func _background() -> void:
@@ -1165,29 +1347,30 @@ func _background() -> void:
 				var yaw := rng.randf_range(-0.15, 0.15) + (PI * 0.5 if side < 0 else -PI * 0.5)
 				var xf := Transform3D(Basis(Vector3.UP, yaw), Vector3(x, gy, z))
 				var wc := Color(Mats.PALETTE_HOUSES[rng.randi() % Mats.PALETTE_HOUSES.size()])
-				b.box(paint, xf * Transform3D(Basis(), Vector3(0, hgt * 0.5, 0)), Vector3(d, hgt, w), wc, 63 - 8)
 				var rc := Mats.ROOF_SLATE if rng.randf() < 0.5 else Mats.ROOF_TERRACOTTA
-				b.gable_roof(shingle, xf * Transform3D(Basis(), Vector3(0, hgt, 0)), d, w, d * 0.36, 0.3, 0.15, rc)
-				b.gable_wall(paint, xf * Transform3D(Basis(), Vector3(0, hgt, 0)), d, d * 0.36, w * 0.5, 1.0, wc)
-				b.gable_wall(paint, xf * Transform3D(Basis(), Vector3(0, hgt, 0)), d, d * 0.36, -w * 0.5, -1.0, wc)
-				for wx in [-w * 0.25, w * 0.25]:
-					for wy in [1.8, hgt - 1.6]:
-						var face_x: float = d * 0.5 + 0.02
-						b.box(Mats.get_mat("window_lit"), xf * Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(-face_x if side > 0 else face_x, wy, wx)), Vector3(0.9, 1.2, 0.05), Color("#3d5a78"))
-				var cs := CollisionShape3D.new()
-				var bs := BoxShape3D.new()
-				bs.size = Vector3(d, hgt, w)
-				cs.shape = bs
-				cs.transform = xf * Transform3D(Basis(), Vector3(0, hgt * 0.5, 0))
-				body.add_child(cs)
-				var rs := CollisionShape3D.new()
-				var prism := ConvexPolygonShape3D.new()
-				var rr := d * 0.36
-				prism.points = PackedVector3Array([Vector3(-d * 0.5, 0, -w * 0.5), Vector3(d * 0.5, 0, -w * 0.5), Vector3(-d * 0.5, 0, w * 0.5),
-					Vector3(d * 0.5, 0, w * 0.5), Vector3(0, rr, -w * 0.5), Vector3(0, rr, w * 0.5)])
-				rs.shape = prism
-				rs.transform = xf * Transform3D(Basis(), Vector3(0, hgt, 0))
-				body.add_child(rs)
+				if not WILLOW_RECT.grow(6.0).has_point(Vector2(x, z)):
+					b.box(paint, xf * Transform3D(Basis(), Vector3(0, hgt * 0.5, 0)), Vector3(d, hgt, w), wc, 63 - 8)
+					b.gable_roof(shingle, xf * Transform3D(Basis(), Vector3(0, hgt, 0)), d, w, d * 0.36, 0.3, 0.15, rc)
+					b.gable_wall(paint, xf * Transform3D(Basis(), Vector3(0, hgt, 0)), d, d * 0.36, w * 0.5, 1.0, wc)
+					b.gable_wall(paint, xf * Transform3D(Basis(), Vector3(0, hgt, 0)), d, d * 0.36, -w * 0.5, -1.0, wc)
+					for wx in [-w * 0.25, w * 0.25]:
+						for wy in [1.8, hgt - 1.6]:
+							var face_x: float = d * 0.5 + 0.02
+							b.box(Mats.get_mat("window_lit"), xf * Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(-face_x if side > 0 else face_x, wy, wx)), Vector3(0.9, 1.2, 0.05), Color("#3d5a78"))
+					var cs := CollisionShape3D.new()
+					var bs := BoxShape3D.new()
+					bs.size = Vector3(d, hgt, w)
+					cs.shape = bs
+					cs.transform = xf * Transform3D(Basis(), Vector3(0, hgt * 0.5, 0))
+					body.add_child(cs)
+					var rs := CollisionShape3D.new()
+					var prism := ConvexPolygonShape3D.new()
+					var rr := d * 0.36
+					prism.points = PackedVector3Array([Vector3(-d * 0.5, 0, -w * 0.5), Vector3(d * 0.5, 0, -w * 0.5), Vector3(-d * 0.5, 0, w * 0.5),
+						Vector3(d * 0.5, 0, w * 0.5), Vector3(0, rr, -w * 0.5), Vector3(0, rr, w * 0.5)])
+					rs.shape = prism
+					rs.transform = xf * Transform3D(Basis(), Vector3(0, hgt, 0))
+					body.add_child(rs)
 				# A tree or two beside each house.
 				if rng.randf() < 0.8:
 					var tp := Vector3(x + rng.randf_range(-6.0, 6.0), 0, z + rng.randf_range(-9.0, 9.0))
@@ -1399,7 +1582,7 @@ func _grass() -> void:
 		if near_pad or p.distance_to(Vector3(-27, 0, -142)) < 5.0:
 			continue
 		p.y = ground_height(p.x, p.z)
-		if p.y < WATER_Y + 0.05 or Terrain.is_water(p.x, p.z):
+		if p.y < WATER_Y + 0.05 or Terrain.is_water(p.x, p.z) or _in_willow_house(p):
 			continue
 		var s := rng.randf_range(0.7, 1.35)
 		var tint := Color("#8fbf5a").lerp(Color("#c3d870"), rng.randf()).lerp(Color("#d9b25a"), rng.randf() * 0.12)

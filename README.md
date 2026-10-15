@@ -83,6 +83,7 @@ Other places to tune:
 | 4 | Classroom Window Escape | A desk in the upstairs classroom of Linden Primary | A friend's backpack at the bus stop on Linden Lane |
 | 5 | Lantern Night | The clock tower balcony, at dusk | The lantern raft on the river, past the old bridge |
 | 6 | Open House Day | An attic bedroom on Rowan Row | The cat's rug by the cottage fireplace |
+| 7 | Willow Close | A treehouse at the top of Willow Close | Biscuit the dog's bed in the den |
 
 **Difficulty climbs flight by flight.** Flights 3 to 5 mix the two hardest ideas in the game: low, precise flying over water (as under the old bridge in flight 2) and threading tight openings (as in Open House Day, flight 6, the hardest). Rings and landing targets shrink as you go:
 
@@ -94,10 +95,17 @@ Other places to tune:
 | 4 | 1.4 m (0.85 indoors) | 1.5 m | Classroom, then low over the school pond under its footbridge |
 | 5 | 1.3 m (1.0 under the arch) | 1.7 m | Dusk, lantern strings to go over and under, under the old bridge low over the river, onto a small raft |
 | 6 | 0.95 m | 1.7 m | Room to room through windows and doors |
+| 7 | 0.9 m | 1.4 m | Room to room again: down through a library, over a car in a garage, up a stairwell |
 
 **Up to the Clock Tower:** from the bakery roof, through the Mill Lane archway (a covered passage through the west row of shops, `props/archway`). Turn right onto the millpond through a strong updraft in the bend, then make a short low glide down the water and under the wooden footbridge (`props/footbridge`). Two updrafts in a wide right turn lift you to the open upstairs window of a flower shop (`open_upstairs` on `props/shop`). You fly in the back window, through the room and out the front over Market Street. Another updraft takes you over the rooftops opposite, then you glide behind the shops into the square and past the tower's updraft to the balcony. There's no circling; every bend is wide.
 
 **Classroom Window Escape:** warm air rises off the radiator, and the spinning ceiling fan or a closed window crashes the plane. After the window you dive into the schoolyard, skim the wildlife pond under the bunting and its little footbridge, and leave through the yard gate. Rising air over the lane lifts you back up, and you glide about 130 m down Linden Lane to the bus stop. Rings inside the classroom are smaller (`small_gate_box`).
+
+**Willow Close:** the same room-to-room style as Open House Day, on a second garden row of open houses behind the east side of Linden Lane (`TownBuilder._willow_close()`, layouts in `props/open_house`). It takes about 6 s along the line.
+- Throw from the treehouse into the library's open upstairs window, swoop down past the tall bookshelves and out the low window on the other side.
+- Over the paddling pool, in through the garage's roller door, skim over the little car and out the back window.
+- Through the barbecue smoke, in through the hall's garden doors under the landing, then warm air from the floor grate lifts you up the stairwell and out the upstairs window (the reverse of Open House Day's stairwell).
+- Over the washing line and in through the den's garden doors to land in Biscuit's bed.
 
 **Ponds:** stone-walled basins cut into the ground (`Terrain.PONDS`, built by `TownBuilder._ponds()`). Each pond has its own water level, and `Terrain.water_height()` covers the river and the ponds alike, so skips, skims, splashes and sinking air work the same everywhere. Pond edges sit on the 4 m terrain grid so the terrain mesh can leave a clean hole for them.
 
@@ -226,7 +234,7 @@ The catalog and unlock thresholds are in `scripts/cosmetics/cosmetics.gd`. Paper
   Turning tips back on in Settings shows them again. A "Too slow!" warning appears before every stall.
 - **Credits:** includes the Godot Engine license notice that publishing requires.
 
-At runtime the game places seven stars along the route, gold rings about every 14 m, and the dotted flight line. It also removes trees near the first route segments and the pad.
+At runtime the game places seven stars along the route, blue rings about every 14 m, and the dotted flight line. It also removes trees near the first route segments and the pad.
 
 ## Project layout
 
@@ -276,11 +284,12 @@ Include each font's `OFL.txt` alongside it. If a file is missing, `scripts/ui/ui
 ## Verified
 
 - All scripts and scenes load without errors in a headless check.
-- A test autopilot that steers along the dotted line and settles onto each pad lands all six levels with the flight constants unchanged:
+- A test autopilot that steers along the dotted line and settles onto each pad lands all seven levels with the flight constants unchanged:
   - Level 1: about 10 s, 0.5 m from the center
   - Level 2: about 7.3 s, including the +500 bridge ring
   - Level 3: about 30 s, through Mill Lane, under the millpond footbridge and through the flower shop
   - Level 4: about 12 s, from the classroom under the pond bridge to the bus stop
   - Level 5: about 35 s, from the clock tower under the old bridge to the raft
   - Level 6: about 7 s, room to room
+  - Level 7: about 6 s, treehouse to the dog's bed
 - Screenshots were checked in landscape and portrait, for every flight and for the Hangar, Settings and Credits screens.
