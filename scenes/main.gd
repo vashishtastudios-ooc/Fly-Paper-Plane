@@ -35,6 +35,12 @@ func _ready() -> void:
 		mi.name = "Model"
 		mi.mesh = PaperPlaneMesh.get_mesh()
 		menu_plane.add_child(mi)
+	# The showreel plane always flies with the rainbow trail.
+	_menu_trail = PlaneTrail.new()
+	_menu_trail.name = "MenuTrail"
+	_menu_trail.source = menu_plane
+	add_child(_menu_trail)
+	_menu_trail.set_style("rainbow")
 	plane.level = level
 	kid.visible = false
 	hud.visible = false
@@ -344,6 +350,7 @@ var _reel_i := -1
 var _reel_off := 0.0
 var _reel_end := 0.0
 var _reel_fade: ColorRect
+var _menu_trail: PlaneTrail
 
 
 func _reel_curve(li: int) -> Curve3D:
@@ -371,6 +378,8 @@ func _next_reel_clip() -> void:
 	_reel_off = c.get_closest_offset(clip[1])
 	_reel_end = c.get_closest_offset(clip[2])
 	_update_menu_plane(0.0)
+	_menu_trail.clear()
+	_menu_trail.active = true
 	cam.set_mode(ChaseCamera.Mode.MENU, true)
 
 
@@ -412,6 +421,8 @@ func _update_menu_plane(delta: float) -> void:
 func _hide_reel() -> void:
 	if _reel_fade:
 		_reel_fade.color.a = 0.0
+	_menu_trail.active = false
+	_menu_trail.clear()
 
 
 # --- Cosmetics and flight tips --------------------------------------------------------------

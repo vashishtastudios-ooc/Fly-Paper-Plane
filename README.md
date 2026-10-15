@@ -73,11 +73,20 @@ Other places to tune:
 - Camera framing, damping and FOV are exported on `scenes/camera/chase_camera.gd`.
 - Scoring rules are in `autoload/game.gd` (`compute_landing_score`).
 
+## Plane trails
+
+`scenes/plane/plane_trail.gd` (`PlaneTrail`) draws the trail for the flying plane and the menu plane. Each wingtip leaves a soft-edged ribbon with a bright core and a wider glow. Samples are spaced by distance so the ribbons stay smooth at any frame rate, and they fade out over the style's lifetime, so the trail drifts away when the plane stops. Every style has its own particles:
+- **White:** faint air wisps.
+- **Rainbow:** colours that flow along the ribbons, a soft rainbow band off the tail, twinkling rainbow sparkles and soft puffs.
+- **Gold:** gold ribbons with glitter.
+- **Confetti:** multicolour ribbons and tumbling confetti flakes.
+- **Comet:** glowing streaks and embers.
+
 ## Title screen
 
 The menu is a torn scrapbook page: the title *Paper Plane Playground* with the subtitle *Fun paper plane flying challenges*, a photo card per flight, a yellow Play button and paper chips for the Hangar, Settings and Credits (`scenes/ui/menu.gd`). Tap a card to pick it, then Play (or tap the picked card again). Keyboard and gamepad focus picks a card directly.
 
-Behind the page runs a live showreel: the paper plane flies the best bits of the real flights through the real town (under the stone bridge, through the Mill Lane tunnel, in the treehouse window to the library, out the classroom window, through the flower shop, room to room on Rowan Row and down Linden Lane), with a soft paper fade between clips (`REEL` in `scenes/main.gd`). The menu camera uses an off-centre lens so the plane shows in the open space beside the page (right in landscape, below it in portrait).
+Behind the page runs a live showreel: the paper plane flies the best bits of the real flights through the real town (under the stone bridge, through the Mill Lane tunnel, in the treehouse window to the library, out the classroom window, through the flower shop, room to room on Rowan Row and down Linden Lane), with a soft paper fade between clips (`REEL` in `scenes/main.gd`). The showreel plane always flies with the rainbow trail. The menu camera uses an off-centre lens so the plane shows in the open space beside the page (right in landscape, below it in portrait).
 
 The card photos in `ui/thumbs/` are snapshots of each flight's key moment, rendered by the game itself (HUD hidden) and saved as small JPEGs. Re-capture them if a flight's look changes.
 
