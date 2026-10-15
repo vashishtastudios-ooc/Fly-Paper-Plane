@@ -44,6 +44,11 @@ func _build_storybook_pass() -> void:
 	var m := ShaderMaterial.new()
 	m.shader = load("res://shaders/storybook_post.gdshader")
 	m.render_priority = 127
+	if Mats.painterly:
+		# Painterly: soft color edges instead of ink lines; a gentle warm vignette stays.
+		m.set_shader_parameter("line_strength", 0.0)
+		m.set_shader_parameter("vignette", 0.24)
+		m.set_shader_parameter("vignette_color", Color(0.36, 0.2, 0.3))
 	q.material = m
 	_post.mesh = q
 	_post.extra_cull_margin = 16384.0

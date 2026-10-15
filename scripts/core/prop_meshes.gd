@@ -17,6 +17,44 @@ static func get_mesh(kind: String) -> Mesh:
 	return mesh
 
 
+## Painterly foliage: a soft core plus many leaf-brush cards around it. The cards' normals point
+## out from the middle, so the whole clump shades like one fluffy volume in the wind.
+static func _leafy_clump(radius: float, flatten: float, cards: int, seed_value: int, center := Vector3.ZERO) -> ArrayMesh:
+	var b := MeshBuilder.new()
+	b.sphere(Mats.get_mat("foliage"), center, Vector3(radius, radius * flatten, radius) * 0.8, 6, 10, Color(0.82, 0.82, 0.82))
+	var mesh := b.build()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_material(Mats.get_mat("leaf_cards"))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var lobes := [Vector3.ZERO, Vector3(0.45, 0.3, 0.25), Vector3(-0.42, 0.25, -0.3), Vector3(0.05, -0.2, -0.45)]
+	for i in cards:
+		var d := Vector3(rng.randf_range(-1, 1), rng.randf_range(-0.7, 1), rng.randf_range(-1, 1)).normalized()
+		var lobe: Vector3 = lobes[i % lobes.size()] * radius
+		var p := center + lobe * 0.6 + Vector3(d.x, d.y * flatten, d.z) * radius * rng.randf_range(0.7, 1.0)
+		var size := radius * rng.randf_range(0.5, 0.75)
+		# Face mostly outward, with a random spin and tilt.
+		var basis := Basis.looking_at(-d, Vector3.UP if absf(d.y) < 0.95 else Vector3.RIGHT)
+		basis = basis.rotated(d, rng.randf() * TAU).rotated(Vector3(d.z, 0, -d.x).normalized() if absf(d.y) < 0.99 else Vector3.RIGHT, rng.randf_range(-0.6, 0.6))
+		var n := (p - center).normalized()
+		var tint := rng.randf_range(0.86, 1.06)
+		var corners := [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]
+		var verts := []
+		for c in corners:
+			verts.append(p + basis.x * c.x * size * 0.5 + basis.y * c.y * size * 0.5)
+		for tri in [[0, 1, 2], [0, 2, 3]]:
+			for k in tri:
+				var vp: Vector3 = verts[k]
+				st.set_normal((n * 0.8 + (vp - center).normalized() * 0.2).normalized())
+				st.set_color(Color(tint, tint, tint))
+				var cc: Vector2 = corners[k]
+				st.set_uv(Vector2(cc.x * 0.5 + 0.5, 0.5 - cc.y * 0.5))
+				st.add_vertex(vp)
+	st.commit(mesh)
+	return mesh
+
+
 static func _override(kind: String) -> Mesh:
 	var path := "res://props/overrides/%s.tscn" % kind
 	if not ResourceLoader.exists(path):
@@ -52,6 +90,8 @@ static func _build(kind: String) -> Mesh:
 			b.sphere(fm, Vector3(0, 0.1, 0), Vector3(0.07, 0.05, 0.07), 3, 6, white)
 			b.sphere(fm, Vector3(0.06, 0.08, 0.03), Vector3(0.05, 0.04, 0.05), 3, 5, white)
 			b.sphere(fm, Vector3(-0.05, 0.07, -0.04), Vector3(0.05, 0.04, 0.05), 3, 5, white)
+		"bush" when Mats.painterly:
+			return _leafy_clump(0.5, 0.42, 46, 11, Vector3(0, 0.42, 0))
 		"bush":
 			# Unit bush ~1 m wide, base at origin.
 			var bm := Mats.get_mat("foliage")
@@ -64,6 +104,8 @@ static func _build(kind: String) -> Mesh:
 			b.box(hm, Transform3D(Basis(), Vector3(0, 0.45, 0)), Vector3(1.0, 0.9, 0.8), white)
 			for i in 3:
 				b.sphere(hm, Vector3(-0.33 + i * 0.33, 0.88, 0), Vector3(0.24, 0.16, 0.42), 3, 6, white)
+		"canopy" when Mats.painterly:
+			return _leafy_clump(1.0, 0.92, 120, 7)
 		"canopy":
 			# Round stylized canopy, radius ~1, centered at origin. Scale per instance.
 			var cm := Mats.get_mat("foliage")

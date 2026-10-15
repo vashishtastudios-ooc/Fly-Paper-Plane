@@ -16,6 +16,9 @@ var sfx_volume := 1.0
 var ambience_volume := 0.8
 ## 0 = Low, 1 = Medium, 2 = High. Defaults to Medium on phones and High on desktop.
 var quality := -1
+## "storybook" (ink outlines, the original look) or "painterly" (soft painted lighting, haze and
+## leafy trees). Takes effect the next time the game starts.
+var art_style := "storybook"
 ## Steering multiplier applied to stick, touch and keyboard input.
 var sensitivity := 1.0
 var invert_pitch := false
@@ -44,6 +47,12 @@ func _ready() -> void:
 		Input.emulate_touch_from_mouse = true
 	_register_inputs()
 	_load()
+	# Art style for this run (the command line can override it, for comparing looks).
+	if args.has("--painterly"):
+		art_style = "painterly"
+	elif args.has("--storybook"):
+		art_style = "storybook"
+	Mats.painterly = art_style == "painterly"
 	if quality < 0:
 		quality = 1 if is_mobile else 2
 	get_viewport().size_changed.connect(_on_size_changed)
@@ -166,6 +175,7 @@ func set_option(option: String, value: Variant) -> void:
 		"invert_pitch": invert_pitch = value
 		"vibration": vibration = value
 		"show_tips": show_tips = value
+		"art_style": art_style = value
 	_save()
 
 
@@ -208,12 +218,14 @@ func _load() -> void:
 		invert_pitch = bool(cfg.get_value("controls", "invert_pitch", false))
 		vibration = bool(cfg.get_value("controls", "vibration", true))
 		show_tips = bool(cfg.get_value("controls", "show_tips", true))
+		art_style = str(cfg.get_value("video", "art_style", "storybook"))
 
 
 func _save() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("audio", "music", music_volume)
 	cfg.set_value("video", "quality", quality)
+	cfg.set_value("video", "art_style", art_style)
 	cfg.set_value("controls", "sensitivity", sensitivity)
 	cfg.set_value("controls", "invert_pitch", invert_pitch)
 	cfg.set_value("controls", "vibration", vibration)

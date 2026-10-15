@@ -84,6 +84,8 @@ var _route_keepouts: Array = []  # [Vector3 a, Vector3 b] segments from every le
 var _pad_keepouts: Array = []
 var _clouds: Array[MeshInstance3D] = []
 var _sky_mat: ProceduralSkyMaterial
+## Art style: Painterly uses a painted gradient sky instead.
+var _paint_sky: ShaderMaterial
 var _probe: ReflectionProbe
 var _sun_glow: MeshInstance3D
 var _beams: MultiMeshInstance3D
@@ -275,6 +277,74 @@ func _environment() -> void:
 	var to_light := Vector3(0.62, 0.36, -0.7).normalized()
 	sun.look_at_from_position(Vector3.ZERO, -to_light, Vector3.UP)
 	Settings.configure_environment(env, sun)
+	if Mats.painterly:
+		_painterly_environment(env)
+
+
+## Art style: Painterly. A painted gradient sky, warm sun with cool lavender ambient light,
+## layered warm-to-lavender haze, a soft glow and a richer, pastel color grade.
+func _painterly_environment(env: Environment) -> void:
+	_paint_sky = ShaderMaterial.new()
+	_paint_sky.shader = load("res://shaders/painterly_sky.gdshader")
+	env.sky.sky_material = _paint_sky
+	_sky_mat = null
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ssao_enabled = false
+	env.fog_mode = Environment.FOG_MODE_DEPTH
+	env.fog_depth_curve = 1.5
+	env.fog_aerial_perspective = 0.4
+	env.fog_sky_affect = 0.0
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
+	env.glow_bloom = 0.03
+	env.glow_strength = 0.9
+	env.adjustment_color_correction = _painterly_lut()
+	_apply_painterly_time(false)
+
+
+func _apply_painterly_time(dusk: bool) -> void:
+	var env := world_env.environment
+	_paint_sky.set_shader_parameter("top_color", Color("#232a5c") if dusk else Color("#4f8cc9"))
+	_paint_sky.set_shader_parameter("mid_color", Color("#8c5d8f") if dusk else Color("#e8c3b0"))
+	_paint_sky.set_shader_parameter("horizon_color", Color("#ff9a6a") if dusk else Color("#fbd7a0"))
+	_paint_sky.set_shader_parameter("ground_color", Color("#4b3a55") if dusk else Color("#c8b0a8"))
+	_paint_sky.set_shader_parameter("sun_color", Color("#ff8a5a") if dusk else Color("#ffd28a"))
+	_paint_sky.set_shader_parameter("energy", 0.85 if dusk else 1.0)
+	env.ambient_light_color = Color("#5d5c9e") if dusk else Color("#a7a5c9")
+	env.ambient_light_energy = 0.45 if dusk else 0.5
+	sun.light_color = Color("#ff9260") if dusk else Color("#ffc985")
+	sun.light_energy = 0.8 if dusk else 2.4
+	env.fog_light_color = Color("#7f5b8a") if dusk else Color("#e6c8aa")
+	env.fog_sun_scatter = 0.45 if dusk else 0.4
+	env.fog_depth_begin = 30.0 if dusk else 45.0
+	env.fog_depth_end = 300.0 if dusk else 380.0
+	env.tonemap_exposure = 1.0 if dusk else 0.9
+	env.glow_intensity = 0.8 if dusk else 0.45
+	env.glow_hdr_threshold = 0.9 if dusk else 1.0
+	env.adjustment_saturation = 1.2 if dusk else 1.06
+
+
+## Color grade for the painterly look: shadows lifted toward violet, warm golden highlights,
+## slightly softer contrast and richer color.
+static func _painterly_lut() -> ImageTexture3D:
+	var n := 17
+	var images: Array[Image] = []
+	for bz in n:
+		var img := Image.create(n, n, false, Image.FORMAT_RGB8)
+		for gy in n:
+			for rx in n:
+				var c := Vector3(float(rx), float(gy), float(bz)) / float(n - 1)
+				var lum := c.dot(Vector3(0.3, 0.59, 0.11))
+				c = c * 0.97 + Vector3(0.012, 0.008, 0.025)
+				c += Vector3(0.02, 0.0, 0.05) * pow(1.0 - lum, 3.0)
+				c += Vector3(0.04, 0.015, -0.035) * pow(lum, 1.5)
+				c = Vector3(lum, lum, lum).lerp(c, 1.1)
+				# A touch more contrast in the mid-tones.
+				c = c.lerp(Vector3.ONE * 0.5 + (c - Vector3.ONE * 0.5) * 1.06, 0.8)
+				img.set_pixel(rx, gy, Color(clampf(c.x, 0, 1), clampf(c.y, 0, 1), clampf(c.z, 0, 1)))
+		images.append(img)
+	var tex := ImageTexture3D.new()
+	tex.create(Image.FORMAT_RGB8, n, n, n, false, images)
+	return tex
 
 
 # --- Terrain and water -----------------------------------------------------------
@@ -299,6 +369,12 @@ func _terrain() -> void:
 	var grass_b := Color("#f2e6a8")
 	var bank := Color("#bfa77e")
 	var hillc := Color("#d8d49a")
+	if Mats.painterly:
+		# Richer painted greens and golden patches.
+		grass_a = Color("#8fbd5e")
+		grass_b = Color("#d6c870")
+		bank = Color("#b08f68")
+		hillc = Color("#b9b465")
 	for iz in nz:
 		var z := z0 - iz * step
 		for ix in nx:
@@ -335,9 +411,12 @@ func _terrain() -> void:
 	arrays[Mesh.ARRAY_INDEX] = idx
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	var mat := (Mats.get_mat("grass") as StandardMaterial3D).duplicate() as StandardMaterial3D
-	mat.uv1_scale = Vector3.ONE
-	mesh.surface_set_material(0, mat)
+	if Mats.painterly:
+		mesh.surface_set_material(0, Mats.painterly_textured("grass", 1.0))
+	else:
+		var mat := (Mats.get_mat("grass") as StandardMaterial3D).duplicate() as StandardMaterial3D
+		mat.uv1_scale = Vector3.ONE
+		mesh.surface_set_material(0, mat)
 	var mi := MeshInstance3D.new()
 	mi.name = "Terrain"
 	mi.mesh = mesh
@@ -1561,22 +1640,25 @@ func set_time_of_day(mode: String) -> void:
 	time_of_day = mode
 	var dusk := mode == "dusk"
 	var env := world_env.environment
-	_sky_mat.sky_top_color = Color("#27325f") if dusk else Color("#6699dd")
-	_sky_mat.sky_horizon_color = Color("#f0906a") if dusk else Color("#f5d1ab")
-	_sky_mat.ground_horizon_color = _sky_mat.sky_horizon_color
-	_sky_mat.ground_bottom_color = Color("#4a3442") if dusk else Color("#b98d6a")
-	_sky_mat.sky_energy_multiplier = 0.9 if dusk else 1.0
-	sun.light_color = Color("#ff9466") if dusk else Color("#ffd3a1")
-	sun.light_energy = 0.7 if dusk else 2.1
 	var to_light := Vector3(0.66, 0.1, -0.74) if dusk else Vector3(0.62, 0.36, -0.7)
 	sun.look_at_from_position(Vector3.ZERO, -to_light.normalized(), Vector3.UP)
-	env.ambient_light_energy = 0.55 if dusk else 0.9
-	env.fog_light_color = Color("#8e6a86") if dusk else Color("#f5d2ac")
-	env.fog_depth_end = 330.0 if dusk else 430.0
-	env.tonemap_exposure = 1.08 if dusk else 0.92
-	env.glow_intensity = 0.95 if dusk else 0.55
-	env.glow_hdr_threshold = 0.85 if dusk else 1.0
-	env.adjustment_saturation = 1.12 if dusk else 1.06
+	if _paint_sky:
+		_apply_painterly_time(dusk)
+	else:
+		_sky_mat.sky_top_color = Color("#27325f") if dusk else Color("#6699dd")
+		_sky_mat.sky_horizon_color = Color("#f0906a") if dusk else Color("#f5d1ab")
+		_sky_mat.ground_horizon_color = _sky_mat.sky_horizon_color
+		_sky_mat.ground_bottom_color = Color("#4a3442") if dusk else Color("#b98d6a")
+		_sky_mat.sky_energy_multiplier = 0.9 if dusk else 1.0
+		sun.light_color = Color("#ff9466") if dusk else Color("#ffd3a1")
+		sun.light_energy = 0.7 if dusk else 2.1
+		env.ambient_light_energy = 0.55 if dusk else 0.9
+		env.fog_light_color = Color("#8e6a86") if dusk else Color("#f5d2ac")
+		env.fog_depth_end = 330.0 if dusk else 430.0
+		env.tonemap_exposure = 1.08 if dusk else 0.92
+		env.glow_intensity = 0.95 if dusk else 0.55
+		env.glow_hdr_threshold = 0.85 if dusk else 1.0
+		env.adjustment_saturation = 1.12 if dusk else 1.06
 	# Every window and street lamp glows warmly at dusk.
 	var lit := Mats.get_mat("window_lit") as StandardMaterial3D
 	lit.emission = Color(1.0, 0.68, 0.36) if dusk else Color(1.0, 0.72, 0.42)

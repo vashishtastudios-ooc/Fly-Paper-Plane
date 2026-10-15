@@ -4,6 +4,9 @@ extends RefCounted
 ## differently colored parts can share one material (and one draw call per mesh).
 
 static var _cache := {}
+## Art style: Painterly swaps the shared lit materials for painterly shaders (set at startup by
+## Settings, before anything is built).
+static var painterly := false
 
 const PALETTE_HOUSES := ["#e9b7a1", "#f2d58f", "#a9c9db", "#b9d6a8", "#e6c3da", "#f5f0e5", "#cbbbe8"]
 const ROOF_SLATE := Color("#5b6270")
@@ -18,6 +21,11 @@ static func get_mat(kind: String) -> Material:
 	if _cache.has(kind):
 		return _cache[kind]
 	var m: Material
+	if painterly:
+		m = _painterly_mat(kind)
+		if m:
+			_cache[kind] = m
+			return m
 	match kind:
 		"paint": m = _tex("siding", 1.0, 0.9)
 		"plaster": m = _tex("plaster", 0.5, 0.9)
@@ -100,6 +108,36 @@ static func get_mat(kind: String) -> Material:
 			m = _plain(0.8)
 	_cache[kind] = m
 	return m
+
+
+## Painterly material for a kind, or null for kinds that keep their special material
+## (glass, glows, lit windows, water, cloth in the wind, the paper plane).
+static func _painterly_mat(kind: String) -> Material:
+	var textured := {"paint": ["siding", 1.0], "plaster": ["plaster", 0.5], "shingle": ["shingle", 0.8], "brick": ["brick", 0.6],
+		"stone": ["stone", 0.45], "wood": ["wood", 0.7], "asphalt": ["asphalt", 0.25], "cobble": ["cobble", 0.5],
+		"paving": ["paving", 0.5], "grass": ["grass", 0.12], "gravel": ["gravel", 0.4], "awning": ["awning", 1.0],
+		"blanket": ["blanket", 0.6]}
+	if textured.has(kind):
+		return painterly_textured(textured[kind][0], textured[kind][1])
+	match kind:
+		"solid", "metal", "foliage_core":
+			return _shader("res://shaders/painterly.gdshader", {})
+		"rope", "cloth":
+			return _shader("res://shaders/painterly_double.gdshader", {})
+		"foliage":
+			return _shader("res://shaders/foliage_painterly.gdshader", {"sway": 0.09, "rustle": 0.022})
+		"grass_wind":
+			return _shader("res://shaders/foliage_painterly.gdshader", {"sway": 0.13, "rustle": 0.035, "tip_weighted": 1.0, "tip_height": 0.45})
+		"leaf_cards":
+			return _shader("res://shaders/foliage_painterly.gdshader", {"sway": 0.1, "rustle": 0.03,
+				"leaf_tex": TexGen.get_tex("leaf_clump"), "use_leaf_tex": true, "alpha_cut": 0.45})
+	return null
+
+
+## A painterly material with one of the generated textures (a new one each call).
+static func painterly_textured(tex_kind: String, scale: float) -> ShaderMaterial:
+	return _shader("res://shaders/painterly.gdshader", {"albedo_tex": TexGen.get_tex(tex_kind), "use_tex": true,
+		"uv_scale": Vector2(scale, scale)})
 
 
 static func _tex(tex_kind: String, scale: float, rough: float) -> StandardMaterial3D:

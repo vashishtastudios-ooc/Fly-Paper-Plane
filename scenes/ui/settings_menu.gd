@@ -61,6 +61,20 @@ func _ready() -> void:
 		_quality_buttons.append(b)
 	v.add_child(qrow)
 	v.add_child(_note("Lower quality saves battery and keeps older phones smooth."))
+	var srow := HBoxContainer.new()
+	srow.add_theme_constant_override("separation", 8)
+	srow.add_child(UIKit.label("Art style", UIKit.body_font(), 20, UIKit.INK_DARK))
+	var sgroup := ButtonGroup.new()
+	for st in [["storybook", "Storybook"], ["painterly", "Painterly"]]:
+		var b := UIKit.paper_button(st[1], false, 22)
+		b.toggle_mode = true
+		b.button_group = sgroup
+		b.set_pressed_no_signal(Settings.art_style == st[0])
+		var id: String = st[0]
+		b.pressed.connect(func(): Settings.set_option("art_style", id))
+		srow.add_child(b)
+	v.add_child(srow)
+	v.add_child(_note("The art style changes the next time you start the game."))
 
 	v.add_child(_section("Controls"))
 	v.add_child(_slider_row("sensitivity", "Steering sensitivity", inverse_lerp(0.5, 1.6, Settings.sensitivity),

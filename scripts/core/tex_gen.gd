@@ -24,6 +24,7 @@ static func get_tex(kind: String) -> Texture2D:
 		"cloud": img = _cloud()
 		"soft_dot": img = _soft_dot()
 		"leaf": img = _leaf()
+		"leaf_clump": img = _leaf_clump()
 		"blanket": img = _blanket()
 		"awning": img = _awning()
 		"star_glint": img = _star_glint()
@@ -416,6 +417,44 @@ static func _leaf() -> Image:
 			d[i * 4 + 2] = 255 if not vein else 210
 			d[i * 4 + 3] = 255 if inside else 0
 	return _img(s, d, true)
+
+
+## A clump of overlapping leaves, like one dab of a round brush: soft irregular edge, lighter
+## toward the top. White-ish so the tree's color tints it.
+static func _leaf_clump() -> Image:
+	var s := 128
+	var img := Image.create(s, s, true, Image.FORMAT_RGBA8)
+	img.fill(Color(1, 1, 1, 0))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	for k in 34:
+		var a := rng.randf() * TAU
+		var r := sqrt(rng.randf()) * 0.33
+		var cx := 0.5 + cos(a) * r
+		var cy := 0.52 + sin(a) * r * 0.9
+		var ang := rng.randf() * PI
+		var ll := rng.randf_range(0.13, 0.2)
+		var lw := ll * rng.randf_range(0.4, 0.55)
+		var shade := rng.randf_range(0.72, 1.0) * (1.08 - cy * 0.3)
+		var ca := cos(ang)
+		var sa := sin(ang)
+		var x0 := int(maxf(0.0, (cx - ll) * s))
+		var x1 := int(minf(s - 1.0, (cx + ll) * s))
+		var y0 := int(maxf(0.0, (cy - ll) * s))
+		var y1 := int(minf(s - 1.0, (cy + ll) * s))
+		for y in range(y0, y1 + 1):
+			for x in range(x0, x1 + 1):
+				var u := (x + 0.5) / s - cx
+				var v := (y + 0.5) / s - cy
+				var lu := (u * ca + v * sa) / ll
+				var lv := (-u * sa + v * ca) / lw
+				# Leaf shape: pointed at both ends.
+				var e := lu * lu + lv * lv * (1.0 + 0.6 * absf(lu))
+				if e < 1.0:
+					var c := img.get_pixel(x, y)
+					var t := clampf(shade * (0.92 + 0.08 * (1.0 - e)), 0.0, 1.0)
+					img.set_pixel(x, y, Color(t, t, t, 1.0) if c.a < 0.5 or rng.randf() < 0.5 else c)
+	return img
 
 
 static func _blanket() -> Image:
