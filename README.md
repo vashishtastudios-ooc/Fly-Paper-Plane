@@ -77,6 +77,8 @@ Other places to tune:
 
 The menu is a torn scrapbook page: the title *Paper Plane Playground* with the subtitle *Fun paper plane flying challenges*, a photo card per flight, a yellow Play button and paper chips for the Hangar, Settings and Credits (`scenes/ui/menu.gd`). Tap a card to pick it, then Play (or tap the picked card again). Keyboard and gamepad focus picks a card directly.
 
+Behind the page runs a live showreel: the paper plane flies the best bits of the real flights through the real town (under the stone bridge, through the Mill Lane tunnel, in the treehouse window to the library, out the classroom window, through the flower shop, room to room on Rowan Row and down Linden Lane), with a soft paper fade between clips (`REEL` in `scenes/main.gd`). The menu camera uses an off-centre lens so the plane shows in the open space beside the page (right in landscape, below it in portrait).
+
 The card photos in `ui/thumbs/` are snapshots of each flight's key moment, rendered by the game itself (HUD hidden) and saved as small JPEGs. Re-capture them if a flight's look changes.
 
 ## Levels

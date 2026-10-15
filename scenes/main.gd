@@ -18,7 +18,6 @@ extends Node
 @onready var credits: CanvasLayer = $Credits
 
 var _loading: CanvasLayer
-var _menu_t := 0.0
 var _end_timer := -1.0
 var _pending := {}
 var _last_flight_time := 0.0
@@ -128,7 +127,7 @@ func go_menu() -> void:
 	kid.visible = false
 	menu_plane.visible = true
 	town.set_time_of_day("golden")
-	_menu_t = 0.0
+	_reel_i = -1
 	_update_menu_plane(0.0)
 	cam.set_mode(ChaseCamera.Mode.MENU, true)
 	menu.open()
@@ -148,6 +147,7 @@ func start_level(index: int) -> void:
 	hud.reset()
 	plane.reset()
 	menu_plane.visible = false
+	_hide_reel()
 	kid.visible = true
 	kid.global_position = data.platform_position
 	kid.rotation = Vector3(0, data.start_yaw(), 0)
@@ -323,22 +323,95 @@ func _notification(what: int) -> void:
 		pause_game()
 
 
-## Decorative plane looping over Linden Lane behind the menu.
+# --- Menu showreel ------------------------------------------------------------------------
+
+## Behind the menu, the paper plane flies the best bits of the flights: [level index, start,
+## end] (points near the route; the clip runs along the route between them).
+const REEL := [
+	[1, Vector3(-18, -0.4, -299.3), Vector3(16, -0.2, -304)],
+	[2, Vector3(3, 5.9, -345.5), Vector3(-31.5, 5.2, -359)],
+	[6, Vector3(35.3, 5.45, -100.4), Vector3(33.4, 2.1, -128.5)],
+	[3, Vector3(0.8, 6.1, 58.6), Vector3(-5.5, 1.3, 33)],
+	[2, Vector3(-34, 2.5, -411), Vector3(17, 9.3, -427)],
+	[5, Vector3(31, 8, -343), Vector3(32, 1.65, -396)],
+	[0, Vector3(5, 6.5, -44), Vector3(-19, 5.5, -111)],
+]
+const REEL_SPEED := 9.0
+const REEL_FADE := 0.35
+
+var _reel_curves := {}
+var _reel_i := -1
+var _reel_off := 0.0
+var _reel_end := 0.0
+var _reel_fade: ColorRect
+
+
+func _reel_curve(li: int) -> Curve3D:
+	if _reel_curves.has(li):
+		return _reel_curves[li]
+	var c := Curve3D.new()
+	c.bake_interval = 0.4
+	var pts: PackedVector3Array = Game.levels[li].route_points()
+	for p in pts:
+		c.add_point(p)
+	for i in pts.size():
+		var t := (pts[mini(i + 1, pts.size() - 1)] - pts[maxi(i - 1, 0)]) / 6.0
+		if i == 0 or i == pts.size() - 1:
+			t *= 0.5
+		c.set_point_in(i, -t)
+		c.set_point_out(i, t)
+	_reel_curves[li] = c
+	return c
+
+
+func _next_reel_clip() -> void:
+	_reel_i = (_reel_i + 1) % REEL.size()
+	var clip: Array = REEL[_reel_i]
+	var c := _reel_curve(clip[0])
+	_reel_off = c.get_closest_offset(clip[1])
+	_reel_end = c.get_closest_offset(clip[2])
+	_update_menu_plane(0.0)
+	cam.set_mode(ChaseCamera.Mode.MENU, true)
+
+
+## Moves the menu plane along the current showreel clip, fading between clips.
 func _update_menu_plane(delta: float) -> void:
-	_menu_t += delta
-	var w := 0.11
-	var t := _menu_t * w
-	var p := _menu_path(t)
-	var p2 := _menu_path(t + 0.02)
-	var dir := (p2 - p).normalized()
-	var turn := _menu_path(t + 0.04) - 2.0 * p2 + p
-	var bank := clampf(-dir.cross(turn).y * 18.0, -0.8, 0.8)
+	if _reel_fade == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 5
+		add_child(layer)
+		_reel_fade = ColorRect.new()
+		_reel_fade.color = Color(0.98, 0.95, 0.88, 0.0)
+		_reel_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_reel_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+		layer.add_child(_reel_fade)
+	if _reel_i < 0:
+		_next_reel_clip()
+		return
+	_reel_off += REEL_SPEED * delta
+	if _reel_off >= _reel_end:
+		_next_reel_clip()
+		return
+	var c := _reel_curve(REEL[_reel_i][0])
+	var p := c.sample_baked(_reel_off, true)
+	var ahead := c.sample_baked(_reel_off + 0.8, true)
+	var further := c.sample_baked(_reel_off + 1.6, true)
+	var dir := (ahead - p).normalized()
+	var bank := clampf(-dir.cross(further - 2.0 * ahead + p).y * 6.0, -0.7, 0.7)
 	menu_plane.global_position = p
-	menu_plane.basis = Basis.looking_at(dir, Vector3.UP) * Basis(Vector3(0, 0, 1), bank)
+	if dir.length() > 0.5:
+		menu_plane.basis = Basis.looking_at(dir, Vector3.UP) * Basis(Vector3(0, 0, 1), bank)
+	# Fade the paper-coloured veil in at the end of a clip and out at the start of the next.
+	var left := (_reel_end - _reel_off) / REEL_SPEED
+	var into := (_reel_off - c.get_closest_offset(REEL[_reel_i][1])) / REEL_SPEED
+	_reel_fade.color.a = clampf(1.0 - minf(left, into) / REEL_FADE, 0.0, 1.0)
+	var s := Settings.viewport_size()
+	cam.menu_frame = Vector2(0.5, 0.86) if s.y > s.x else Vector2(0.84, 0.5)
 
 
-func _menu_path(t: float) -> Vector3:
-	return Vector3(13.0 * sin(t), 11.5 + 2.0 * sin(2.0 * t), -105.0 + 72.0 * cos(t))
+func _hide_reel() -> void:
+	if _reel_fade:
+		_reel_fade.color.a = 0.0
 
 
 # --- Cosmetics and flight tips --------------------------------------------------------------

@@ -19,6 +19,8 @@ enum Mode { MENU, INTRO, FOLLOW, ORBIT }
 var mode := Mode.MENU
 var plane: PaperPlane
 var menu_target: Node3D
+## Where the menu showreel's plane sits on screen (0..1), so it shows beside the menu page.
+var menu_frame := Vector2(0.5, 0.5)
 var intro_center := Vector3.ZERO
 var intro_yaw := 0.0
 var orbit_center := Vector3.ZERO
@@ -103,15 +105,17 @@ func _update(delta: float, snap: bool) -> void:
 	var cam_roll := 0.0
 	match mode:
 		Mode.MENU:
+			# Showreel: chase the menu plane closely along a flight's route.
 			if menu_target:
 				var mp := menu_target.global_position
 				var fwd := -menu_target.global_transform.basis.z
-				fwd.y = 0.0
-				fwd = fwd.normalized()
-				var side := fwd.cross(Vector3.UP)
-				desired = mp - fwd * 6.5 + Vector3.UP * 1.8 + side * 1.6
-				look = mp + fwd * 6.0
-				rate = 2.5
+				var flat := Vector3(fwd.x, 0.0, fwd.z).normalized()
+				desired = mp - flat * 3.1 + Vector3.UP * 0.75
+				look = mp + fwd * 5.0
+				desired = _clamp_to_world(desired, mp)
+				desired = _under_ceiling(mp, desired)
+				desired = _avoid_walls(mp + Vector3(0, 0.15, 0), desired)
+				rate = 6.0
 		Mode.INTRO:
 			var swing := sin(_time * 0.22) * 0.85
 			# Sweep slowly through an arc in front of the kid (the house is behind).
@@ -161,6 +165,11 @@ func _update(delta: float, snap: bool) -> void:
 		pos = _clamp_to_world(pos, plane.state.pos)
 		pos = _under_ceiling(plane.state.pos, pos)
 		pos = _avoid_walls(plane.get_global_transform_interpolated().origin + Vector3(0, 0.15, 0), pos)
+	elif mode == Mode.MENU and menu_target:
+		var mp := menu_target.global_position
+		pos = _clamp_to_world(pos, mp)
+		pos = _under_ceiling(mp, pos)
+		pos = _avoid_walls(mp + Vector3(0, 0.15, 0), pos)
 	var offset := Vector3.ZERO
 	if _shake > 0.001:
 		offset = Vector3(_rng.randf_range(-1, 1), _rng.randf_range(-1, 1), _rng.randf_range(-1, 1)) * _shake * 0.35
@@ -170,6 +179,21 @@ func _update(delta: float, snap: bool) -> void:
 		look_at(_look, Vector3.UP)
 	rotate_object_local(Vector3(0, 0, 1), -cam_roll)
 	fov = lerpf(fov, target_fov, 1.0 - exp(-3.0 * delta)) if not snap else target_fov
+	_apply_frame()
+
+
+## In the menu, shifts the view (an off-centre lens) so the plane appears at menu_frame instead
+## of the middle of the screen, which the menu page covers.
+func _apply_frame() -> void:
+	if mode != Mode.MENU or menu_frame == Vector2(0.5, 0.5):
+		projection = Camera3D.PROJECTION_PERSPECTIVE
+		return
+	var vp := get_viewport().get_visible_rect().size
+	var aspect := vp.x / maxf(vp.y, 1.0)
+	var h := 2.0 * near * tan(deg_to_rad(fov) * 0.5)
+	projection = Camera3D.PROJECTION_FRUSTUM
+	size = h
+	frustum_offset = Vector2(-(menu_frame.x - 0.5) * h * aspect, (menu_frame.y - 0.5) * h)
 
 
 ## Pulls the camera in front of any wall between the subject and the desired position.
