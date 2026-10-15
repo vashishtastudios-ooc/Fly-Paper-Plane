@@ -196,10 +196,10 @@ func _on_released(hand: Vector3) -> void:
 
 func _on_landed(info: Dictionary) -> void:
 	Game.set_state(Game.State.LANDED)
-	# Any friend waiting at the landing spot (Biscuit the dog) is delighted.
-	for buddy in get_tree().get_nodes_in_group("landing_buddy"):
-		if level.horizontal_distance_to_pad((buddy as Node3D).global_position) < 4.0:
-			buddy.call("celebrate")
+	# A pet on the landing spot reacts only if the plane came to rest touching it.
+	for pet in get_tree().get_nodes_in_group("pets"):
+		if pet.is_touching(plane.state.pos):
+			pet.react()
 	var data := Game.level()
 	var stats := {
 		"dist": info.dist,

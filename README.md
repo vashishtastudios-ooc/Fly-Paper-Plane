@@ -73,6 +73,17 @@ Other places to tune:
 - Camera framing, damping and FOV are exported on `scenes/camera/chase_camera.gd`.
 - Scoring rules are in `autoload/game.gd` (`compute_landing_score`).
 
+## Pets on the landing spots
+
+Smooth, rounded pets (`props/pet.gd`, built from merged primitive shapes) sit in the middle of some landing spots:
+
+| Flight | Pet | Idle | When the plane touches it |
+|---|---|---|---|
+| 1 | Pickle, a ginger tabby, on the picnic blanket (`props/cat`) | Lazy tail-tip flick, ear twitches, slow head turns | Tail swish, ears flick, a little hop and pink sparkles |
+| 7 | Biscuit the dog, in his bed (`props/dog`) | Gentle tail wag, breathing | Big happy wag, a bounce and pink sparkles |
+
+A pet only reacts when the plane touches it: bumping into it or coming to rest against it. A pet is part of the landing spot (pad layer, collider kind `buddy`), so touching it counts as arriving and stops the plane there instead of crashing. A landing elsewhere on the spot leaves the pet alone.
+
 ## Plane trails
 
 `scenes/plane/plane_trail.gd` (`PlaneTrail`) draws the trail for the flying plane and the menu plane. Each wingtip leaves a soft-edged ribbon with a bright core and a wider glow. Samples are spaced by distance so the ribbons stay smooth at any frame rate, and they fade out over the style's lifetime, so the trail drifts away when the plane stops. Every style has its own particles:
@@ -122,7 +133,7 @@ The card photos in `ui/thumbs/` are snapshots of each flight's key moment, rende
 - Throw from the treehouse into the library's open upstairs window, swoop down past the tall bookshelves and out the low window on the other side.
 - Over the paddling pool, in through the garage's roller door, skim over the little car and out the back window.
 - Through the barbecue smoke, in through the hall's garden doors under the landing, then warm air from the floor grate lifts you up the stairwell and out the upstairs window (the reverse of Open House Day's stairwell).
-- Over the washing line and in through the den's garden doors to land in Biscuit's bed. Biscuit (`props/dog`, a smooth rounded dog) sits in the middle of it. His tail wags gently all the time and happily when you land; he's part of the landing spot, so bumping into him stops the plane there instead of crashing.
+- Over the washing line and in through the den's garden doors to land in Biscuit's bed. Biscuit the dog (`props/dog`) sits in the middle of it.
 
 **Ponds:** stone-walled basins cut into the ground (`Terrain.PONDS`, built by `TownBuilder._ponds()`). Each pond has its own water level, and `Terrain.water_height()` covers the river and the ponds alike, so skips, skims, splashes and sinking air work the same everywhere. Pond edges sit on the 4 m terrain grid so the terrain mesh can leave a clean hole for them.
 

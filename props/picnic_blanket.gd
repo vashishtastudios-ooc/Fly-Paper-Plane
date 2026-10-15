@@ -22,7 +22,8 @@ func _build(b: MeshBuilder) -> void:
 	var solid := Mats.get_mat("solid")
 	for p in [Vector3(-0.6, y, 0.3), Vector3(0.4, y, 0.5)]:
 		b.cylinder(solid, Transform3D(Basis(), p), 0.2, 0.22, 0.03, 12, Color("#fbf8f0"))
-	for p in [Vector3(-0.2, y, -0.4), Vector3(0.1, y, 0.0)]:
+	# (The middle is left free for the cat.)
+	for p in [Vector3(-0.2, y, -0.4), Vector3(-0.95, y, -0.55)]:
 		b.cylinder(solid, Transform3D(Basis(), p), 0.05, 0.06, 0.12, 8, Color("#a9c9db"))
 	for p in [Vector3(-0.62, y + 0.1, 0.3), Vector3(-0.5, y + 0.09, 0.42), Vector3(0.7, y + 0.08, -0.3)]:
 		b.sphere(solid, p, Vector3(0.08, 0.08, 0.08), 4, 7, Color("#d8433b"))

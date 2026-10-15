@@ -28,6 +28,7 @@ const BRIDGE_SCENE := preload("res://props/bridge.tscn")
 const FOOTBRIDGE_SCENE := preload("res://props/footbridge.tscn")
 const ARCHWAY_SCENE := preload("res://props/archway.tscn")
 const DOG_SCENE := preload("res://props/dog.tscn")
+const CAT_SCENE := preload("res://props/cat.tscn")
 const FOUNTAIN_SCENE := preload("res://props/fountain.tscn")
 const BANDSTAND_SCENE := preload("res://props/bandstand.tscn")
 const JETTY_SCENE := preload("res://props/jetty.tscn")
@@ -676,6 +677,13 @@ func _park() -> void:
 	blanket.position = Vector3(-30, 0, -128)
 	blanket.rotation.y = 0.25
 	add_child(blanket)
+	# Pickle the cat sits in the middle of the blanket (flight 1's landing spot), facing the way
+	# the plane comes in.
+	var cat: Node3D = CAT_SCENE.instantiate()
+	cat.batcher = batcher
+	cat.position = Vector3(-30, 0.13, -128)
+	cat.rotation.y = 0.59
+	add_child(cat)
 	var benches := [[Vector3(-12.5, 0, -121), 2.1], [Vector3(-23.5, 0, -133), 1.6], [Vector3(-34, 0, -155), 0.2],
 		[Vector3(-26, 0, -165), 3.0], [Vector3(-13, 0, -178), 2.5], [Vector3(-33, 0, -126), -1.4]]
 	for bdat in benches:

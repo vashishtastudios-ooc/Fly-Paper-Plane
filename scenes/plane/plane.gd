@@ -387,8 +387,11 @@ func _check_collisions(prev: Vector3, prev_vy: float) -> void:
 			if level and prev.y >= level.pad_top() - 0.15:
 				_land(level.pad_contact_point(safe))
 				if collider.get_meta("kind", "") == "buddy":
-					# Bumped gently into the friend waiting on the spot: stop right there.
+					# Bumped gently into the pet waiting on the spot: stop right there, and it reacts.
 					state.v = 0.0
+					var pet: Node = (collider as Node).get_parent()
+					if pet and pet.has_method("react"):
+						pet.react()
 				return
 		# Clipping the edge of the target itself (a raft or jetty) at deck height: hop up onto it.
 		if level and level.horizontal_distance_to_pad(contact) < level.pad_radius() + 0.4 				and absf(contact.y - level.pad_top()) < 0.35:
