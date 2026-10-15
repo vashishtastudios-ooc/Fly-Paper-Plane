@@ -694,7 +694,7 @@ func _den(b: MeshBuilder) -> void:
 	for s in [-1.0, 1.0]:
 		b.sphere(solid, bed + Vector3(-0.4 + s * 0.16, 0.18, 0.5), Vector3(0.07, 0.05, 0.07), 3, 6, Color("#fbf8f0"))
 	b.box_mm(solid, bed + Vector3(-0.42, 0.15, 0.47), bed + Vector3(-0.38, 0.19, 0.53), Color("#fbf8f0"))
-	_sitting_dog(b, Vector3(3.3, GF, -3.4))
+	# Biscuit himself sits in the middle of the bed (props/dog, placed by the town).
 	b.sphere(solid, Vector3(2.5, GF + 0.12, -2.4), Vector3(0.12, 0.12, 0.12), 4, 8, Color("#c8423b"))
 	# Sofa, TV cabinet, bookshelf, a floor lamp and a window seat.
 	_rug(b, Vector2(-2.6, -4.4), Vector2(2.2, 1.2), GF, Color("#e0a13a"), Color("#3f7d4f"))
@@ -719,23 +719,6 @@ static func _ring(c: Vector3, r: float, n: int) -> PackedVector3Array:
 		var a := TAU * i / n
 		pts.append(c + Vector3(cos(a) * r, 0, sin(a) * r))
 	return pts
-
-
-func _sitting_dog(b: MeshBuilder, at: Vector3) -> void:
-	var solid := _m("solid")
-	var fur := Color("#d9a066")
-	var dark := Color("#8a5a32")
-	b.sphere(solid, at + Vector3(0, 0.32, 0.05), Vector3(0.24, 0.3, 0.26), 5, 8, fur)
-	b.sphere(solid, at + Vector3(0, 0.62, -0.08), Vector3(0.17, 0.17, 0.18), 5, 8, fur)
-	b.sphere(solid, at + Vector3(0, 0.58, -0.25), Vector3(0.09, 0.07, 0.1), 3, 6, fur.lightened(0.1))
-	b.sphere(solid, at + Vector3(0, 0.6, -0.34), Vector3(0.035, 0.03, 0.03), 3, 5, Color("#2a2522"))
-	for s in [-1.0, 1.0]:
-		b.sphere(solid, at + Vector3(s * 0.16, 0.6, -0.04), Vector3(0.05, 0.13, 0.08), 3, 6, dark)
-		b.sphere(solid, at + Vector3(s * 0.07, 0.68, -0.22), Vector3(0.025, 0.025, 0.02), 3, 5, Color("#2a2522"))
-		b.cylinder(solid, Transform3D(Basis(), at + Vector3(s * 0.1, 0, -0.1)), 0.05, 0.05, 0.22, 6, fur)
-	b.cylinder(solid, Transform3D(Basis(), at + Vector3(0, 0.46, -0.06)), 0.13, 0.13, 0.05, 10, Color("#c8423b"))
-	b.tube(solid, PackedVector3Array([at + Vector3(0, 0.15, 0.28), at + Vector3(0.12, 0.3, 0.45)]), 0.03, 4, fur)
-	add_box("furniture", at + Vector3(0, 0.4, 0), Vector3(0.5, 0.8, 0.6))
 
 
 # --- Shell helpers ------------------------------------------------------------------------------

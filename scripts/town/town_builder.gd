@@ -27,6 +27,7 @@ const TOWER_SCENE := preload("res://props/clock_tower.tscn")
 const BRIDGE_SCENE := preload("res://props/bridge.tscn")
 const FOOTBRIDGE_SCENE := preload("res://props/footbridge.tscn")
 const ARCHWAY_SCENE := preload("res://props/archway.tscn")
+const DOG_SCENE := preload("res://props/dog.tscn")
 const FOUNTAIN_SCENE := preload("res://props/fountain.tscn")
 const BANDSTAND_SCENE := preload("res://props/bandstand.tscn")
 const JETTY_SCENE := preload("res://props/jetty.tscn")
@@ -1178,6 +1179,14 @@ func _willow_close() -> void:
 		h.shutter_color = Color(Mats.SHUTTER_COLORS[(i * 3 + 2) % Mats.SHUTTER_COLORS.size()])
 		h.seed_value = 90 + i
 		add_child(h)
+
+	# Biscuit sits in the middle of his bed in the den (flight 7's landing spot), facing the doors.
+	var dog: Node3D = DOG_SCENE.instantiate()
+	dog.batcher = batcher
+	var den_z: float = WILLOW_HOUSES[3][1]
+	# The bed's center in the den (open_house DOG_BED), on top of the cushion.
+	dog.position = Vector3(WILLOW_X + 0.4, 0.54, den_z - 2.2)
+	add_child(dog)
 
 	var b := MeshBuilder.new()
 	var solid := Mats.get_mat("solid")

@@ -122,7 +122,7 @@ The card photos in `ui/thumbs/` are snapshots of each flight's key moment, rende
 - Throw from the treehouse into the library's open upstairs window, swoop down past the tall bookshelves and out the low window on the other side.
 - Over the paddling pool, in through the garage's roller door, skim over the little car and out the back window.
 - Through the barbecue smoke, in through the hall's garden doors under the landing, then warm air from the floor grate lifts you up the stairwell and out the upstairs window (the reverse of Open House Day's stairwell).
-- Over the washing line and in through the den's garden doors to land in Biscuit's bed.
+- Over the washing line and in through the den's garden doors to land in Biscuit's bed. Biscuit (`props/dog`, a smooth rounded dog) sits in the middle of it. His tail wags gently all the time and happily when you land; he's part of the landing spot, so bumping into him stops the plane there instead of crashing.
 
 **Ponds:** stone-walled basins cut into the ground (`Terrain.PONDS`, built by `TownBuilder._ponds()`). Each pond has its own water level, and `Terrain.water_height()` covers the river and the ponds alike, so skips, skims, splashes and sinking air work the same everywhere. Pond edges sit on the 4 m terrain grid so the terrain mesh can leave a clean hole for them.
 
