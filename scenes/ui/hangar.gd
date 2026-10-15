@@ -1,5 +1,6 @@
 extends CanvasLayer
-## The Hangar: pick the plane's paper, trail and wing sticker. Shows a rotating 3D preview.
+## The Hangar: pick the plane's paper, trail and wing sticker. In the preview the plane flies
+## gentle figure-eights with the real trail (ribbons and particles), as in a flight.
 ## Items unlock with ribbons earned across all flights.
 
 signal closed
@@ -11,8 +12,8 @@ var _ribbons_label: Label
 var _preview_box: SubViewportContainer
 var _viewport: SubViewport
 var _preview_plane: MeshInstance3D
-var _trail_mesh: ImmediateMesh
-var _trail_mat: StandardMaterial3D
+var _flyer: Node3D
+var _trail: PlaneTrail
 var _body: BoxContainer
 var _options: VBoxContainer
 var _buttons := {}  # kind -> {id: Button}
@@ -129,12 +130,14 @@ func _build_preview() -> void:
 	_preview_box.custom_minimum_size = Vector2(380, 250)
 	_viewport = SubViewport.new()
 	_viewport.own_world_3d = true
-	_viewport.transparent_bg = true
+	_viewport.transparent_bg = false
 	_viewport.msaa_3d = Viewport.MSAA_4X
 	_viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	_preview_box.add_child(_viewport)
 	var env := Environment.new()
-	env.background_mode = Environment.BG_CLEAR_COLOR
+	# A soft sky behind the plane so every trail (even the glowing ones) shows clearly.
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("#6fa9d6")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("#f5d9bd")
 	env.ambient_light_energy = 0.7
@@ -149,26 +152,25 @@ func _build_preview() -> void:
 	_viewport.add_child(sun)
 	var cam := Camera3D.new()
 	cam.fov = 34.0
-	var cam_pos := Vector3(0, 0.95, 2.4)
-	cam.transform = Transform3D(Basis.looking_at(Vector3(0, 0.0, 0.15) - cam_pos, Vector3.UP), cam_pos)
+	var cam_pos := Vector3(0, 1.7, 5.3)
+	cam.transform = Transform3D(Basis.looking_at(Vector3(0, -0.05, 0) - cam_pos, Vector3.UP), cam_pos)
 	_viewport.add_child(cam)
+	# The plane flies figure-eights; the trail follows it exactly as in a flight.
+	_flyer = Node3D.new()
+	_flyer.name = "Flyer"
+	_viewport.add_child(_flyer)
 	_preview_plane = MeshInstance3D.new()
 	_preview_plane.mesh = PaperPlaneMesh.get_mesh()
-	_viewport.add_child(_preview_plane)
-	_trail_mesh = ImmediateMesh.new()
-	var trail := MeshInstance3D.new()
-	trail.mesh = _trail_mesh
-	_trail_mat = StandardMaterial3D.new()
-	_trail_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_trail_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_trail_mat.vertex_color_use_as_albedo = true
-	_trail_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	trail.material_override = _trail_mat
-	_preview_plane.add_child(trail)
+	_flyer.add_child(_preview_plane)
+	_trail = PlaneTrail.new()
+	_trail.source = _flyer
+	_viewport.add_child(_trail)
 
 
 func open() -> void:
 	visible = true
+	_trail.clear()
+	_trail.active = true
 	_refresh()
 	_layout()
 	if not get_tree().process_frame.is_connected(_layout):
@@ -177,6 +179,7 @@ func open() -> void:
 
 func close() -> void:
 	visible = false
+	_trail.active = false
 
 
 func _refresh() -> void:
@@ -195,7 +198,9 @@ func _refresh() -> void:
 			b.text = nm if unlocked else "%s  (%d ribbons)" % [nm, req]
 			b.set_pressed_no_signal(Game.cosmetics.get(kind, "") == id)
 	Cosmetics.apply(_preview_plane, Game.cosmetics.paper, Game.cosmetics.sticker)
-	_trail_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD if Game.cosmetics.trail == "comet" else BaseMaterial3D.BLEND_MODE_MIX
+	if _trail.style != Game.cosmetics.trail:
+		_trail.set_style(Game.cosmetics.trail)
+		_trail.clear()
 
 
 func _select(kind: String, id: String) -> void:
@@ -207,26 +212,20 @@ func _process(delta: float) -> void:
 	if not visible:
 		return
 	_t += delta
-	_preview_plane.rotation = Vector3(0.12 * sin(_t * 0.9), _t * 0.6, 0.25 * sin(_t * 1.3))
-	_draw_trail_preview()
+	# A figure-eight in front of the camera, banking into the turns.
+	var w := 0.95
+	var p := _eight(_t * w)
+	var ahead := _eight(_t * w + 0.05)
+	var further := _eight(_t * w + 0.1)
+	var dir := (ahead - p).normalized()
+	var turn := further - 2.0 * ahead + p
+	var bank := clampf(-dir.cross(turn).y * 260.0, -0.75, 0.75)
+	_flyer.position = p
+	_flyer.basis = Basis.looking_at(dir, Vector3.UP) * Basis(Vector3(0, 0, 1), bank)
 
 
-func _draw_trail_preview() -> void:
-	_trail_mesh.clear_surfaces()
-	var style: String = Game.cosmetics.trail
-	var n := 30
-	var w := 0.03 * Cosmetics.trail_width(style)
-	for tip in [PaperPlaneMesh.TIP_LEFT, PaperPlaneMesh.TIP_RIGHT]:
-		_trail_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP)
-		for i in n:
-			var t := float(i) / (n - 1)
-			var p: Vector3 = tip + Vector3(0.1 * sin((1.0 - t) * 3.0 + _t * 2.0) * (1.0 - t), 0, (1.0 - t) * 1.6)
-			var c := Cosmetics.trail_color(style, t, i, _t)
-			_trail_mesh.surface_set_color(c)
-			_trail_mesh.surface_add_vertex(p + Vector3(0, w * (0.4 + t), 0))
-			_trail_mesh.surface_set_color(c)
-			_trail_mesh.surface_add_vertex(p - Vector3(0, w * (0.4 + t), 0))
-		_trail_mesh.surface_end()
+func _eight(a: float) -> Vector3:
+	return Vector3(0.8 * sin(a), 0.1 * sin(2.0 * a + 0.6), 0.45 * sin(2.0 * a))
 
 
 func _layout() -> void:

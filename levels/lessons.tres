@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 14.3, 5.9, -31.2, 0, 0, 0, 0, 0, 0, 9, 5.6, -32.5, 0, 0, 0, 0, 0, 0, 4.5, 5.3, -36, 0, 0, 0, 0, 0, 0, 1.5, 5.1, -42, 0, 0, 0, 0, 0, 0, 0, 4.7, -50, 0, 0, 0, 0, 0, 0, 0, 3.4, -58, 0, 0, 0, 0, 0, 0, 0, 4.2, -64, 0, 0, 0, 0, 0, 0, 0, 6, -72, 0, 0, 0, 0, 0, 0, 0, 8, -80, 0, 0, 0, 0, 0, 0, 0, 8.8, -88, 0, 0, 0, 0, 0, 0, 0, 8.7, -96, 0, 0, 0, 0, 0, 0, -3, 8.4, -104, 0, 0, 0, 0, 0, 0, -8, 7.4, -110, 0, 0, 0, 0, 0, 0, -14, 5.6, -112, 0, 0, 0, 0, 0, 0, -20, 3.6, -112.5, 0, 0, 0, 0, 0, 0, -25, 1.8, -112.3, 0, 0, 0, 0, 0, 0, -29, 0.4, -112),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 17
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Flying Lessons"
+short_goal = "Learn to fly in seven quick lessons."
+goal_text = "Before your first flight, a few quick lessons. You'll learn to glide, turn, dive and climb, ride rising air, use a gust and land. Take your time: if you crash, you go straight back to the start of the lesson."
+platform_kind = "balcony"
+platform_position = Vector3(16.3, 5, -31)
+platform_yaw = 1.571
+aim_point = Vector3(6, 0, -33)
+route = SubResource("Curve3D_route")
+gate_radius = 2.2
+pad_position = Vector3(-29, 0.02, -112)
+pad_radius = 3.5
+pad_name = "Landing circle"
+par_time = 40
+thermals = [{
+"x": 0,
+"z": -72,
+"radius": 8,
+"strength": 4.2,
+"top": 11,
+"style": "golden"
+}]
+bonus_stars = PackedVector3Array()
+hazard_lines = []

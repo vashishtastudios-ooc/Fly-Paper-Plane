@@ -154,7 +154,10 @@ static func ground_height(x: float, z: float) -> float:
 # --- Level-aware helpers ----------------------------------------------------------
 
 func _collect_keepouts() -> void:
-	for lvl in Game.levels:
+	var all: Array = Game.levels.duplicate()
+	if Game.lessons_level:
+		all.append(Game.lessons_level)
+	for lvl: LevelData in all:
 		var pts := lvl.route_points()
 		for i in pts.size() - 1:
 			_route_keepouts.append([pts[i], pts[i + 1]])

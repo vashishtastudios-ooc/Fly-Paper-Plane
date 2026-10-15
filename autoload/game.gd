@@ -24,6 +24,11 @@ const LEVEL_PATHS := [
 var state: int = State.LOADING
 var levels: Array[LevelData] = []
 var current_level := 0
+## The first-flight tutorial (Flying Lessons) is played as level index LESSONS.
+const LESSONS := -1
+const LESSONS_PATH := "res://levels/lessons.tres"
+var lessons_level: LevelData
+var lessons_done := false
 var unlocked := 1
 var best_scores := {}   # level index -> int
 var best_ribbons := {}  # level index -> int
@@ -37,6 +42,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	for p in LEVEL_PATHS:
 		levels.append(load(p) as LevelData)
+	lessons_level = load(LESSONS_PATH) as LevelData
 	load_save()
 
 
@@ -48,11 +54,20 @@ func set_state(s: int) -> void:
 
 
 func level() -> LevelData:
-	return levels[current_level]
+	return lessons_level if current_level == LESSONS else levels[current_level]
+
+
+func in_lessons() -> bool:
+	return current_level == LESSONS
+
+
+func finish_lessons() -> void:
+	lessons_done = true
+	save_game()
 
 
 func is_unlocked(i: int) -> bool:
-	return UNLOCK_ALL_FOR_TESTING or i < unlocked
+	return i == LESSONS or UNLOCK_ALL_FOR_TESTING or i < unlocked
 
 
 func has_next_level() -> bool:
@@ -153,6 +168,7 @@ func load_save() -> void:
 	for kind in Cosmetics.DEFAULTS:
 		cosmetics[kind] = str(cfg.get_value("cosmetics", kind, Cosmetics.DEFAULTS[kind]))
 	tips_seen = cfg.get_value("tips", "seen", {})
+	lessons_done = bool(cfg.get_value("progress", "lessons_done", false))
 	for i in LEVEL_PATHS.size():
 		var key := "level_%d" % (i + 1)
 		if cfg.has_section_key(key, "best_score"):
@@ -164,6 +180,7 @@ func load_save() -> void:
 func save_game() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("progress", "unlocked", unlocked)
+	cfg.set_value("progress", "lessons_done", lessons_done)
 	for kind in cosmetics:
 		cfg.set_value("cosmetics", kind, cosmetics[kind])
 	cfg.set_value("tips", "seen", tips_seen)

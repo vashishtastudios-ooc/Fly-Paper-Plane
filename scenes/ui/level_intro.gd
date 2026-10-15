@@ -52,7 +52,7 @@ func _ready() -> void:
 
 
 func open(index: int, data: LevelData) -> void:
-	_num.text = "FLIGHT %d" % (index + 1)
+	_num.text = "FLYING LESSONS" if index == Game.LESSONS else "FLIGHT %d" % (index + 1)
 	_name.text = data.level_name
 	_goal.text = data.goal_text
 	var best := ("   Best %d" % Game.best_scores[index]) if Game.best_scores.has(index) else ""

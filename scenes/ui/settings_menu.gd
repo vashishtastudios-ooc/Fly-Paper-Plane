@@ -3,6 +3,7 @@ extends CanvasLayer
 ## Works from the main menu and from the pause screen (runs while paused).
 
 signal closed
+signal lessons_pressed
 
 var _sheet: NotebookSheet
 var _quality_buttons: Array[Button] = []
@@ -67,6 +68,12 @@ func _ready() -> void:
 	v.add_child(_check_row("invert", "Invert climb and dive", Settings.invert_pitch, func(on: bool): Settings.set_option("invert_pitch", on)))
 	if Settings.is_mobile:
 		v.add_child(_check_row("vibration", "Vibration", Settings.vibration, func(on: bool): Settings.set_option("vibration", on)))
+	var lessons := UIKit.paper_button("Play the flying lessons again", false, 20)
+	lessons.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	lessons.pressed.connect(func():
+		close()
+		lessons_pressed.emit())
+	v.add_child(lessons)
 	v.add_child(_check_row("tips", "Flight tips", Settings.show_tips, func(on: bool):
 		Settings.set_option("show_tips", on)
 		if on:

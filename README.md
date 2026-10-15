@@ -107,6 +107,20 @@ Behind the page runs a live showreel: the paper plane flies the best bits of the
 
 The card photos in `ui/thumbs/` are snapshots of each flight's key moment, rendered by the game itself (HUD hidden) and saved as small JPEGs. Re-capture them if a flight's look changes.
 
+## Flying Lessons (first-flight tutorial)
+
+The first time someone presses Play, they get **Flying Lessons** instead of Flight 1: a short, forgiving practice course from Flight 1's balcony, across Linden Lane and into the park (`levels/lessons.tres`, run as level index `Game.LESSONS` = -1). A prompt card at the top of the screen (`scenes/gameplay/flying_lessons.gd`) teaches one thing at a time and waits until the player actually does it:
+
+1. Let it glide
+2. Turn left (toward a ring)
+3. Dive, then climb
+4. Ride rising air
+5. Use a gust
+6. Turn right (into the park)
+7. Land on the big circle
+
+There is no failing. A crash puts the plane straight back in the air at the start of the current lesson, and flying past the place for a lesson without doing it does the same ("Let's try that again!"). Landing ends the lessons (no score) and goes straight on to Flight 1. "Skip lessons" on the card skips straight to Flight 1. Finishing or skipping is saved (`lessons_done`), and Settings has **Play the flying lessons again**. The keyboard and touch versions of each prompt name the right controls.
+
 ## Levels
 
 | # | Flight | Start | Landing target |
@@ -249,7 +263,7 @@ The rule: you only crash when the plane visibly touches something.
 
 ## Hangar (plane customization)
 
-The Hangar lets players change the plane's paper, wingtip trail and wing sticker. These are looks only, so flight behavior and level balance never change. Items unlock from the total number of ribbons earned across all flights (up to 18):
+The Hangar lets players change the plane's paper, wingtip trail and wing sticker. Its preview shows the plane flying gentle figure-eights against a little patch of sky, using the same trail (ribbons and particles) as in a flight. These are looks only, so flight behavior and level balance never change. Items unlock from the total number of ribbons earned across all flights (up to 18):
 
 - **Papers:** Notebook (free), Graph paper (2), Red origami (4), Newspaper (6), Old map (8), Sky blue card (10), Polka dot (12)
 - **Trails:** Classic white (free), Rainbow ribbon (3), Gold sparkles (5), Confetti (7), Comet glow (9)
@@ -301,7 +315,7 @@ shaders/         Water, thermal shimmer, pad light beam
 levels/          level_1.tres ... level_3.tres
 ```
 
-Saves go to `user://save.cfg`: best score and ribbons per level, unlocked levels, Hangar choices and seen tips. Settings go to `user://settings.cfg`.
+Saves go to `user://save.cfg`: best score and ribbons per level, unlocked levels, Hangar choices, seen tips and whether the flying lessons are done. Settings go to `user://settings.cfg`.
 
 ## Swapping in real models
 

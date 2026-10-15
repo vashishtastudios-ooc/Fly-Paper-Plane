@@ -22,6 +22,8 @@ var _end_timer := -1.0
 var _pending := {}
 var _last_flight_time := 0.0
 var _slow_cooldown := 0.0
+var _lessons: FlyingLessons
+var _respawn_timer := -1.0
 var collision_debug: CollisionDebug
 
 
@@ -102,7 +104,12 @@ func _wire() -> void:
 	touch.gust_pressed.connect(func(): plane.use_gust())
 	touch.roll_pressed.connect(func(d: float): plane.barrel_roll(d))
 	touch.pause_pressed.connect(pause_game)
-	menu.level_chosen.connect(start_level)
+	# The very first flight is the flying lessons.
+	menu.level_chosen.connect(func(i: int): start_level(Game.LESSONS if not Game.lessons_done else i))
+	settings_menu.connect("lessons_pressed", func():
+		pause_ui.close()
+		get_tree().paused = false
+		start_level(Game.LESSONS))
 	intro.throw_pressed.connect(throw_plane)
 	intro.flights_pressed.connect(go_menu)
 	result.next_pressed.connect(func(): start_level(mini(Game.current_level + 1, Game.levels.size() - 1)))
@@ -121,6 +128,7 @@ func _wire() -> void:
 
 func go_menu() -> void:
 	get_tree().paused = false
+	_end_lessons()
 	_end_timer = -1.0
 	Game.set_state(Game.State.MENU)
 	intro.close()
@@ -148,6 +156,19 @@ func start_level(index: int) -> void:
 	_end_timer = -1.0
 	Game.current_level = index
 	var data := Game.level()
+	_end_lessons()
+	if Game.in_lessons():
+		_lessons = FlyingLessons.new()
+		_lessons.plane = plane
+		_lessons.skip_pressed.connect(func():
+			Game.finish_lessons()
+			start_level(0))
+		_lessons.finished.connect(Game.finish_lessons)
+		_lessons.retry_needed.connect(func():
+			hud.banner("Let's try that again!", Color("#ffd9a1"), 1.2)
+			_respawn_in_lesson())
+		add_child(_lessons)
+		_lessons.visible = false
 	level.build(data, town)
 	town.clear_trees_for_level(data)
 	hud.reset()
@@ -192,10 +213,44 @@ func _on_released(hand: Vector3) -> void:
 	hud.visible = true
 	if Settings.touch_ui:
 		touch.open()
+	if _lessons:
+		_lessons.visible = true
+
+
+func _end_lessons() -> void:
+	_respawn_timer = -1.0
+	if _lessons:
+		_lessons.queue_free()
+		_lessons = null
+
+
+## Lessons: put the plane straight back in the air at the start of the current lesson.
+func _respawn_in_lesson() -> void:
+	var cp := _lessons.checkpoint()
+	plane.launch(cp[0], cp[1])
+	plane.state.v = 9.5
+	plane.state.pitch = -0.05
+	Game.set_state(Game.State.FLYING)
+	cam.set_mode(ChaseCamera.Mode.FOLLOW, true)
+	hud.visible = true
+	if Settings.touch_ui:
+		touch.open()
 
 
 func _on_landed(info: Dictionary) -> void:
 	Game.set_state(Game.State.LANDED)
+	if _lessons:
+		# Lessons done: no score, just a well done and on to Flight 1.
+		_lessons.on_landed()
+		cam.orbit_center = info.position
+		cam.set_mode(ChaseCamera.Mode.ORBIT)
+		hud.banner("Well done!", UIKit.LIFT, 2.0)
+		level.hide_guides()
+		touch.close()
+		Settings.vibrate(60)
+		_pending = {"kind": "lessons"}
+		_end_timer = 3.6
+		return
 	# The pet sitting by the landing spot is delighted.
 	for pet in get_tree().get_nodes_in_group("pets"):
 		if level.horizontal_distance_to_pad((pet as Node3D).global_position) < pet.watch_radius:
@@ -231,6 +286,15 @@ func _on_landed(info: Dictionary) -> void:
 
 func _on_crashed(message: String, _kind: String) -> void:
 	Game.set_state(Game.State.CRASHED)
+	if _lessons:
+		# Lessons are forgiving: a moment to see what happened, then back in the air.
+		hud.banner(message + "  Let's try that again!", Color("#ffd9a1"), 1.2)
+		cam.orbit_center = plane.state.pos
+		cam.set_mode(ChaseCamera.Mode.ORBIT)
+		level.hide_guides()
+		touch.close()
+		_respawn_timer = 1.3
+		return
 	_pending = {"kind": "crash", "message": message, "stars": level.stars_collected,
 		"stars_total": level.stars_total(), "time": plane.flight_time}
 	if _kind != "stopped" and _kind != "soaked":
@@ -246,6 +310,10 @@ func _on_crashed(message: String, _kind: String) -> void:
 
 
 func _show_result() -> void:
+	if _pending.get("kind", "") == "lessons":
+		# Straight on to Flight 1 after the lessons.
+		start_level(0)
+		return
 	Game.set_state(Game.State.RESULT)
 	hud.visible = false
 	if _pending.kind == "land":
@@ -268,6 +336,10 @@ func resume_game() -> void:
 # --- Per frame ---------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	if _respawn_timer > 0.0 and not get_tree().paused:
+		_respawn_timer -= delta
+		if _respawn_timer <= 0.0 and _lessons:
+			_respawn_in_lesson()
 	match Game.state:
 		Game.State.MENU:
 			_update_menu_plane(delta)
@@ -451,6 +523,8 @@ func _tip(id: String, text: String, duration := 2.6) -> void:
 
 
 func _flight_hints(delta: float) -> void:
+	if Game.in_lessons():
+		return
 	var t := plane.flight_time
 	if t > 0.8:
 		_tip("steer", "Drag left or right to steer, up to climb" if touch.visible else "A / D to steer, W / S to climb and dive")
