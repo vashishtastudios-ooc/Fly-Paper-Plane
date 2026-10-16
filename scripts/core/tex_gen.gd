@@ -17,6 +17,7 @@ static func get_tex(kind: String) -> Texture2D:
 		"gravel": img = _gravel()
 		"siding": img = _siding()
 		"paint_siding": img = _paint_siding()
+		_ when kind.begins_with("paint_"): img = PaintTex.make(kind)
 		"shingle": img = _shingle()
 		"brick": img = _brick()
 		"stone": img = _stone()

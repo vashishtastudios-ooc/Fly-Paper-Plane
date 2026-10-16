@@ -136,7 +136,9 @@ static func _painterly_mat(kind: String) -> Material:
 
 ## A painterly material with one of the generated textures (a new one each call).
 ## Generated textures that have a hand-painted version for the painterly style.
-const PAINTED_TEX := {"siding": "paint_siding"}
+const PAINTED_TEX := {"siding": "paint_siding", "shingle": "paint_shingle", "grass": "paint_grass",
+	"asphalt": "paint_asphalt", "paving": "paint_paving", "cobble": "paint_cobble", "brick": "paint_brick",
+	"stone": "paint_stone", "plaster": "paint_plaster", "wood": "paint_wood", "gravel": "paint_gravel"}
 
 
 static func painterly_textured(tex_kind: String, scale: float) -> ShaderMaterial:
