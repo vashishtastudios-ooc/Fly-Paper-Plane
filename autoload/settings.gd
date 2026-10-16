@@ -22,7 +22,7 @@ var quality := -1
 ## leafy trees). Takes effect the next time the game starts.
 var art_style := "storybook"
 ## Steering multiplier applied to stick, touch and keyboard input.
-var sensitivity := 1.0
+var sensitivity := -1.0
 var invert_pitch := false
 var vibration := true
 var show_tips := true
@@ -69,6 +69,8 @@ func _ready() -> void:
 	Mats.painterly = art_style == "painterly"
 	if camera_style == "":
 		camera_style = default_camera_style()
+	if sensitivity < 0.0:
+		sensitivity = default_sensitivity()
 	if quality < 0:
 		quality = 1 if is_mobile else 2
 	get_viewport().size_changed.connect(_on_size_changed)
@@ -170,7 +172,7 @@ func reset_to_defaults() -> void:
 	sfx_volume = DEFAULT_SFX
 	ambience_volume = DEFAULT_AMBIENCE
 	quality = 1 if is_mobile else 2
-	sensitivity = DEFAULT_SENSITIVITY
+	sensitivity = default_sensitivity()
 	invert_pitch = false
 	vibration = true
 	show_tips = true
@@ -197,6 +199,10 @@ func set_option(option: String, value: Variant) -> void:
 		"camera_style": camera_style = value
 		"show_fps": show_fps = value
 	_save()
+
+
+func default_sensitivity() -> float:
+	return 1.2 if is_mobile else DEFAULT_SENSITIVITY
 
 
 func default_camera_style() -> String:
@@ -238,7 +244,7 @@ func _load() -> void:
 		sfx_volume = cfg.get_value("audio", "sfx", sfx_volume)
 		ambience_volume = cfg.get_value("audio", "ambience", ambience_volume)
 		quality = int(cfg.get_value("video", "quality", -1))
-		sensitivity = float(cfg.get_value("controls", "sensitivity", 1.0))
+		sensitivity = float(cfg.get_value("controls", "sensitivity", -1.0))
 		invert_pitch = bool(cfg.get_value("controls", "invert_pitch", false))
 		vibration = bool(cfg.get_value("controls", "vibration", true))
 		show_tips = bool(cfg.get_value("controls", "show_tips", true))
