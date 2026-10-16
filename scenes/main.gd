@@ -86,7 +86,7 @@ func _wire() -> void:
 	Game.cosmetics_changed.connect(_apply_cosmetics)
 	menu.hangar_pressed.connect(func(): hangar.open())
 	menu.settings_pressed.connect(func(): settings_menu.open())
-	menu.credits_pressed.connect(func(): credits.open())
+	settings_menu.connect("credits_pressed", func(): credits.open())
 	hangar.closed.connect(func(): menu.refresh())
 	pause_ui.settings_pressed.connect(func(): settings_menu.open())
 	level.star_collected.connect(func(p: Vector3):
@@ -492,8 +492,7 @@ func _update_menu_plane(delta: float) -> void:
 	var left := (_reel_end - _reel_off) / REEL_SPEED
 	var into := (_reel_off - c.get_closest_offset(REEL[_reel_i][1])) / REEL_SPEED
 	_reel_fade.color.a = clampf(1.0 - minf(left, into) / REEL_FADE, 0.0, 1.0)
-	var s := Settings.viewport_size()
-	cam.menu_frame = Vector2(0.5, 0.86) if s.y > s.x else Vector2(0.84, 0.5)
+	cam.menu_frame = menu.reel_frame()
 
 
 func _hide_reel() -> void:

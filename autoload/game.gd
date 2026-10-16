@@ -74,6 +74,17 @@ func has_next_level() -> bool:
 	return current_level + 1 < levels.size()
 
 
+## Maps. Each lists its flights (indices into `levels`) and the ribbons (from any flight) that
+## open it; "soon" maps show as Coming soon cards on the map page.
+const MAPS := [
+	{"id": "linden", "name": "Linden Lane", "blurb": "Gardens, windows and the old bridge", "levels": [0, 1, 2, 3, 4, 5, 6, 7], "ribbons": 0, "thumb": 2},
+	{"id": "harbour", "name": "Seaside Harbour", "blurb": "Boats, the pier and sea breezes", "levels": [], "ribbons": 15, "soon": true},
+	{"id": "farm", "name": "Maple Farm", "blurb": "Barns, fields and the windmill", "levels": [], "ribbons": 30, "soon": true},
+	{"id": "snow", "name": "Snowy Village", "blurb": "Chimney smoke and twinkling lights", "levels": [], "ribbons": 45, "soon": true},
+	{"id": "city", "name": "City Rooftops", "blurb": "Water towers and narrow alleys", "levels": [], "ribbons": 60, "soon": true},
+]
+
+
 func total_ribbons() -> int:
 	var n := 0
 	for k in best_ribbons:

@@ -4,6 +4,7 @@ extends CanvasLayer
 
 signal closed
 signal lessons_pressed
+signal credits_pressed
 
 var _sheet: NotebookSheet
 var _quality_buttons: Array[Button] = []
@@ -87,7 +88,15 @@ func _ready() -> void:
 	lessons.pressed.connect(func():
 		close()
 		lessons_pressed.emit())
-	v.add_child(lessons)
+	var credits := UIKit.paper_button("Credits", false, 20)
+	credits.pressed.connect(func():
+		close()
+		credits_pressed.emit())
+	var extra := HBoxContainer.new()
+	extra.add_theme_constant_override("separation", 12)
+	extra.add_child(lessons)
+	extra.add_child(credits)
+	v.add_child(extra)
 	v.add_child(_check_row("tips", "Flight tips", Settings.show_tips, func(on: bool):
 		Settings.set_option("show_tips", on)
 		if on:
