@@ -43,7 +43,7 @@ func _ready() -> void:
 	sm.shader = load("res://shaders/thermal.gdshader")
 	sm.set_shader_parameter("height", h)
 	sm.set_shader_parameter("radius", radius * 0.85)
-	sm.set_shader_parameter("intensity", 0.15 if style == "golden" else 0.05)
+	sm.set_shader_parameter("intensity", 0.11 if style == "golden" else 0.05)
 	sm.set_shader_parameter("tint", UIKit.LIFT)
 	if style == "smoke":
 		sm.set_shader_parameter("tint", Color(0.9, 0.85, 0.8))
@@ -94,6 +94,37 @@ func _ready() -> void:
 		q.size = Vector2(1.2, 1.2)
 		var mat := Mats.soft_alpha(Color(1, 1, 1, 1), TexGen.get_tex("cloud"), true, false)
 		q.material = mat
+	elif style == "golden":
+		# A few soft up-arrows drifting up the column: "the air rises here".
+		p.amount = 6 if Settings.is_mobile else 8
+		p.lifetime = clampf(h / 1.8, 2.5, 8.0)
+		p.preprocess = p.lifetime
+		pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
+		pm.emission_ring_axis = Vector3.UP
+		pm.emission_ring_radius = radius * 0.45
+		pm.emission_ring_inner_radius = radius * 0.1
+		pm.emission_ring_height = 0.5
+		pm.initial_velocity_min = 1.5
+		pm.initial_velocity_max = 2.0
+		pm.gravity = Vector3.ZERO
+		pm.scale_min = 0.9
+		pm.scale_max = 1.2
+		var gc := Gradient.new()
+		var mint := Color(0.62, 1.0, 0.78)
+		gc.set_color(0, Color(mint, 0.0))
+		gc.add_point(0.2, Color(mint, 0.85))
+		gc.add_point(0.75, Color(mint, 0.7))
+		gc.set_color(gc.get_point_count() - 1, Color(mint, 0.0))
+		var gct := GradientTexture1D.new()
+		gct.gradient = gc
+		pm.color_ramp = gct
+		q.size = Vector2(1.4, 1.4)
+		var cm2 := Mats.additive(Color(0.72, 1.0, 0.82), TexGen.get_tex("chevron"), true)
+		# Fade out right in front of the camera.
+		cm2.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
+		cm2.distance_fade_min_distance = 2.0
+		cm2.distance_fade_max_distance = 7.0
+		q.material = cm2
 	else:
 		p.amount = 36 if Settings.is_mobile else 72
 		p.lifetime = clampf(h / 2.2, 2.0, 9.0)
@@ -125,8 +156,8 @@ func _ready() -> void:
 	add_child(p)
 	if style == "lantern":
 		_build_sky_lanterns(h)
-	else:
-		_build_swirl(h)
+	elif style == "golden":
+		_build_ground_ring()
 
 
 ## Glowing paper sky lanterns drifting up the column.
@@ -174,66 +205,18 @@ func _build_sky_lanterns(h: float) -> void:
 	add_child(p)
 
 
-# --- Swirl of leaves spiralling up the column ---------------------------------------------
-
-var _swirl: MultiMeshInstance3D
-var _leaves: Array = []  # Each: [angle, height, radius_frac, climb_speed, spin_speed, spin]
-var _height := 1.0
-
-
-func _build_swirl(h: float) -> void:
-	_height = h
-	var count := 10 if Settings.is_mobile else 18
-	var rng := RandomNumberGenerator.new()
-	rng.seed = int(absf(global_position.x * 31.0 + global_position.z * 7.0)) + 1
+## A soft mint ring on the ground or water at the foot of the column, so it reads from above.
+func _build_ground_ring() -> void:
+	var ring := MeshInstance3D.new()
+	ring.name = "GroundRing"
 	var q := QuadMesh.new()
-	q.size = Vector2(0.24, 0.3)
-	var lm := StandardMaterial3D.new()
-	lm.albedo_texture = TexGen.get_tex("leaf")
-	lm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	lm.alpha_scissor_threshold = 0.5
-	lm.vertex_color_use_as_albedo = true
-	lm.vertex_color_is_srgb = true
-	lm.cull_mode = BaseMaterial3D.CULL_DISABLED
-	lm.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER
-	lm.distance_fade_min_distance = 1.5
-	lm.distance_fade_max_distance = 4.0
-	q.material = lm
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true
-	mm.mesh = q
-	mm.instance_count = count
-	var cols := ["#7fc98f", "#a6dba0", "#5fb37a", "#c6e8a8", "#8fd3a8", "#e8873a"]
-	for i in count:
-		_leaves.append([rng.randf() * TAU, rng.randf() * h, rng.randf_range(0.35, 0.8),
-			rng.randf_range(1.4, 2.4), rng.randf_range(-6.0, 6.0), rng.randf() * TAU])
-		mm.set_instance_color(i, Color(cols[i % cols.size()]))
-	_swirl = MultiMeshInstance3D.new()
-	_swirl.name = "LeafSwirl"
-	_swirl.multimesh = mm
-	_swirl.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_swirl.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	_swirl.visibility_range_end = 160.0
-	_swirl.custom_aabb = AABB(Vector3(-radius, 0, -radius), Vector3(radius * 2.0, h + 2.0, radius * 2.0))
-	add_child(_swirl)
-
-
-func _process(delta: float) -> void:
-	if _swirl == null or not _swirl.is_visible_in_tree():
-		return
-	var mm := _swirl.multimesh
-	for i in _leaves.size():
-		var l: Array = _leaves[i]
-		var r: float = radius * l[2] * (0.55 + 0.45 * l[1] / _height)
-		l[0] += delta * l[3] * 1.6 / maxf(r, 1.0)
-		l[1] += delta * l[3]
-		l[5] += delta * l[4]
-		if l[1] > _height:
-			l[1] = 0.0
-		var a: float = l[0]
-		var pos := Vector3(cos(a) * r, l[1], sin(a) * r)
-		# Leaves fade in at the bottom and out near the top by shrinking.
-		var k := clampf(l[1] / 1.5, 0.0, 1.0) * clampf((_height - l[1]) / 2.0, 0.0, 1.0)
-		var basis := Basis(Vector3.UP, -a).rotated(Vector3(cos(a), 0, sin(a)), l[5]).scaled(Vector3.ONE * maxf(k, 0.001))
-		mm.set_instance_transform(i, Transform3D(basis, pos))
+	q.size = Vector2(radius * 1.7, radius * 1.7)
+	q.orientation = PlaneMesh.FACE_Y
+	var m := Mats.additive(Color(0.55, 0.95, 0.72, 0.55), TexGen.get_tex("soft_ring"))
+	m.vertex_color_use_as_albedo = false
+	q.material = m
+	ring.mesh = q
+	var surface := Terrain.surface_height(global_position.x, global_position.z)
+	ring.position = Vector3(0, surface - global_position.y + 0.06, 0)
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(ring)
