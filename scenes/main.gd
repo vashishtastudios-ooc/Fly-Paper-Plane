@@ -22,6 +22,7 @@ var _end_timer := -1.0
 var _pending := {}
 var _last_flight_time := 0.0
 var _slow_cooldown := 0.0
+var _last_stall_banner := -100000
 var _lessons: FlyingLessons
 var _respawn_timer := -1.0
 var collision_debug: CollisionDebug
@@ -102,7 +103,12 @@ func _show_loading() -> void:
 
 
 func _wire() -> void:
-	plane.stall_entered.connect(func(): hud.banner("Stall! Nose down", Color("#ffb3a1"), 1.2))
+	# The stall warning shows at most once every few seconds (no popping up over and over).
+	plane.stall_entered.connect(func():
+		var now := Time.get_ticks_msec()
+		if now - _last_stall_banner > 4000:
+			_last_stall_banner = now
+			hud.banner("Stall! Nose down", Color("#ffb3a1"), 1.2))
 	plane.rising_air.connect(func(): hud.banner("Rising air", UIKit.LIFT, 1.2))
 	plane.barrel_roll_done.connect(func(): hud.float_text(plane.state.pos, "+50"))
 	plane.landed.connect(_on_landed)
@@ -378,10 +384,6 @@ func _process(delta: float) -> void:
 				x += touch.stick.x
 				y += -touch.stick.y
 				touch.gust_charge = plane.gusts
-				# Stall guard for touch: pulling up fades out as the plane slows toward a stall.
-				if y > 0.0:
-					y *= clampf((plane.state.v - plane.stall_speed - 0.6) / 2.5, 0.0, 1.0)
-			plane.turn_scale = maxf(1.0, Settings.sensitivity)
 			x *= Settings.sensitivity
 			y *= Settings.sensitivity * (-1.0 if Settings.invert_pitch else 1.0)
 			plane.set_controls(clampf(x, -1.0, 1.0), clampf(y, -1.0, 1.0))
