@@ -108,6 +108,17 @@ func _input(event: InputEvent) -> void:
 		if d.index == _stick_index:
 			_pos = d.position
 			_update_stick()
+	elif Settings.mouse_as_finger:
+		# PC test of the phone version: the left mouse button is finger 0.
+		if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+			var mb := event as InputEventMouseButton
+			if mb.pressed:
+				_on_press(0, mb.position)
+			else:
+				_on_release(0)
+		elif event is InputEventMouseMotion and _stick_index == 0:
+			_pos = (event as InputEventMouseMotion).position
+			_update_stick()
 			get_viewport().set_input_as_handled()
 
 

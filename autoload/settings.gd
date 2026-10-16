@@ -12,6 +12,8 @@ const OLD_USER_DIR_NAME := "Glide Home"
 
 var is_mobile := false
 var touch_ui := false
+## Testing the phone version on PC: the left mouse button acts as a finger.
+var mouse_as_finger := false
 var portrait := false
 var music_volume := 0.7
 var sfx_volume := 1.0
@@ -54,8 +56,9 @@ func _ready() -> void:
 		is_mobile = true
 		settings_file = "user://settings_mobile_test.cfg"
 	touch_ui = is_mobile or args.has("--touch-ui")
-	if touch_ui and not DisplayServer.is_touchscreen_available():
-		Input.emulate_touch_from_mouse = true
+	# On a PC without a touchscreen the touch controls read the mouse as finger 0 themselves
+	# (emulating touches from the mouse would send every click twice to the menus).
+	mouse_as_finger = touch_ui and not DisplayServer.is_touchscreen_available()
 	_register_inputs()
 	_load()
 	# Art style for this run (the command line can override it, for comparing looks).

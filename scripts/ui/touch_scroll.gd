@@ -55,6 +55,28 @@ func _input(event: InputEvent) -> void:
 		if _dragging:
 			scroll.scroll_vertical = _start_scroll - int(delta.y)
 			get_viewport().set_input_as_handled()
+	elif Settings.mouse_as_finger and event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		# PC test of the phone version: the mouse is the finger.
+		var mb := event as InputEventMouseButton
+		if mb.pressed:
+			if _index == -1 and scroll.get_global_rect().has_point(mb.position):
+				_index = 0
+				_start = mb.position
+				_start_scroll = scroll.scroll_vertical
+				_dragging = false
+		elif _index == 0:
+			_index = -1
+			if _dragging:
+				get_viewport().set_input_as_handled()
+				_end_drag.call_deferred()
+	elif Settings.mouse_as_finger and event is InputEventMouseMotion and _index == 0:
+		var delta := (event as InputEventMouseMotion).position - _start
+		if not _dragging and absf(delta.y) > THRESHOLD and absf(delta.y) > absf(delta.x):
+			_dragging = true
+			get_viewport().gui_release_focus()
+		if _dragging:
+			scroll.scroll_vertical = _start_scroll - int(delta.y)
+			get_viewport().set_input_as_handled()
 	elif _dragging and (event is InputEventMouseButton or event is InputEventMouseMotion):
 		# Mouse events emulated from the dragging finger.
 		get_viewport().set_input_as_handled()
