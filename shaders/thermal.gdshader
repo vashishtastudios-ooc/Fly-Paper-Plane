@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded, blend_add, cull_disabled, depth_draw_never, shadows_disabled;
+render_mode unshaded, blend_mix, cull_disabled, depth_draw_never, shadows_disabled, fog_disabled;
 
 // Faint golden shimmer column for rising air.
 uniform vec4 tint : source_color = vec4(1.0, 0.82, 0.45, 1.0);
@@ -30,6 +30,7 @@ void fragment() {
 	// across the screen (the rising particles and the label still show it).
 	float near = smoothstep(4.0, 22.0, length(VERTEX)) * mix(1.0, 0.1, v_inside);
 	float a = intensity * vfade * near * (0.35 + 0.65 * rise * swirl) * (0.4 + edge);
-	ALBEDO = tint.rgb * a;
-	ALPHA = 1.0;
+	// A see-through tint (not added light), so the column shows over a bright sky too.
+	ALBEDO = tint.rgb;
+	ALPHA = clamp(a * 2.2, 0.0, 1.0);
 }

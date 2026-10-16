@@ -43,7 +43,7 @@ func _ready() -> void:
 	sm.shader = load("res://shaders/thermal.gdshader")
 	sm.set_shader_parameter("height", h)
 	sm.set_shader_parameter("radius", radius * 0.85)
-	sm.set_shader_parameter("intensity", 0.11 if style == "golden" else 0.05)
+	sm.set_shader_parameter("intensity", 0.132 if style == "golden" else 0.05)
 	# Rising air is drawn in the same blue as the rings.
 	sm.set_shader_parameter("tint", UIKit.ROUTE)
 	if style == "smoke":
@@ -121,7 +121,7 @@ func _ready() -> void:
 		pm.color_ramp = gt2
 		q.size = Vector2(0.24, 0.24)
 		var glint := Color(1, 0.7, 0.4) if style == "lantern" else UIKit.ROUTE_GLOW
-		var gm := Mats.additive(glint, TexGen.get_tex("star_glint"), true)
+		var gm := Mats.additive(glint * (1.2 if style == "golden" else 1.0), TexGen.get_tex("star_glint"), true)
 		# Fade out right in front of the camera.
 		gm.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
 		gm.distance_fade_min_distance = 1.5
@@ -188,7 +188,7 @@ func _build_ground_ring() -> void:
 	var q := QuadMesh.new()
 	q.size = Vector2(radius * 1.7, radius * 1.7)
 	q.orientation = PlaneMesh.FACE_Y
-	var m := Mats.additive(Color(UIKit.ROUTE, 0.55), TexGen.get_tex("soft_ring"))
+	var m := Mats.additive(Color(UIKit.ROUTE, 0.66), TexGen.get_tex("soft_ring"))
 	m.vertex_color_use_as_albedo = false
 	q.material = m
 	ring.mesh = q
