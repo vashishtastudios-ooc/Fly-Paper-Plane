@@ -6,7 +6,8 @@ extends Node3D
 @export var radius := 8.0
 @export var strength := 3.4
 @export var top := 15.0
-## "golden", "smoke" or "lantern" (Lantern Night: warm air carrying sky lanterns)
+## "golden", "smoke", "lantern" (Lantern Night: warm air carrying sky lanterns) or "fireworks"
+## (warm air over a fireworks display: bursts of coloured sparks above the column)
 @export var style := "golden"
 ## Height where the smoke starts (chimney top).
 @export var source_height := 0.0
@@ -48,7 +49,7 @@ func _ready() -> void:
 	sm.set_shader_parameter("tint", UIKit.ROUTE)
 	if style == "smoke":
 		sm.set_shader_parameter("tint", Color(0.9, 0.85, 0.8))
-	elif style == "lantern":
+	elif style == "lantern" or style == "fireworks":
 		sm.set_shader_parameter("tint", Color(1.0, 0.6, 0.3))
 		sm.set_shader_parameter("intensity", 0.13)
 	col.material_override = sm
@@ -132,8 +133,50 @@ func _ready() -> void:
 	add_child(p)
 	if style == "lantern":
 		_build_sky_lanterns(h)
+	elif style == "fireworks":
+		_build_fireworks(h)
 	elif style == "golden":
 		_build_ground_ring()
+
+
+## Bursts of coloured sparks popping above the column, one after another.
+func _build_fireworks(h: float) -> void:
+	var cols := [Color(1.0, 0.45, 0.55), Color(0.55, 0.8, 1.0), Color(1.0, 0.85, 0.35), Color(0.6, 1.0, 0.6)]
+	for i in cols.size():
+		var p := GPUParticles3D.new()
+		p.name = "Burst%d" % i
+		p.amount = 40 if Settings.is_mobile else 70
+		p.lifetime = 1.6
+		p.explosiveness = 1.0
+		p.preprocess = 0.4 * i
+		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		p.visibility_aabb = AABB(Vector3(-14, -4, -14), Vector3(28, 20, 28))
+		var a := TAU * i / cols.size()
+		p.position = Vector3(cos(a) * radius * 0.4, h + 2.0 + i * 1.2, sin(a) * radius * 0.4)
+		var pm := ParticleProcessMaterial.new()
+		pm.direction = Vector3.UP
+		pm.spread = 180.0
+		pm.initial_velocity_min = 5.0
+		pm.initial_velocity_max = 7.0
+		pm.gravity = Vector3(0, -3.0, 0)
+		pm.damping_min = 2.0
+		pm.damping_max = 3.0
+		var g := Gradient.new()
+		g.set_color(0, Color(cols[i], 1.0))
+		g.add_point(0.6, Color(cols[i], 0.9))
+		g.set_color(g.get_point_count() - 1, Color(cols[i], 0.0))
+		var gt := GradientTexture1D.new()
+		gt.gradient = g
+		pm.color_ramp = gt
+		p.process_material = pm
+		var q := QuadMesh.new()
+		q.size = Vector2(0.35, 0.35)
+		q.material = Mats.additive(Color(1, 1, 1, 1), TexGen.get_tex("star_glint"), true)
+		p.draw_pass_1 = q
+		# Staggered so the bursts go off one after another.
+		p.emitting = false
+		add_child(p)
+		get_tree().create_timer(0.45 * i + 0.1).timeout.connect(func(): if is_instance_valid(p): p.emitting = true)
 
 
 ## Glowing paper sky lanterns drifting up the column.

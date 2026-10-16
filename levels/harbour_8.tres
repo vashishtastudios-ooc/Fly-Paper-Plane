@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 40, 22.6, 104, 0, 0, 0, 0, 0, 0, 40, 21.4, 94, 0, 0, 0, 0, 0, 0, 40, 19.8, 82, 0, 0, 0, 0, 0, 0, 40, 17.6, 68, 0, 0, 0, 0, 0, 0, 40, 15, 54, 0, 0, 0, 0, 0, 0, 40, 12, 40, 0, 0, 0, 0, 0, 0, 40, 8.8, 26, 0, 0, 0, 0, 0, 0, 38, 6.8, 14, 0, 0, 0, 0, 0, 0, 32, 5.8, 6, 0, 0, 0, 0, 0, 0, 20, 5.4, 5.5, 0, 0, 0, 0, 0, 0, 6, 5.2, 5.5, 0, 0, 0, 0, 0, 0, -10, 5, 5, 0, 0, 0, 0, 0, 0, -26, 4.8, 4, 0, 0, 0, 0, 0, 0, -40, 4.5, 2, 0, 0, 0, 0, 0, 0, -50, 4.1, -1, 0, 0, 0, 0, 0, 0, -57, 3.7, -6, 0, 0, 0, 0, 0, 0, -61, 3.3, -11, 0, 0, 0, 0, 0, 0, -62, 3, -16, 0, 0, 0, 0, 0, 0, -62, 2.8, -26, 0, 0, 0, 0, 0, 0, -62, 2.6, -36, 0, 0, 0, 0, 0, 0, -60, 2.2, -40, 0, 0, 0, 0, 0, 0, -54, 1.6, -36, 0, 0, 0, 0, 0, 0, -44, 1, -32.5, 0, 0, 0, 0, 0, 0, -36, 0.6, -31.9, 0, 0, 0, 0, 0, 0, -28, 0.4, -31.9, 0, 0, 0, 0, 0, 0, -20, 0.8, -32, 0, 0, 0, 0, 0, 0, -12, 1.2, -34.5, 0, 0, 0, 0, 0, 0, -8, 1.2, -38, 0, 0, 0, 0, 0, 0, -5.5, 1.1, -43, 0, 0, 0, 0, 0, 0, -5, 0.95, -47, 0, 0, 0, 0, 0, 0, -5, 0.9, -50, 0, 0, 0, 0, 0, 0, -5, 0.85, -53, 0, 0, 0, 0, 0, 0, -2, 1.6, -58, 0, 0, 0, 0, 0, 0, 2, 2.6, -64, 0, 0, 0, 0, 0, 0, 6, 3.8, -72, 0, 0, 0, 0, 0, 0, 12, 6.6, -82, 0, 0, 0, 0, 0, 0, 14, 8.2, -96, 0, 0, 0, 0, 0, 0, 16, 9, -108, 0, 0, 0, 0, 0, 0, 16, 9, -117, 0, 0, 0, 0, 0, 0, 18, 8.6, -128, 0, 0, 0, 0, 0, 0, 24, 8, -136, 0, 0, 0, 0, 0, 0, 32, 7.6, -140, 0, 0, 0, 0, 0, 0, 36, 7.6, -138, 0, 0, 0, 0, 0, 0, 44, 8.2, -135, 0, 0, 0, 0, 0, 0, 52, 9, -138, 0, 0, 0, 0, 0, 0, 55, 9.8, -146, 0, 0, 0, 0, 0, 0, 52, 10.6, -154, 0, 0, 0, 0, 0, 0, 44, 11.4, -157, 0, 0, 0, 0, 0, 0, 36, 12, -154, 0, 0, 0, 0, 0, 0, 33, 12.6, -146, 0, 0, 0, 0, 0, 0, 36, 13.2, -138, 0, 0, 0, 0, 0, 0, 44, 13.6, -135, 0, 0, 0, 0, 0, 0, 56, 13.4, -130, 0, 0, 0, 0, 0, 0, 70, 12.4, -118, 0, 0, 0, 0, 0, 0, 82, 11, -106, 0, 0, 0, 0, 0, 0, 90, 9.6, -98, 0, 0, 0, 0, 0, 0, 96, 8.6, -94, 0, 0, 0, 0, 0, 0, 99.5, 7.6, -92.5, 0, 0, 0, 0, 0, 0, 101.5, 7, -92.2),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 59
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Lighthouse to Lighthouse"
+map = "harbour"
+short_goal = "The grand finale: the whole harbour, once round the green lighthouse, home to the red one."
+goal_text = "The grand finale! Throw from the hilltop lookout and dive down the lane, then fly along the quay to the old boathouse and straight through it. Slip under the pier, through the ferry's cabin windows, ride the warm air up over the breakwater and out into the sea breeze. Circle once round the little green lighthouse on its rock to climb, then fly home and land on the doorstep of the red lighthouse. Follow the dotted line and fly through the rings."
+platform_kind = "lookout"
+platform_position = Vector3(40, 22.63, 108)
+platform_yaw = 0
+aim_point = Vector3(40, 0, 90)
+route = SubResource("Curve3D_route")
+gate_radius = 1.3
+pad_position = Vector3(103, 6.43, -92)
+pad_radius = 1.6
+pad_name = "Lighthouse doorstep"
+par_time = 60
+thermals = [{
+"x": -52,
+"z": -50,
+"radius": 6,
+"strength": 2.5,
+"top": 5,
+"style": "golden"
+}, {
+"x": 8,
+"z": -74,
+"radius": 6,
+"strength": 4.6,
+"top": 10,
+"style": "golden"
+}, {
+"x": 14,
+"z": -96,
+"radius": 6,
+"strength": 4,
+"top": 11.5,
+"style": "golden"
+}, {
+"x": 44,
+"z": -146,
+"radius": 16,
+"strength": 5,
+"top": 16,
+"style": "golden"
+}]
+wind_zones = [{
+"x": 22,
+"z": -134,
+"radius": 14,
+"dx": 0,
+"dz": 1,
+"strength": 2.2,
+"top": 18
+}]
+bonus_stars = PackedVector3Array(-5, 0.9, -50, 44, 11.4, -157)
+hazard_lines = []

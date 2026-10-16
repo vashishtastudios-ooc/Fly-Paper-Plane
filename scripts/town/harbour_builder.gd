@@ -260,6 +260,16 @@ func _h_pier(b: MeshBuilder) -> void:
 		while pz > z1 + 8.0:
 			b.box(wood, Transform3D(Basis(), Vector3(rx, top + 0.45, pz)), Vector3(0.1, 0.9, 0.1), Color("#e8dfcc"))
 			pz -= 2.5
+	# Fairy lights strung along both sides just under the deck edge.
+	var bulb_cols := [Color("#ffd27a"), Color("#ff9ccb"), Color("#9fd6ff"), Color("#b9f0a8")]
+	for sx in [-1.0, 1.0]:
+		var bz := z0 - 1.0
+		var n := 0
+		while bz > z1 + 1.0:
+			var sag := 0.25 * absf(sin(n * PI / 6.0))
+			b.sphere(Mats.get_mat("glow"), Vector3(PIER_X + sx * (hw + 0.05), top - 0.45 - sag, bz), Vector3(0.09, 0.09, 0.09), 3, 6, bulb_cols[n % 4])
+			bz -= 1.25
+			n += 1
 	# Lamps every 15 m.
 	z = z0 - 8.0
 	var k := 0
@@ -326,6 +336,24 @@ func _h_lighthouse() -> void:
 	var p := HarbourTerrain.LIGHTHOUSE
 	lh.position = Vector3(p.x, _ground(p.x, p.z), p.z)
 	add_child(lh)
+	# A little green-and-white lighthouse on a rock islet out at sea (flight 8 circles it).
+	var b := MeshBuilder.new()
+	var stone := Mats.get_mat("stone")
+	b.cylinder(stone, Transform3D(Basis(), Vector3(ISLET.x, SEA_Y - 3.0, ISLET.z)), 7.5, 5.5, 4.4, 14, Color("#a39a8c"))
+	for k in 7:
+		var a := TAU * k / 7.0 + 0.4
+		b.box(stone, Transform3D(Basis(Vector3.UP, a), Vector3(ISLET.x + cos(a) * 6.0, SEA_Y + 0.4, ISLET.z + sin(a) * 6.0)), Vector3(2.6, 1.8, 2.2), Color("#b2a898"))
+	add_child(b.build_instance("Islet", true))
+	_static_cyl("wall", Vector3(ISLET.x, SEA_Y - 3.0, ISLET.z), 6.6, 4.6)
+	var gl: Node3D = LIGHTHOUSE_SCENE.instantiate()
+	gl.batcher = batcher
+	gl.height = 9.0
+	gl.base_radius = 1.8
+	gl.top_radius = 1.3
+	gl.band_color = Color("#3f8f5a")
+	gl.with_cottage = false
+	gl.position = Vector3(ISLET.x, ISLET_TOP, ISLET.z)
+	add_child(gl)
 
 
 func _h_boathouse(b: MeshBuilder) -> void:
@@ -553,8 +581,14 @@ const HARBOUR_PETS := [
 	[10, "cat", "tuxedo", Vector3(-15.6, 1.65, -36.9)],
 	[11, "dog", "beagle", Vector3(6.0, -0.95, -84.0)],
 	[12, "cat", "grey", Vector3(21.6, 2.0, -9.03)],
-	[13, "dog", "golden", Vector3(-7.2, RAFT_TOP, -65.2)],
+	[13, "dog", "golden", Vector3(-4.8, RAFT_TOP, -62.8)],
+	# Flight 7 lands on the back deck of this fishing boat; its dog waits on the wheelhouse roof.
+	[14, "dog", "collie", Vector3(20.4, 1.65, -24.0)],
+	[15, "cat", "ginger", Vector3(101.0, 0.0, -89.6)],
 ]
+## Flight 8: the rock islet with the little green lighthouse.
+const ISLET := Vector3(44, 0, -146)
+const ISLET_TOP := Terrain.WATER_Y + 1.4
 ## Flight 6: the attic bedroom it starts in, and the swim raft it lands on.
 const ATTIC_HOUSE := Vector3(6, 1.35, 19.78)
 const RAFT := Vector3(-6, 0, -64)

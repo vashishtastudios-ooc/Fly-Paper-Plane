@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 97, 23.6, -81.5, 0, 0, 0, 0, 0, 0, 86, 21.8, -78, 0, 0, 0, 0, 0, 0, 72, 19.6, -72, 0, 0, 0, 0, 0, 0, 60, 17.6, -66, 0, 0, 0, 0, 0, 0, 48, 16, -62, 0, 0, 0, 0, 0, 0, 34, 14.4, -60, 0, 0, 0, 0, 0, 0, 20, 12.8, -56, 0, 0, 0, 0, 0, 0, 6, 11.2, -54, 0, 0, 0, 0, 0, 0, -6, 9.8, -58, 0, 0, 0, 0, 0, 0, -12, 7.6, -60, 0, 0, 0, 0, 0, 0, -18, 4.6, -61.2, 0, 0, 0, 0, 0, 0, -23, 2.2, -61.8, 0, 0, 0, 0, 0, 0, -28, 0.5, -61.9, 0, 0, 0, 0, 0, 0, -33, 0.6, -61.9, 0, 0, 0, 0, 0, 0, -40, 1.4, -58, 0, 0, 0, 0, 0, 0, -46, 2.4, -50, 0, 0, 0, 0, 0, 0, -48, 5, -40, 0, 0, 0, 0, 0, 0, -46, 7, -32, 0, 0, 0, 0, 0, 0, -36, 7.6, -22, 0, 0, 0, 0, 0, 0, -24, 7, -16, 0, 0, 0, 0, 0, 0, -12, 6, -14, 0, 0, 0, 0, 0, 0, -2, 4.8, -15, 0, 0, 0, 0, 0, 0, 6, 3.2, -20, 0, 0, 0, 0, 0, 0, 12, 1.8, -23.5, 0, 0, 0, 0, 0, 0, 16, 0.4, -24),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 25
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Night Lights"
+map = "harbour"
+short_goal = "At dusk: across the harbour, under the lit-up pier, up on the fireworks, onto a fishing boat."
+goal_text = "Night has fallen on the harbour. Throw from the lighthouse gallery as its beam sweeps round, glide across the harbour and dive down under the pier where the fairy lights are strung. Ride the warm air over the fireworks back up, cross the harbour again and land on the back deck of the fishing boat, just short of its glowing wheelhouse. Follow the dotted line and fly through the rings."
+platform_kind = "tower"
+platform_position = Vector3(101.2, 24.458, -82)
+platform_yaw = 1.571
+aim_point = Vector3(88, 0, -80)
+route = SubResource("Curve3D_route")
+gate_radius = 1.3
+time_of_day = "dusk"
+pad_position = Vector3(18.4, -0.65, -24)
+pad_radius = 0.8
+pad_name = "Fishing boat"
+par_time = 40
+thermals = [{
+"x": 40,
+"z": -58,
+"radius": 6,
+"strength": 2,
+"top": 12,
+"style": "fireworks"
+}, {
+"x": -48,
+"z": -44,
+"radius": 7,
+"strength": 4.6,
+"top": 12,
+"style": "fireworks"
+}]
+bonus_stars = PackedVector3Array(-28, 0.5, -61.9)
+hazard_lines = []
