@@ -37,6 +37,7 @@ func _ready() -> void:
 	outer.add_child(UIKit.label("Settings", UIKit.display_font(), 54, UIKit.INK))
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	TouchScroll.attach(scroll)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	outer.add_child(scroll)
 	var v := VBoxContainer.new()
@@ -212,9 +213,43 @@ func _check_row(key: String, text: String, value: bool, on_change: Callable) -> 
 	c.add_theme_color_override("font_hover_color", UIKit.INK)
 	c.add_theme_color_override("font_hover_pressed_color", UIKit.INK)
 	c.add_theme_color_override("font_focus_color", UIKit.INK)
+	# Clear on/off switches (the default "on" icon is nearly invisible on the paper).
+	c.add_theme_icon_override("checked", _switch_icon(true))
+	c.add_theme_icon_override("unchecked", _switch_icon(false))
+	c.add_theme_icon_override("checked_disabled", _switch_icon(true))
+	c.add_theme_icon_override("unchecked_disabled", _switch_icon(false))
 	c.toggled.connect(on_change)
 	_checks[key] = c
 	return c
+
+
+static var _switch_cache := {}
+
+
+## A pill-shaped switch: green with the knob on the right when on, grey with it on the left.
+static func _switch_icon(on: bool) -> Texture2D:
+	if _switch_cache.has(on):
+		return _switch_cache[on]
+	var w := 56
+	var h := 30
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	var track := Color("#5fae6a") if on else Color("#b9b2a6")
+	var r := h * 0.5
+	var knob_c := Vector2(w - r, r) if on else Vector2(r, r)
+	for y in h:
+		for x in w:
+			var p := Vector2(x + 0.5, y + 0.5)
+			var cx := clampf(p.x, r, w - r)
+			var dt := p.distance_to(Vector2(cx, r)) - (r - 0.5)
+			var a := clampf(0.5 - dt, 0.0, 1.0)
+			var col := Color(track, a)
+			var dk := p.distance_to(knob_c) - (r - 3.5)
+			var ka := clampf(0.5 - dk, 0.0, 1.0)
+			col = col.blend(Color(1, 1, 1, ka))
+			img.set_pixel(x, y, col)
+	var tex := ImageTexture.create_from_image(img)
+	_switch_cache[on] = tex
+	return tex
 
 
 ## Shows the current settings in every control without re-triggering their callbacks.
@@ -256,5 +291,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _layout() -> void:
 	var s := Settings.viewport_size()
-	_sheet.size = Vector2(minf(s.x - 24.0, 760.0), minf(s.y - 24.0, 720.0))
+	# Taller in portrait so more of the list shows at once.
+	var tall := 1180.0 if s.y > s.x else 720.0
+	_sheet.size = Vector2(minf(s.x - 24.0, 760.0), minf(s.y - 24.0, tall))
 	_sheet.position = (s - _sheet.size) * 0.5
