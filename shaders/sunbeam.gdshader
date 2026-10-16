@@ -34,5 +34,7 @@ void fragment() {
 	// UV.y = 0 at the top (toward the sun), 1 at the ground.
 	float along = smoothstep(0.0, 0.3, v_uv.y) * (1.0 - smoothstep(0.65, 1.0, v_uv.y));
 	float breathe = 0.7 + 0.3 * sin(TIME * 0.35 + v_seed);
-	ALBEDO = tint.rgb * intensity * across * along * breathe * v_fade;
+	// Also fade per pixel near the camera: a long beam can pass right beside the plane.
+	float near = smoothstep(4.0, 12.0, length(VERTEX));
+	ALBEDO = tint.rgb * intensity * across * along * breathe * v_fade * near;
 }

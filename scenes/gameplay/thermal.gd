@@ -42,6 +42,7 @@ func _ready() -> void:
 	var sm := ShaderMaterial.new()
 	sm.shader = load("res://shaders/thermal.gdshader")
 	sm.set_shader_parameter("height", h)
+	sm.set_shader_parameter("radius", radius * 0.85)
 	sm.set_shader_parameter("intensity", 0.15 if style == "golden" else 0.05)
 	sm.set_shader_parameter("tint", UIKit.LIFT)
 	if style == "smoke":
