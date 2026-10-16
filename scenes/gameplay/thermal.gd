@@ -94,39 +94,9 @@ func _ready() -> void:
 		q.size = Vector2(1.2, 1.2)
 		var mat := Mats.soft_alpha(Color(1, 1, 1, 1), TexGen.get_tex("cloud"), true, false)
 		q.material = mat
-	elif style == "golden":
-		# A few soft up-arrows drifting up the column: "the air rises here".
-		p.amount = 6 if Settings.is_mobile else 8
-		p.lifetime = clampf(h / 1.8, 2.5, 8.0)
-		p.preprocess = p.lifetime
-		pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
-		pm.emission_ring_axis = Vector3.UP
-		pm.emission_ring_radius = radius * 0.45
-		pm.emission_ring_inner_radius = radius * 0.1
-		pm.emission_ring_height = 0.5
-		pm.initial_velocity_min = 1.5
-		pm.initial_velocity_max = 2.0
-		pm.gravity = Vector3.ZERO
-		pm.scale_min = 0.9
-		pm.scale_max = 1.2
-		var gc := Gradient.new()
-		var mint := Color(0.62, 1.0, 0.78)
-		gc.set_color(0, Color(mint, 0.0))
-		gc.add_point(0.2, Color(mint, 0.85))
-		gc.add_point(0.75, Color(mint, 0.7))
-		gc.set_color(gc.get_point_count() - 1, Color(mint, 0.0))
-		var gct := GradientTexture1D.new()
-		gct.gradient = gc
-		pm.color_ramp = gct
-		q.size = Vector2(1.4, 1.4)
-		var cm2 := Mats.additive(Color(0.72, 1.0, 0.82), TexGen.get_tex("chevron"), true)
-		# Fade out right in front of the camera.
-		cm2.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
-		cm2.distance_fade_min_distance = 2.0
-		cm2.distance_fade_max_distance = 7.0
-		q.material = cm2
 	else:
-		p.amount = 36 if Settings.is_mobile else 72
+		# Sparkles flowing up the column (fewer than they used to be, no leaves).
+		p.amount = 24 if Settings.is_mobile else 44
 		p.lifetime = clampf(h / 2.2, 2.0, 9.0)
 		p.preprocess = p.lifetime
 		pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
@@ -150,7 +120,12 @@ func _ready() -> void:
 		pm.color_ramp = gt2
 		q.size = Vector2(0.24, 0.24)
 		var glint := Color(1, 0.7, 0.4) if style == "lantern" else Color(0.72, 1.0, 0.82)
-		q.material = Mats.additive(glint, TexGen.get_tex("star_glint"), true)
+		var gm := Mats.additive(glint, TexGen.get_tex("star_glint"), true)
+		# Fade out right in front of the camera.
+		gm.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
+		gm.distance_fade_min_distance = 1.5
+		gm.distance_fade_max_distance = 5.0
+		q.material = gm
 	p.process_material = pm
 	p.draw_pass_1 = q
 	add_child(p)

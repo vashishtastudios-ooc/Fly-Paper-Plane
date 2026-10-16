@@ -25,7 +25,6 @@ static func get_tex(kind: String) -> Texture2D:
 		"paper": img = _paper()
 		"cloud": img = _cloud()
 		"soft_dot": img = _soft_dot()
-		"chevron": img = _chevron()
 		"soft_ring": img = _soft_ring()
 		"leaf": img = _leaf()
 		"leaf_clump": img = _leaf_clump()
@@ -455,27 +454,6 @@ static func _cloud() -> Image:
 			d[i * 4] = int(255 * shade)
 			d[i * 4 + 1] = int(250 * shade)
 			d[i * 4 + 2] = int(246 * shade)
-			d[i * 4 + 3] = int(a * 255)
-	return _img(s, d, true)
-
-
-## A soft upward arrow (^), white with alpha: rising air.
-static func _chevron() -> Image:
-	var s := 64
-	var d := PackedByteArray()
-	d.resize(s * s * 4)
-	for y in s:
-		for x in s:
-			var i := y * s + x
-			var u := (x + 0.5) / s - 0.5
-			var v := (y + 0.5) / s
-			# Distance to the two strokes of the chevron (apex at the top middle).
-			var line := absf(v - 0.3 - absf(u) * 1.1)
-			var a := clampf(1.0 - line / 0.11, 0.0, 1.0) * (1.0 - smoothstep(0.36, 0.46, absf(u)))
-			a = smoothstep(0.0, 0.7, a)
-			d[i * 4] = 255
-			d[i * 4 + 1] = 255
-			d[i * 4 + 2] = 255
 			d[i * 4 + 3] = int(a * 255)
 	return _img(s, d, true)
 
