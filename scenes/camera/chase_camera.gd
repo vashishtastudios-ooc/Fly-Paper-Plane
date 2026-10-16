@@ -252,7 +252,7 @@ func _ceiling_above(p: Vector3, reach: float) -> float:
 
 ## Keeps the camera above ground/water (0.5 m) except when following the plane under the arch.
 func _clamp_to_world(p: Vector3, subject: Vector3) -> Vector3:
-	var under_arch := absf(subject.z - Terrain.RIVER_Z) < 8.5 and subject.y < 1.2 and absf(subject.x) < 14.0
+	var under_arch := Terrain.map == "linden" and absf(subject.z - Terrain.RIVER_Z) < 8.5 and subject.y < 1.2 and absf(subject.x) < 14.0
 	var ground := Terrain.surface_height(p.x, p.z)
 	if under_arch:
 		p.y = maxf(p.y, Terrain.WATER_Y + 0.3)

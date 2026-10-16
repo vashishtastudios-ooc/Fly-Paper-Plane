@@ -93,6 +93,8 @@ var _beam_mat: ShaderMaterial
 var _grass_nodes: Array[Node] = []
 ## "golden" (default) or "dusk" (Lantern Night).
 var time_of_day := "golden"
+## Which map this builds (see Game.MAPS); subclasses build other maps.
+var map_id := "linden"
 var is_built := false
 
 
@@ -104,6 +106,7 @@ func _ready() -> void:
 func build() -> void:
 	if is_built:
 		return
+	Terrain.map = "linden"
 	rng.seed = SEED
 	_collect_keepouts()
 	batcher = Batcher.new()
@@ -147,6 +150,12 @@ func _process(delta: float) -> void:
 			c.position.x = -420.0
 
 
+## Showreel clips for the menu while this map is loaded: [points, start, end] (fractions of the
+## path). Empty: the menu uses its own Linden Lane clips (MainScene.REEL).
+func showreel() -> Array:
+	return []
+
+
 # --- Terrain queries (see Terrain) ----------------------------------------------------
 
 static func ground_height(x: float, z: float) -> float:
@@ -160,6 +169,8 @@ func _collect_keepouts() -> void:
 	if Game.lessons_level:
 		all.append(Game.lessons_level)
 	for lvl: LevelData in all:
+		if lvl.map != map_id:
+			continue
 		var pts := lvl.route_points()
 		for i in pts.size() - 1:
 			_route_keepouts.append([pts[i], pts[i + 1]])

@@ -59,6 +59,33 @@ func _ready() -> void:
 	go_menu()
 
 
+## Builds the world for map `id` (behind the loading card) unless it is the one loaded.
+func switch_map(id: String) -> void:
+	if town.map_id == id:
+		return
+	_show_loading()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var old := town
+	remove_child(old)
+	old.queue_free()
+	Terrain.map = id
+	var nt: TownBuilder
+	if id == "harbour":
+		nt = HarbourBuilder.new()
+	else:
+		nt = load("res://scenes/town/town.tscn").instantiate()
+	nt.name = "Town"
+	nt.build_on_ready = false
+	add_child(nt)
+	move_child(nt, 0)
+	town = nt
+	town.build()
+	_reel_curves.clear()
+	_reel_i = -1
+	_loading.queue_free()
+
+
 func _show_loading() -> void:
 	_loading = CanvasLayer.new()
 	_loading.layer = 50
@@ -156,6 +183,7 @@ func start_level(index: int) -> void:
 	_end_timer = -1.0
 	Game.current_level = index
 	var data := Game.level()
+	await switch_map(data.map)
 	_end_lessons()
 	if Game.in_lessons():
 		_lessons = FlyingLessons.new()
@@ -431,12 +459,20 @@ var _reel_fade: ColorRect
 var _menu_trail: PlaneTrail
 
 
-func _reel_curve(li: int) -> Curve3D:
-	if _reel_curves.has(li):
-		return _reel_curves[li]
+## The showreel clips for the loaded map: the town's own, or the Linden Lane REEL.
+func _reel_clips() -> Array:
+	var own := town.showreel()
+	return own if not own.is_empty() else REEL
+
+
+## A clip's path: a flight's route (by level index) or the points given in the clip.
+func _reel_curve(key: Variant) -> Curve3D:
+	var id: Variant = key if key is int else hash(key)
+	if _reel_curves.has(id):
+		return _reel_curves[id]
 	var c := Curve3D.new()
 	c.bake_interval = 0.4
-	var pts: PackedVector3Array = Game.levels[li].route_points()
+	var pts: PackedVector3Array = Game.levels[key].route_points() if key is int else key
 	for p in pts:
 		c.add_point(p)
 	for i in pts.size():
@@ -445,16 +481,22 @@ func _reel_curve(li: int) -> Curve3D:
 			t *= 0.5
 		c.set_point_in(i, -t)
 		c.set_point_out(i, t)
-	_reel_curves[li] = c
+	_reel_curves[id] = c
 	return c
 
 
+## Start offset of the current clip along its path.
+func _clip_offset(c: Curve3D, at: Variant) -> float:
+	return c.get_closest_offset(at) if at is Vector3 else c.get_baked_length() * float(at)
+
+
 func _next_reel_clip() -> void:
-	_reel_i = (_reel_i + 1) % REEL.size()
-	var clip: Array = REEL[_reel_i]
+	var clips := _reel_clips()
+	_reel_i = (_reel_i + 1) % clips.size()
+	var clip: Array = clips[_reel_i]
 	var c := _reel_curve(clip[0])
-	_reel_off = c.get_closest_offset(clip[1])
-	_reel_end = c.get_closest_offset(clip[2])
+	_reel_off = _clip_offset(c, clip[1])
+	_reel_end = _clip_offset(c, clip[2])
 	_update_menu_plane(0.0)
 	_menu_trail.clear()
 	_menu_trail.active = true
@@ -479,7 +521,8 @@ func _update_menu_plane(delta: float) -> void:
 	if _reel_off >= _reel_end:
 		_next_reel_clip()
 		return
-	var c := _reel_curve(REEL[_reel_i][0])
+	var clip: Array = _reel_clips()[_reel_i]
+	var c := _reel_curve(clip[0])
 	var p := c.sample_baked(_reel_off, true)
 	var ahead := c.sample_baked(_reel_off + 0.8, true)
 	var further := c.sample_baked(_reel_off + 1.6, true)
@@ -490,7 +533,7 @@ func _update_menu_plane(delta: float) -> void:
 		menu_plane.basis = Basis.looking_at(dir, Vector3.UP) * Basis(Vector3(0, 0, 1), bank)
 	# Fade the paper-coloured veil in at the end of a clip and out at the start of the next.
 	var left := (_reel_end - _reel_off) / REEL_SPEED
-	var into := (_reel_off - c.get_closest_offset(REEL[_reel_i][1])) / REEL_SPEED
+	var into := (_reel_off - _clip_offset(c, clip[1])) / REEL_SPEED
 	_reel_fade.color.a = clampf(1.0 - minf(left, into) / REEL_FADE, 0.0, 1.0)
 	cam.menu_frame = menu.reel_frame()
 

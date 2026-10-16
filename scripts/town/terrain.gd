@@ -2,6 +2,7 @@ class_name Terrain
 extends RefCounted
 ## Analytic terrain: ground height, river and town bounds. Shared by the town builder,
 ## the flight model, the camera and props (kept separate to avoid preload cycles).
+## `map` picks the world: "linden" (Linden Lane) or "harbour" (Seaside Harbour, HarbourTerrain).
 
 const RIVER_Z := -300.0
 const WATER_Y := -1.55
@@ -18,8 +19,13 @@ const PONDS := [
 ]
 const POND_BED := -1.3
 
+## The map whose ground the queries describe (set when a map is built).
+static var map := "linden"
+
 
 static func ground_height(x: float, z: float) -> float:
+	if map == "harbour":
+		return HarbourTerrain.ground_height(x, z)
 	if pond_at(x, z) >= 0:
 		return POND_BED
 	return land_height(x, z)
@@ -27,6 +33,8 @@ static func ground_height(x: float, z: float) -> float:
 
 ## The ground ignoring the ponds (used for the terrain mesh around their walls).
 static func land_height(x: float, z: float) -> float:
+	if map == "harbour":
+		return HarbourTerrain.ground_height(x, z)
 	var h := 0.0
 	var ax := absf(x)
 	var hill := smoothstep(44.0, 78.0, ax)
@@ -41,6 +49,8 @@ static func land_height(x: float, z: float) -> float:
 
 ## Index of the pond containing (x, z) (strictly inside its walls), or -1.
 static func pond_at(x: float, z: float) -> int:
+	if map != "linden":
+		return -1
 	for i in PONDS.size():
 		var r: Rect2 = PONDS[i][0]
 		if x > r.position.x and x < r.end.x and z > r.position.y and z < r.end.y:
@@ -60,6 +70,8 @@ static func water_height(x: float, z: float) -> float:
 
 ## What the water at (x, z) is called, for crash messages.
 static func water_name(x: float, z: float) -> String:
+	if map == "harbour":
+		return HarbourTerrain.water_name(x, z)
 	var i := pond_at(x, z)
 	return PONDS[i][2] if i >= 0 else "the river"
 
@@ -74,4 +86,6 @@ static func is_water(x: float, z: float) -> bool:
 
 
 static func out_of_bounds(p: Vector3) -> bool:
+	if map == "harbour":
+		return HarbourTerrain.out_of_bounds(p)
 	return absf(p.x) > BOUNDS_X or p.z > BOUNDS_Z_MAX or p.z < BOUNDS_Z_MIN
