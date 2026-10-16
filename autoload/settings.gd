@@ -5,6 +5,8 @@ signal layout_changed(portrait: bool)
 signal quality_changed(quality: int)
 
 const SETTINGS_PATH := "user://settings.cfg"
+## Where settings are kept (a separate file when testing the phone version on PC).
+var settings_file := SETTINGS_PATH
 ## The game used to be called "Glide Home"; on desktop its save folder was named after it.
 const OLD_USER_DIR_NAME := "Glide Home"
 
@@ -46,8 +48,13 @@ func _ready() -> void:
 	is_mobile = OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("ios") \
 		or OS.has_feature("web_android") or OS.has_feature("web_ios")
 	var args := OS.get_cmdline_user_args()
+	# Testing on PC: "-- --mobile" behaves like a phone (touch controls from the mouse, phone
+	# defaults) and keeps its settings apart from the PC ones.
+	if args.has("--mobile"):
+		is_mobile = true
+		settings_file = "user://settings_mobile_test.cfg"
 	touch_ui = is_mobile or args.has("--touch-ui")
-	if touch_ui and not is_mobile:
+	if touch_ui and not DisplayServer.is_touchscreen_available():
 		Input.emulate_touch_from_mouse = true
 	_register_inputs()
 	_load()
@@ -226,7 +233,7 @@ func apply_volumes() -> void:
 
 func _load() -> void:
 	var cfg := ConfigFile.new()
-	if cfg.load(SETTINGS_PATH) == OK:
+	if cfg.load(settings_file) == OK:
 		music_volume = cfg.get_value("audio", "music", music_volume)
 		sfx_volume = cfg.get_value("audio", "sfx", sfx_volume)
 		ambience_volume = cfg.get_value("audio", "ambience", ambience_volume)
@@ -253,7 +260,7 @@ func _save() -> void:
 	cfg.set_value("video", "show_fps", show_fps)
 	cfg.set_value("audio", "sfx", sfx_volume)
 	cfg.set_value("audio", "ambience", ambience_volume)
-	cfg.save(SETTINGS_PATH)
+	cfg.save(settings_file)
 
 
 # --- Input map -------------------------------------------------------------
