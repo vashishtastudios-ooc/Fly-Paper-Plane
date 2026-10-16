@@ -4,34 +4,27 @@
 
 [sub_resource type="Curve3D" id="Curve3D_route"]
 _data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -58.5, 8.4, -17.6, 0, 0, 0, 0, 0, 0, -52, 7, -16.6, 0, 0, 0, 0, 0, 0, -46, 5.6, -15.4, 0, 0, 0, 0, 0, 0, -40, 4.4, -14.36, 0, 0, 0, 0, 0, 0, -34, 3.5, -12.3, 0, 0, 0, 0, 0, 0, -28, 3, -10.44, 0, 0, 0, 0, 0, 0, -21, 2.6, -8.5, 0, 0, 0, 0, 0, 0, -16, 2.4, -7.4, 0, 0, 0, 0, 0, 0, -12.6, 2.3, -5.2, 0, 0, 0, 0, 0, 0, -10, 2.3, -1.6, 0, 0, 0, 0, 0, 0, -7.4, 2.3, 1.4, 0, 0, 0, 0, 0, 0, -4, 2.3, 1.9, 0, 0, 0, 0, 0, 0, 0, 2.3, 2, 0, 0, 0, 0, 0, 0, 3.6, 2.3, 1.6, 0, 0, 0, 0, 0, 0, 6, 2.3, -1.2, 0, 0, 0, 0, 0, 0, 8.4, 2.3, -4.4, 0, 0, 0, 0, 0, 0, 11.5, 2.1, -7, 0, 0, 0, 0, 0, 0, 14.5, 1.8, -8.3, 0, 0, 0, 0, 0, 0, 16.2, 1.4, -8.85),
-"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -58, 8.2, -19.6, 0, 0, 0, 0, 0, 0, -52, 6.6, -22.4, 0, 0, 0, 0, 0, 0, -46, 4.6, -23.6, 0, 0, 0, 0, 0, 0, -40, 2.8, -22, 0, 0, 0, 0, 0, 0, -34, 1.4, -19.6, 0, 0, 0, 0, 0, 0, -28, 0.5, -16.94, 0, 0, 0, 0, 0, 0, -20, 0.3, -14.85, 0, 0, 0, 0, 0, 0, -12, 0.3, -13.37, 0, 0, 0, 0, 0, 0, -5, 0.6, -12.7, 0, 0, 0, 0, 0, 0, 0, 1.2, -12.2, 0, 0, 0, 0, 0, 0, 4.5, 1.9, -11.2, 0, 0, 0, 0, 0, 0, 8, 2.2, -9.4, 0, 0, 0, 0, 0, 0, 11.5, 2, -8.4, 0, 0, 0, 0, 0, 0, 14.5, 1.7, -8.4, 0, 0, 0, 0, 0, 0, 16.2, 1.4, -8.85),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 }
-point_count = 19
+point_count = 15
 
 [resource]
 script = ExtResource("1_data")
 level_name = "Market Run"
 map = "harbour"
-short_goal = "From the boathouse roof, weave in and out between the market stalls to the fish crates."
-goal_text = "Throw from the boathouse roof and drop down to the quay. Weave through the market: slip through the gap between two stalls to fly behind them, then cut back out through the next gap and settle onto the quay right in front of the fish crates by the crane. Come in slow or you'll bump into the crates. Follow the dotted line and fly through the rings."
+short_goal = "Skim low along the harbour wall, under the pier, up past the market to the fish crates."
+goal_text = "Throw from the boathouse roof and glide down over the water. Skim low along the stone harbour wall, slip under the end of the pier between its posts, then hop up onto the quay past the market stalls and settle in front of the fish crates by the crane. Keep low but don't touch the water, and come in slow or you'll bump into the crates. Follow the dotted line and fly through the rings."
 platform_kind = "roof"
 platform_position = Vector3(-62, 8.6, -18)
-platform_yaw = -1.571
-aim_point = Vector3(-50, 0, -16)
+platform_yaw = -1.9
+aim_point = Vector3(-50, 0, -23)
 route = SubResource("Curve3D_route")
-gate_radius = 1.1
+gate_radius = 1.2
 pad_position = Vector3(17.2, 1.02, -9)
 pad_radius = 1.1
 pad_name = "By the fish crates"
 par_time = 15
-thermals = [{
-"x": -2,
-"z": 2,
-"radius": 3,
-"strength": 2.2,
-"top": 4,
-"style": "golden"
-}]
-bonus_stars = PackedVector3Array(0, 2.3, 2)
+thermals = []
+bonus_stars = PackedVector3Array(-28, 0.5, -16.94)
 hazard_lines = []
