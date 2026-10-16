@@ -24,6 +24,10 @@ var sensitivity := 1.0
 var invert_pitch := false
 var vibration := true
 var show_tips := true
+## "responsive" (the camera swings round quickly with the plane; phone default) or "smooth"
+## (a slower, cinematic follow; desktop default). Empty until loaded.
+var camera_style := ""
+var show_fps := false
 
 const QUALITY_NAMES := ["Low", "Medium", "High"]
 ## Default values (quality: Medium on phones, High on desktop).
@@ -52,7 +56,12 @@ func _ready() -> void:
 		art_style = "painterly"
 	elif args.has("--storybook"):
 		art_style = "storybook"
+	# Phones always use the storybook style (the painterly look is a desktop option).
+	if is_mobile:
+		art_style = "storybook"
 	Mats.painterly = art_style == "painterly"
+	if camera_style == "":
+		camera_style = default_camera_style()
 	if quality < 0:
 		quality = 1 if is_mobile else 2
 	get_viewport().size_changed.connect(_on_size_changed)
@@ -158,6 +167,8 @@ func reset_to_defaults() -> void:
 	invert_pitch = false
 	vibration = true
 	show_tips = true
+	camera_style = default_camera_style()
+	show_fps = false
 	apply_volumes()
 	apply_quality()
 	_save()
@@ -176,7 +187,13 @@ func set_option(option: String, value: Variant) -> void:
 		"vibration": vibration = value
 		"show_tips": show_tips = value
 		"art_style": art_style = value
+		"camera_style": camera_style = value
+		"show_fps": show_fps = value
 	_save()
+
+
+func default_camera_style() -> String:
+	return "responsive" if is_mobile else "smooth"
 
 
 ## Short haptic tick on phones (when enabled).
@@ -219,6 +236,8 @@ func _load() -> void:
 		vibration = bool(cfg.get_value("controls", "vibration", true))
 		show_tips = bool(cfg.get_value("controls", "show_tips", true))
 		art_style = str(cfg.get_value("video", "art_style", "storybook"))
+		camera_style = str(cfg.get_value("controls", "camera", ""))
+		show_fps = bool(cfg.get_value("video", "show_fps", false))
 
 
 func _save() -> void:
@@ -230,6 +249,8 @@ func _save() -> void:
 	cfg.set_value("controls", "invert_pitch", invert_pitch)
 	cfg.set_value("controls", "vibration", vibration)
 	cfg.set_value("controls", "show_tips", show_tips)
+	cfg.set_value("controls", "camera", camera_style)
+	cfg.set_value("video", "show_fps", show_fps)
 	cfg.set_value("audio", "sfx", sfx_volume)
 	cfg.set_value("audio", "ambience", ambience_volume)
 	cfg.save(SETTINGS_PATH)

@@ -3,6 +3,7 @@ extends CanvasLayer
 ## variometer, banners, floating score texts and the screen-edge target arrow.
 
 var _root: Control
+var _fps: Label
 var _tl: PanelContainer
 var _height: Label
 var _speed: Label
@@ -38,6 +39,11 @@ func _ready() -> void:
 	tlv.add_child(_height)
 	tlv.add_child(_speed)
 	_root.add_child(_tl)
+	_fps = UIKit.label("", UIKit.ui_font(), 18, Color.WHITE)
+	_fps.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
+	_fps.add_theme_constant_override("outline_size", 6)
+	_fps.visible = false
+	_root.add_child(_fps)
 
 	_tr = HBoxContainer.new()
 	_tr.add_theme_constant_override("separation", 8)
@@ -133,6 +139,10 @@ func reset() -> void:
 
 ## Per-frame update while flying.
 func update_flight(plane: PaperPlane, level: LevelRuntime, cam: Camera3D, time: float, delta: float) -> void:
+	_fps.visible = Settings.show_fps
+	if _fps.visible:
+		_fps.text = "%d fps" % Engine.get_frames_per_second()
+		_fps.position = _tl.position + Vector2(8, _tl.size.y + 6)
 	var p := plane.get_global_transform_interpolated().origin
 	_height.text = "Height %d m" % maxi(0, roundi(plane.agl))
 	_speed.text = "Speed %d km/h" % roundi(plane.state.v * 3.6)

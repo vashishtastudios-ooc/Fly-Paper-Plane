@@ -15,6 +15,8 @@ enum Mode { MENU, INTRO, FOLLOW, ORBIT }
 @export var launch_smooth_time := 0.6
 @export var base_fov := 64.0
 @export var speed_fov := 11.0
+## Follow rate for the Responsive camera (Smooth uses smooth_rate).
+const RESPONSIVE_RATE := 13.0
 
 var mode := Mode.MENU
 var plane: PaperPlane
@@ -149,7 +151,9 @@ func _update(delta: float, snap: bool) -> void:
 				var vel := plane.velocity()
 				var vdir := vel.normalized() if vel.length() > 0.1 else dir
 				look = p + vdir * look_ahead + Vector3.UP * _lift_s * 0.4
-				rate = launch_smooth_rate if _since_launch < launch_smooth_time else smooth_rate
+				# Responsive: the camera keeps right behind the plane through turns.
+				var follow_rate := RESPONSIVE_RATE if Settings.camera_style == "responsive" else smooth_rate
+				rate = launch_smooth_rate if _since_launch < launch_smooth_time else follow_rate
 				cam_roll = s.roll * roll_follow
 				target_fov += clampf((s.v - 9.0) / 12.0, 0.0, 1.0) * speed_fov + _lift_s * 2.5
 				desired = _clamp_to_world(desired, p)
@@ -162,7 +166,7 @@ func _update(delta: float, snap: bool) -> void:
 			desired = _clamp_to_world(desired, orbit_center)
 			desired = _avoid_walls(orbit_center + Vector3(0, 0.4, 0), desired)
 			look = orbit_center + Vector3(0, 0.3, 0)
-			rate = 2.5
+			rate = 4.5 if Settings.camera_style == "responsive" else 2.5
 	var k := 1.0 if snap else 1.0 - exp(-rate * delta)
 	var pos := global_position.lerp(desired, k)
 	_look = look if snap else _look.lerp(look, 1.0 - exp(-rate * 1.6 * delta))

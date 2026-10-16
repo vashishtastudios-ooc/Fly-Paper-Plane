@@ -7,6 +7,7 @@ signal lessons_pressed
 signal credits_pressed
 
 var _sheet: NotebookSheet
+var _camera_buttons := {}
 var _quality_buttons: Array[Button] = []
 var _done: Button
 ## Controls by setting name, so they can be refreshed (e.g. after Reset to defaults).
@@ -62,24 +63,44 @@ func _ready() -> void:
 		_quality_buttons.append(b)
 	v.add_child(qrow)
 	v.add_child(_note("Lower quality saves battery and keeps older phones smooth."))
-	var srow := HBoxContainer.new()
-	srow.add_theme_constant_override("separation", 8)
-	srow.add_child(UIKit.label("Art style", UIKit.body_font(), 20, UIKit.INK_DARK))
-	var sgroup := ButtonGroup.new()
-	for st in [["storybook", "Storybook"], ["painterly", "Painterly"]]:
-		var b := UIKit.paper_button(st[1], false, 22)
-		b.toggle_mode = true
-		b.button_group = sgroup
-		b.set_pressed_no_signal(Settings.art_style == st[0])
-		var id: String = st[0]
-		b.pressed.connect(func(): Settings.set_option("art_style", id))
-		srow.add_child(b)
-	v.add_child(srow)
-	v.add_child(_note("The art style changes the next time you start the game."))
+	# The painterly look is a desktop option; phones always use the storybook style.
+	if not Settings.is_mobile:
+		var srow := HBoxContainer.new()
+		srow.add_theme_constant_override("separation", 8)
+		srow.add_child(UIKit.label("Art style", UIKit.body_font(), 20, UIKit.INK_DARK))
+		var sgroup := ButtonGroup.new()
+		for st in [["storybook", "Storybook"], ["painterly", "Painterly"]]:
+			var b := UIKit.paper_button(st[1], false, 22)
+			b.toggle_mode = true
+			b.button_group = sgroup
+			b.set_pressed_no_signal(Settings.art_style == st[0])
+			var id: String = st[0]
+			b.pressed.connect(func(): Settings.set_option("art_style", id))
+			srow.add_child(b)
+		v.add_child(srow)
+		v.add_child(_note("The art style changes the next time you start the game."))
+	v.add_child(_check_row("fps", "Show frames per second", Settings.show_fps, func(on: bool): Settings.set_option("show_fps", on)))
 
 	v.add_child(_section("Controls"))
 	v.add_child(_slider_row("sensitivity", "Steering sensitivity", inverse_lerp(0.5, 1.6, Settings.sensitivity),
 		func(x: float): Settings.set_option("sensitivity", lerpf(0.5, 1.6, x))))
+	var crow := HBoxContainer.new()
+	crow.add_theme_constant_override("separation", 8)
+	var cl := UIKit.label("Camera", UIKit.body_font(), 20, UIKit.INK_DARK)
+	cl.custom_minimum_size.x = 150
+	crow.add_child(cl)
+	var cgroup := ButtonGroup.new()
+	for cs in [["responsive", "Responsive"], ["smooth", "Smooth"]]:
+		var b := UIKit.paper_button(cs[1], false, 22)
+		b.toggle_mode = true
+		b.button_group = cgroup
+		b.set_pressed_no_signal(Settings.camera_style == cs[0])
+		var cid: String = cs[0]
+		b.pressed.connect(func(): Settings.set_option("camera_style", cid))
+		crow.add_child(b)
+		_camera_buttons[cid] = b
+	v.add_child(crow)
+	v.add_child(_note("Responsive swings round quickly with the plane; Smooth follows more slowly."))
 	v.add_child(_check_row("invert", "Invert climb and dive", Settings.invert_pitch, func(on: bool): Settings.set_option("invert_pitch", on)))
 	if Settings.is_mobile:
 		v.add_child(_check_row("vibration", "Vibration", Settings.vibration, func(on: bool): Settings.set_option("vibration", on)))
@@ -140,21 +161,34 @@ func _slider_row(key: String, text: String, value: float, on_change: Callable) -
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	var l := UIKit.label(text, UIKit.body_font(), 20, UIKit.INK_DARK)
-	l.custom_minimum_size.x = 200
+	l.custom_minimum_size.x = 150
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	row.add_child(l)
 	var s := HSlider.new()
+	s.custom_minimum_size.x = 160
 	s.min_value = 0.0
 	s.max_value = 1.0
 	s.step = 0.01
 	s.value = value
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	s.custom_minimum_size.y = 32
+	s.custom_minimum_size.y = 44
 	if key == "sensitivity":
 		# Snap to tidy 0.1× steps (0.5× to 1.6×).
 		s.step = 1.0 / 11.0
 	s.value_changed.connect(on_change)
+	# − and + buttons either side: a tap always works, even where a finger drag would scroll
+	# the page instead of moving the slider.
+	var nudge := s.step if key == "sensitivity" else 0.1
+	var minus := UIKit.paper_button("−", false, 20)
+	minus.custom_minimum_size = Vector2(40, 38)
+	minus.pressed.connect(func(): s.value = clampf(s.value - nudge, 0.0, 1.0))
+	row.add_child(minus)
 	row.add_child(s)
+	var plus := UIKit.paper_button("+", false, 20)
+	plus.custom_minimum_size = Vector2(40, 38)
+	plus.pressed.connect(func(): s.value = clampf(s.value + nudge, 0.0, 1.0))
+	row.add_child(plus)
 	_sliders[key] = s
 	var vl := UIKit.label("", UIKit.ui_font(), 20, UIKit.INK)
 	vl.custom_minimum_size.x = 58
@@ -191,6 +225,9 @@ func _sync() -> void:
 	(_sliders.sensitivity as HSlider).set_value_no_signal(inverse_lerp(0.5, 1.6, Settings.sensitivity))
 	(_checks.invert as CheckButton).set_pressed_no_signal(Settings.invert_pitch)
 	(_checks.tips as CheckButton).set_pressed_no_signal(Settings.show_tips)
+	(_checks.fps as CheckButton).set_pressed_no_signal(Settings.show_fps)
+	for cid in _camera_buttons:
+		(_camera_buttons[cid] as Button).set_pressed_no_signal(Settings.camera_style == cid)
 	if _checks.has("vibration"):
 		(_checks.vibration as CheckButton).set_pressed_no_signal(Settings.vibration)
 	for i in _quality_buttons.size():
@@ -219,5 +256,5 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _layout() -> void:
 	var s := Settings.viewport_size()
-	_sheet.size = Vector2(minf(s.x - 24.0, 640.0), minf(s.y - 24.0, 720.0))
+	_sheet.size = Vector2(minf(s.x - 24.0, 760.0), minf(s.y - 24.0, 720.0))
 	_sheet.position = (s - _sheet.size) * 0.5

@@ -6,8 +6,10 @@ signal gust_pressed
 signal roll_pressed(direction: float)
 signal pause_pressed
 
-const STICK_REGION := 0.6
-const STICK_MAX := 50.0
+const STICK_REGION := 0.72
+const STICK_MAX := 44.0
+## Response curve: small drags already turn noticeably (1 = linear).
+const STICK_CURVE := 0.7
 const RING_RADIUS := 60.0
 const KNOB_RADIUS := 26.0
 const GUST_RADIUS := 42.0
@@ -151,7 +153,8 @@ func _update_stick() -> void:
 	var d := _pos - _origin
 	if d.length() > STICK_MAX:
 		d = d.normalized() * STICK_MAX
-	stick = d / STICK_MAX
+	var n := d / STICK_MAX
+	stick = Vector2(signf(n.x) * pow(absf(n.x), STICK_CURVE), signf(n.y) * pow(absf(n.y), STICK_CURVE))
 	_canvas.queue_redraw()
 
 
