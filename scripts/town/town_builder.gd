@@ -18,6 +18,8 @@ const SQUARE_END := -610.0
 const BOUNDS_X := Terrain.BOUNDS_X
 
 const HOUSE_SCENE := preload("res://props/house.tscn")
+## Art style: Painterly. The hand-shaped cottage that replaces the plain lane houses.
+const COTTAGE_SCENE := preload("res://props/cottage.tscn")
 const SCHOOL_SCENE := preload("res://props/school.tscn")
 const OPEN_HOUSE_SCENE := preload("res://props/open_house.tscn")
 const BACKPACK_SCENE := preload("res://props/backpack_mat.tscn")
@@ -544,6 +546,24 @@ func _lane_houses() -> void:
 					h.porch_offset = signf(h.porch_offset) * minf(2.6, h.width * 0.5 - 2.4)
 		h.position = Vector3(side * 17.0, 0, hz)
 		h.rotation.y = -PI * 0.5 if side > 0 else PI * 0.5
+		# Painterly: a cottage in its place, except the launch balconies and the smoking chimney
+		# of flight 1, which gameplay depends on.
+		if Mats.painterly and h.balcony_height == 0.0 and not (side < 0 and is_equal_approx(hz, -74.0)):
+			var c: Node3D = COTTAGE_SCENE.instantiate()
+			c.batcher = batcher
+			c.name = h.name
+			c.wall_color = h.wall_color
+			c.roof_color = h.roof_color
+			c.door_color = h.door_color
+			c.shutter_color = h.shutter_color
+			c.door_offset = h.porch_offset
+			c.yard_depth = 9.0
+			c.seed_value = i + 3
+			c.width = 9.6 if i % 3 else 9.0
+			c.position = h.position
+			c.rotation = h.rotation
+			h.free()
+			h = c
 		add_child(h)
 		i += 1
 	# Linden Primary School at the north end of the lane, its yard opening onto the street.

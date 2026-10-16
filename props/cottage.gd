@@ -92,7 +92,7 @@ func _build(b: MeshBuilder) -> void:
 	# Windows: chunky frames, sills, crooked shutters and flower boxes.
 	var ly := PLINTH + LOWER_H * 0.5 + 0.15
 	var uy := y1 + 0.1 + UPPER_H * 0.5 + 0.05
-	for x in [-3.4, 2.6]:
+	for x in _lower_window_xs():
 		_window(b, _at(x, ly, 0.0), true)
 	for x in [-3.0, 0.0, 3.0]:
 		_window(b, _at(x, uy, JETTY), true)
@@ -228,7 +228,17 @@ func _path_and_fence(b: MeshBuilder) -> void:
 			_soft(b, solid, _at(px, 0.58, fz), Vector3(0.17, 1.16, 0.17), 0.06, TRIM, 0.08, 0.0, 0.01, 0, BOTTOM)
 
 
+## Ground-floor front windows: up to two spots well clear of the door.
+func _lower_window_xs() -> Array:
+	var xs := []
+	for x in [-3.5, -1.0, 1.5, 3.6]:
+		if absf(x - door_offset) > 2.3 and xs.size() < 2:
+			xs.append(x)
+	return xs
+
+
 func _after_build() -> void:
+	_far_model()
 	var hw := width * 0.5
 	var greens := [Color("#4f7f3f"), Color("#5f8f45"), Color("#6f9e4c"), Color("#3f6f3a")]
 	# Ivy climbing the front left corner, spreading wider near the ground.
@@ -243,9 +253,13 @@ func _after_build() -> void:
 		y += 1.0
 	# Big bushes and flowering shrubs along the front.
 	for bx in [-4.3, -2.1, 1.2, 4.2]:
+		if absf(bx - door_offset) < 1.4:
+			continue
 		var s := _rng.randf_range(1.5, 1.9)
 		inst("bush", Transform3D(Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s * 0.85, s)), Vector3(bx, 0.0, 0.9)), greens[_rng.randi() % 4])
 	for bx in [-2.6, 0.5, 3.3]:
+		if absf(bx - door_offset) < 1.2:
+			continue
 		var col := Mats.pick(_rng, Mats.FLOWER_COLORS)
 		inst("bush", Transform3D(Basis().scaled(Vector3(0.9, 0.8, 0.9)), Vector3(bx, 0.0, 1.6)), col)
 	var fz := yard_depth - 0.4
@@ -254,6 +268,48 @@ func _after_build() -> void:
 		if absf(fx - door_offset) < 1.0:
 			continue
 		inst("flower", Transform3D(Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3.ONE * 1.4), Vector3(fx, 0, fz - 0.35 - _rng.randf() * 0.6)), Mats.pick(_rng, Mats.FLOWER_COLORS))
+
+
+## Level of detail: past FAR_DISTANCE the soft model hides and a plain box version (a few
+## hundred triangles, same shape and colors) takes over.
+const FAR_DISTANCE := 60.0
+
+
+func _far_model() -> void:
+	var model := get_node_or_null("Model") as GeometryInstance3D
+	if model == null:
+		return
+	model.visibility_range_end = FAR_DISTANCE
+	model.visibility_range_end_margin = 4.0
+	var b := MeshBuilder.new()
+	var zc := -depth * 0.5
+	var y1 := PLINTH + LOWER_H
+	var uw := width + 0.4
+	var ud := depth + JETTY * 2.0
+	var top := y1 + UPPER_H + 0.1
+	var hw := width * 0.5
+	b.box_mm(Mats.get_mat("stone"), Vector3(-hw - 0.17, 0, zc - depth * 0.5 - 0.17), Vector3(hw + 0.17, PLINTH, zc + depth * 0.5 + 0.17), Color("#cdbfa9"), 63 - 8)
+	b.box_mm(Mats.get_mat("plaster"), Vector3(-hw, PLINTH, zc - depth * 0.5), Vector3(hw, y1, zc + depth * 0.5), lower_color, 63 - 8 - 4)
+	b.box_mm(Mats.get_mat("wood"), Vector3(-hw - 0.25, y1 - 0.16, zc - depth * 0.5 - 0.25), Vector3(hw + 0.25, y1 + 0.16, zc + depth * 0.5 + 0.25), Color("#8a5a3c"))
+	b.box_mm(Mats.get_mat("paint"), Vector3(-uw * 0.5, y1 + 0.1, zc - ud * 0.5), Vector3(uw * 0.5, top, zc + ud * 0.5), wall_color, 63 - 8 - 4)
+	for s in [-1.0, 1.0]:
+		var x: float = s * uw * 0.5
+		_poly_out(b, Mats.get_mat("paint"), [Vector3(x, top, zc - ud * 0.5), Vector3(x, top, zc + ud * 0.5), Vector3(x, top + RISE, zc)], wall_color, Vector3(s, 0, 0))
+	b.gable_roof(Mats.get_mat("shingle"), Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(0, top - 0.1, zc)), ud, uw + 0.2, RISE, 0.85, 0.45, roof_color)
+	b.box_mm(Mats.get_mat("brick"), Vector3(hw - 1.95, top, zc - 2.15), Vector3(hw - 0.85, top + RISE + 1.5, zc - 1.05), Color("#f0d6c6"))
+	var glow := Mats.get_mat("window_lit")
+	var ly := PLINTH + LOWER_H * 0.5 + 0.15
+	var uy := y1 + 0.1 + UPPER_H * 0.5 + 0.05
+	for x in _lower_window_xs():
+		b.box(glow, Transform3D(Basis(), Vector3(x, ly, 0.03)), Vector3(1.2, 1.5, 0.06), Color("#3d5a78"))
+	for x in [-3.0, 0.0, 3.0]:
+		b.box(glow, Transform3D(Basis(), Vector3(x, uy, JETTY + 0.03)), Vector3(1.2, 1.5, 0.06), Color("#3d5a78"))
+	b.box(Mats.get_mat("solid"), Transform3D(Basis(), Vector3(door_offset, PLINTH + 1.2, 0.04)), Vector3(1.1, 2.4, 0.08), door_color)
+	var far := b.build_instance("Far", true)
+	far.visibility_range_begin = FAR_DISTANCE
+	far.visibility_range_begin_margin = 4.0
+	far.visibility_range_end = _draw_distance()
+	add_child(far)
 
 
 func _build_colliders() -> void:
