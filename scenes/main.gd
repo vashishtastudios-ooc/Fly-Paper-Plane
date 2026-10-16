@@ -602,7 +602,7 @@ func _flight_hints(delta: float) -> void:
 	if t > 6.0 and plane.state.vy < -1.2 and plane.gusts >= 1.0:
 		_tip("gust", "Tap Gust for a quick lift" if touch.visible else "Press Space for a quick lift")
 	if level.horizontal_distance_to_pad(plane.state.pos) < 30.0 and t > 2.0:
-		_tip("land", "Slow down and settle gently onto the gold circle")
+		_tip("land", "Slow down and settle gently onto the green circle")
 	# Early warning before a stall, every flight.
 	_slow_cooldown -= delta
 	if plane.state.v < 6.0 and not plane.stalled and _slow_cooldown <= 0.0:
