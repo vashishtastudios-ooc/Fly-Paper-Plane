@@ -76,7 +76,11 @@ func _ready() -> void:
 	v.add_child(row)
 	var hint := UIKit.label("Earn ribbons to unlock more. Looks only, the flight stays the same.", UIKit.body_font(), 16, UIKit.PENCIL)
 	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# One line, cut with "..." if short of room. A wrapping label measured before the page is laid
+	# out reports one word per line, which made the whole page taller than the screen.
+	hint.autowrap_mode = TextServer.AUTOWRAP_OFF
+	hint.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	hint.custom_minimum_size.x = 120
 	row.add_child(hint)
 	var done := UIKit.paper_button("Done", true, 28)
 	done.pressed.connect(func():
@@ -249,5 +253,7 @@ func _layout() -> void:
 	_preview_box.custom_minimum_size = Vector2(0, 260) if portrait else Vector2(380, 250)
 	var w := minf(s.x - 24.0, 1080.0)
 	var h := minf(s.y - 24.0, 660.0 if not portrait else 1180.0)
+	# Shrink to the wanted size even if an earlier measurement made the page grow.
+	_sheet.reset_size()
 	_sheet.size = Vector2(w, h)
 	_sheet.position = (s - _sheet.size) * 0.5
