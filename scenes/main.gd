@@ -139,7 +139,7 @@ func _wire() -> void:
 		start_level(Game.LESSONS))
 	intro.throw_pressed.connect(throw_plane)
 	intro.flights_pressed.connect(go_menu)
-	result.next_pressed.connect(func(): start_level(mini(Game.current_level + 1, Game.levels.size() - 1)))
+	result.next_pressed.connect(func(): start_level(Game.next_level() if Game.has_next_level() else Game.current_level))
 	result.retry_pressed.connect(func(): start_level(Game.current_level))
 	result.flights_pressed.connect(go_menu)
 	pause_ui.resume_pressed.connect(resume_game)

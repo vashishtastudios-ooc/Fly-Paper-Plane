@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 27.5, 10.9, -15, 0, 0, 0, 0, 0, 0, 22, 9.8, -22, 0, 0, 0, 0, 0, 0, 14, 8.4, -30, 0, 0, 0, 0, 0, 0, 4, 6.6, -40, 0, 0, 0, 0, 0, 0, -6, 4.4, -48, 0, 0, 0, 0, 0, 0, -14, 2.6, -53.5, 0, 0, 0, 0, 0, 0, -20, 1.3, -56.2, 0, 0, 0, 0, 0, 0, -24, 0.5, -56.9, 0, 0, 0, 0, 0, 0, -28, 0.15, -56.94, 0, 0, 0, 0, 0, 0, -32, 0.2, -57, 0, 0, 0, 0, 0, 0, -37, 0.5, -58.5, 0, 0, 0, 0, 0, 0, -42, 0.9, -65, 0, 0, 0, 0, 0, 0, -45.5, 1.8, -75, 0, 0, 0, 0, 0, 0, -46, 3.6, -85, 0, 0, 0, 0, 0, 0, -45, 5, -95, 0, 0, 0, 0, 0, 0, -42.5, 5.4, -105, 0, 0, 0, 0, 0, 0, -39.5, 4.9, -113, 0, 0, 0, 0, 0, 0, -36.5, 4, -119.5, 0, 0, 0, 0, 0, 0, -33.8, 3, -123.8, 0, 0, 0, 0, 0, 0, -32, 2.3, -125.6),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 20
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Under the Pier"
+map = "harbour"
+short_goal = "From the crane, under the pier between its posts, to the end of the pier."
+goal_text = "Throw from the top of the crane on the quay and dive toward the pier. Fly under it between two of the wooden posts, low over the water, then follow the pier out to sea. Climb in the warm air off its side and land on the end of the pier beside the ice-cream kiosk. Follow the dotted line and fly through the rings."
+platform_kind = "crane"
+platform_position = Vector3(30.8, 11.4, -11)
+platform_yaw = 2.4
+aim_point = Vector3(25, 0, -19)
+route = SubResource("Curve3D_route")
+gate_radius = 1.5
+pad_position = Vector3(-31.3, 1.72, -126)
+pad_radius = 1.4
+pad_name = "End of the pier"
+par_time = 20
+thermals = [{
+"x": -46,
+"z": -86,
+"radius": 7,
+"strength": 4.4,
+"top": 7.5,
+"style": "golden"
+}]
+bonus_stars = PackedVector3Array(-28, 0.15, -56.94)
+hazard_lines = []

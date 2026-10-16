@@ -19,6 +19,8 @@ const LEVEL_PATHS := [
 	"res://levels/level_6.tres",
 	"res://levels/level_7.tres",
 	"res://levels/level_8.tres",
+	"res://levels/harbour_1.tres",
+	"res://levels/harbour_2.tres",
 ]
 
 var state: int = State.LOADING
@@ -66,19 +68,55 @@ func finish_lessons() -> void:
 	save_game()
 
 
+## A map's first flight opens with the map (ribbons); later ones after the flight before them.
 func is_unlocked(i: int) -> bool:
-	return i == LESSONS or UNLOCK_ALL_FOR_TESTING or i < unlocked
+	if i == LESSONS or UNLOCK_ALL_FOR_TESTING:
+		return true
+	for m in MAPS:
+		var lv: Array = m.levels
+		var k := lv.find(i)
+		if k == 0:
+			return total_ribbons() >= int(m.ribbons)
+		if k > 0:
+			return best_scores.has(lv[k - 1]) or i < unlocked
+	return i < unlocked
+
+
+## A flight's number within its map (1-based), and the map's name.
+func flight_number(i: int) -> int:
+	for m in MAPS:
+		var k := (m.levels as Array).find(i)
+		if k >= 0:
+			return k + 1
+	return i + 1
+
+
+func map_name(i: int) -> String:
+	for m in MAPS:
+		if (m.levels as Array).has(i):
+			return m.name
+	return ""
+
+
+## The flight after the current one on the same map, or -1.
+func next_level() -> int:
+	for m in MAPS:
+		var lv: Array = m.levels
+		var k := lv.find(current_level)
+		if k >= 0:
+			return lv[k + 1] if k + 1 < lv.size() else -1
+	return -1
 
 
 func has_next_level() -> bool:
-	return current_level + 1 < levels.size()
+	return next_level() >= 0
 
 
 ## Maps. Each lists its flights (indices into `levels`) and the ribbons (from any flight) that
 ## open it; "soon" maps show as Coming soon cards on the map page.
 const MAPS := [
 	{"id": "linden", "name": "Linden Lane", "blurb": "Gardens, windows and the old bridge", "levels": [0, 1, 2, 3, 4, 5, 6, 7], "ribbons": 0, "thumb": 2},
-	{"id": "harbour", "name": "Seaside Harbour", "blurb": "Boats, the pier and sea breezes", "levels": [], "ribbons": 15, "soon": true},
+	{"id": "harbour", "name": "Seaside Harbour", "blurb": "Boats, the pier and sea breezes", "levels": [8, 9], "ribbons": 15, "thumb": 9},
 	{"id": "farm", "name": "Maple Farm", "blurb": "Barns, fields and the windmill", "levels": [], "ribbons": 30, "soon": true},
 	{"id": "snow", "name": "Snowy Village", "blurb": "Chimney smoke and twinkling lights", "levels": [], "ribbons": 45, "soon": true},
 	{"id": "city", "name": "City Rooftops", "blurb": "Water towers and narrow alleys", "levels": [], "ribbons": 60, "soon": true},

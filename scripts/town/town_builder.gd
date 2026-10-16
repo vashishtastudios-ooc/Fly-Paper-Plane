@@ -442,7 +442,7 @@ func _house_slots() -> Array:
 func _lane_houses() -> void:
 	var balconies := []
 	for lvl in Game.levels:
-		if lvl.platform_kind == "balcony":
+		if lvl.platform_kind == "balcony" and lvl.map == map_id:
 			balconies.append(lvl.platform_position)
 	var i := 0
 	for slot in _house_slots():

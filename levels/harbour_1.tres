@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 97, 23.6, -81.5, 0, 0, 0, 0, 0, 0, 88, 22, -80, 0, 0, 0, 0, 0, 0, 76, 20, -77, 0, 0, 0, 0, 0, 0, 64, 17.8, -73, 0, 0, 0, 0, 0, 0, 52, 15.6, -68, 0, 0, 0, 0, 0, 0, 40, 13.8, -64, 0, 0, 0, 0, 0, 0, 28, 12.6, -60, 0, 0, 0, 0, 0, 0, 16, 12.2, -55, 0, 0, 0, 0, 0, 0, 4, 11.6, -50, 0, 0, 0, 0, 0, 0, -8, 11, -46, 0, 0, 0, 0, 0, 0, -20, 10.2, -43, 0, 0, 0, 0, 0, 0, -28, 9.6, -42, 0, 0, 0, 0, 0, 0, -38, 8.6, -42, 0, 0, 0, 0, 0, 0, -48, 7.2, -43, 0, 0, 0, 0, 0, 0, -58, 5.6, -45, 0, 0, 0, 0, 0, 0, -68, 3.8, -42, 0, 0, 0, 0, 0, 0, -76, 2.2, -36, 0, 0, 0, 0, 0, 0, -80, 1.2, -29.5, 0, 0, 0, 0, 0, 0, -82, 0.7, -25.5),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 19
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Lighthouse Hop"
+map = "harbour"
+short_goal = "From the lighthouse gallery across the harbour to a towel on the beach."
+goal_text = "Throw from the top of the lighthouse and glide west across the harbour mouth, over the breakwater and the moored boats. Ride the warm air over the water to stay high, cross the pier, swing round in front of the boathouse and settle onto the striped towel on the sand. Follow the dotted line and fly through the rings."
+platform_kind = "tower"
+platform_position = Vector3(101.2, 24.458, -82)
+platform_yaw = 1.571
+aim_point = Vector3(88, 0, -80)
+route = SubResource("Curve3D_route")
+pad_position = Vector3(-82, 0.47, -24.5)
+pad_radius = 2.2
+pad_name = "Beach towel"
+par_time = 22
+thermals = [{
+"x": 28,
+"z": -60,
+"radius": 8,
+"strength": 3.6,
+"top": 15,
+"style": "golden"
+}, {
+"x": -20,
+"z": -43,
+"radius": 7,
+"strength": 3.2,
+"top": 12,
+"style": "golden"
+}]
+bonus_stars = PackedVector3Array(28, 15.5, -60)
+hazard_lines = []

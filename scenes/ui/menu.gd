@@ -138,8 +138,11 @@ func _show(screen: String) -> void:
 	_play.visible = home or flights
 	_hangar_chip.visible = flights
 	_back_chip.visible = not home
+	var lv: Array = Game.MAPS[_map].levels
 	for c in _cards:
-		c.visible = flights and (Game.MAPS[_map].levels as Array).has(c.index)
+		c.visible = flights and lv.has(c.index)
+		# Flights are numbered within their map.
+		c.number = lv.find(c.index) + 1
 	for mc in _map_cards:
 		mc.visible = maps
 	if maps:
@@ -514,6 +517,7 @@ class ScrapPage extends Control:
 
 class PhotoCard extends Button:
 	var index := 0
+	var number := 1
 	var thumb: Texture2D
 	var title := ""
 	var tilt := 0.0
@@ -556,7 +560,7 @@ class PhotoCard extends Button:
 		# Pink tape label: FLIGHT N.
 		var font := UIKit.ui_font()
 		var fs := int(16 * k)
-		var label := "FLIGHT %d" % (index + 1)
+		var label := "FLIGHT %d" % number
 		var lw := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		var tape := Rect2(Vector2(-6 * k, -fs * 0.95), Vector2(lw + 20 * k, fs * 1.55))
 		draw_set_transform(photo.position + Vector2(10 * k, photo.size.y + 2 * k), deg_to_rad(-5.0))

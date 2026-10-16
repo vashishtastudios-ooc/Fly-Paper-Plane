@@ -53,6 +53,7 @@ func build() -> void:
 	add_child(b.build_instance("HarbourStatic", true))
 	_h_lighthouse()
 	_h_boats()
+	_h_targets()
 	_h_town()
 	_h_trees()
 	_clouds_build()
@@ -383,7 +384,7 @@ func _h_boats() -> void:
 	var boats := [
 		["fishing", Vector2(4, -17.5), 0.0, "#2f6f8f"],
 		["fishing", Vector2(17, -19.0), 0.05, "#c8423b"],
-		["sail", Vector2(-8, -55), 1.2, "#f6f1e6"],
+		["sail", Vector2(-2, -72), 1.2, "#f6f1e6"],
 		["sail", Vector2(24, -62), 1.5, "#2d4f7c"],
 		["fishing", Vector2(36, -48), 1.9, "#3f7d4f"],
 		["sail", Vector2(6, -86), 1.3, "#f6f1e6"],
@@ -490,7 +491,7 @@ func _h_beach(b: MeshBuilder) -> void:
 	for n in 16:
 		var ux := rng.randf_range(-140.0, -76.0)
 		var uz := shore(ux) + rng.randf_range(5.0, 13.0)
-		if absf(ux - BOATHOUSE.x) < 10.0:
+		if absf(ux - BOATHOUSE.x) < 10.0 or _near_pad(Vector3(ux, 0, uz), 6.0):
 			continue
 		var uy := _ground(ux, uz)
 		var col := Color(umb_cols[n % umb_cols.size()])
@@ -500,6 +501,48 @@ func _h_beach(b: MeshBuilder) -> void:
 			_static_cyl("post", Vector3(ux, uy, uz), 0.08, 2.3)
 		var ty := rng.randf() * TAU
 		b.box(Mats.get_mat("cloth"), Transform3D(Basis(Vector3.UP, ty), Vector3(ux + 1.4, uy + 0.03, uz + 0.4)), Vector3(0.9, 0.04, 1.8), Color(umb_cols[(n + 2) % umb_cols.size()]))
+
+
+func _near_pad(p: Vector3, r: float) -> bool:
+	for pad in _pad_keepouts:
+		if Vector2(p.x - pad.x, p.z - pad.z).length() < r:
+			return true
+	return false
+
+
+# --- Landing spots and the pets beside them -----------------------------------------------------
+
+## [level index, "cat"/"dog", variant, position] (y from the ground when it is 0).
+const HARBOUR_PETS := [
+	[8, "cat", "ginger", Vector3(-85.6, 0.0, -21.6)],
+	[9, "dog", "collie", Vector3(-24.2, PIER_Y, -127.0)],
+]
+
+
+func _h_targets() -> void:
+	# The striped beach towel (flight 1's landing spot), with a bucket and spade.
+	var b := MeshBuilder.new()
+	var t := Vector3(-82.0, _ground(-82.0, -24.5), -24.5)
+	var cloth := Mats.get_mat("cloth")
+	for i in 6:
+		var col := Color("#e8546a") if i % 2 == 0 else Color("#fbf8f0")
+		b.box(cloth, Transform3D(Basis(Vector3.UP, 0.35), t + Basis(Vector3.UP, 0.35) * Vector3(0, 0.02, -1.75 + 0.3 + i * 0.6)), Vector3(2.4, 0.03, 0.6), col)
+	b.cylinder(Mats.get_mat("solid"), Transform3D(Basis(), t + Vector3(2.0, 0, 1.4)), 0.22, 0.28, 0.4, 10, Color("#2f6f8f"))
+	add_child(b.build_instance("BeachTowel", false))
+	for d in HARBOUR_PETS:
+		var li: int = d[0]
+		if li >= Game.levels.size():
+			continue
+		var pet: Node3D = (CAT_SCENE if d[1] == "cat" else DOG_SCENE).instantiate()
+		pet.batcher = batcher
+		pet.variant = d[2]
+		var p: Vector3 = d[3]
+		if p.y == 0.0:
+			p.y = _ground(p.x, p.z)
+		pet.position = p
+		var to_pad: Vector3 = (Game.levels[li] as LevelData).pad_position - p
+		pet.rotation.y = atan2(to_pad.x, to_pad.z)
+		add_child(pet)
 
 
 # --- Town ----------------------------------------------------------------------------------
