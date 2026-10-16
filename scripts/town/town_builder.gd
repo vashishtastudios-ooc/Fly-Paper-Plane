@@ -95,6 +95,9 @@ var _grass_nodes: Array[Node] = []
 var time_of_day := "golden"
 ## Which map this builds (see Game.MAPS); subclasses build other maps.
 var map_id := "linden"
+## When set, build() gives the screen a frame between its steps (the loading animation keeps
+## moving); otherwise it builds in one go.
+var yield_while_building := false
 var is_built := false
 
 
@@ -113,25 +116,44 @@ func build() -> void:
 	batcher.name = "Instances"
 	add_child(batcher)
 	_environment()
+	await _step_yield()
 	_terrain()
+	await _step_yield()
 	_water()
+	await _step_yield()
 	_streets()
+	await _step_yield()
 	_lane_houses()
+	await _step_yield()
 	_lane_details()
+	await _step_yield()
 	_park()
+	await _step_yield()
 	_river_and_bridge()
+	await _step_yield()
 	_market()
+	await _step_yield()
 	_square()
+	await _step_yield()
 	_background()
+	await _step_yield()
 	_clouds_build()
+	await _step_yield()
 	_grass()
+	await _step_yield()
 	_sun_effects()
+	await _step_yield()
 	_ambient_life()
+	await _step_yield()
 	# Built last so the shared random sequence (and the rest of the town) stays unchanged.
 	_rowan_row()
+	await _step_yield()
 	_ponds()
+	await _step_yield()
 	_willow_close()
+	await _step_yield()
 	_grand_tour()
+	await _step_yield()
 	_pets()
 	batcher.finalize()
 	_on_quality(Settings.quality)
@@ -148,6 +170,11 @@ func _process(delta: float) -> void:
 		c.position.x += delta * c.get_meta("speed", 1.0)
 		if c.position.x > 420.0:
 			c.position.x = -420.0
+
+
+func _step_yield() -> void:
+	if yield_while_building:
+		await get_tree().process_frame
 
 
 ## Showreel clips for the menu while this map is loaded: [points, start, end] (fractions of the

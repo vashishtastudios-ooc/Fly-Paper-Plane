@@ -53,7 +53,8 @@ func _ready() -> void:
 	# Let the loading card render before the heavy town build.
 	await get_tree().process_frame
 	await get_tree().process_frame
-	town.build()
+	town.yield_while_building = true
+	await town.build()
 	collision_debug = CollisionDebug.new()
 	collision_debug.name = "CollisionDebug"
 	collision_debug.plane = plane
@@ -84,7 +85,8 @@ func switch_map(id: String) -> void:
 	add_child(nt)
 	move_child(nt, 0)
 	town = nt
-	town.build()
+	town.yield_while_building = true
+	await town.build()
 	_reel_curves.clear()
 	_reel_i = -1
 	_loading.queue_free()
@@ -97,11 +99,8 @@ func _show_loading() -> void:
 	bg.color = UIKit.PAPER
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_loading.add_child(bg)
-	var l := UIKit.label("Folding the plane...", UIKit.display_font(), 54, UIKit.INK)
-	l.set_anchors_preset(Control.PRESET_FULL_RECT)
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_loading.add_child(l)
+	# A sheet of paper folding itself into a plane while the world is built.
+	_loading.add_child(FoldingLoader.new())
 	add_child(_loading)
 
 
