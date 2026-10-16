@@ -205,7 +205,7 @@ func set_option(option: String, value: Variant) -> void:
 
 
 func default_sensitivity() -> float:
-	return DEFAULT_SENSITIVITY
+	return 1.2 if is_mobile else DEFAULT_SENSITIVITY
 
 
 func default_camera_style() -> String:

@@ -109,6 +109,8 @@ var in_y := 0.0
 var _raw_x := 0.0
 var _raw_y := 0.0
 var stalled := false
+## Extra turn rate (sensitivity above 1 turns faster at full deflection).
+var turn_scale := 1.0
 var lift := 0.0
 var agl := 0.0
 var rolls_done := 0
@@ -258,7 +260,7 @@ func step_state(s: FlightState, ix: float, iy: float, dt: float) -> float:
 	var target_pitch := stall_pitch if stall else clampf(trim_pitch + iy * pitch_input_gain, pitch_min, pitch_max)
 	s.pitch = _damp(s.pitch, target_pitch, pitch_rate_stall if stall else pitch_rate, dt)
 	s.roll = _damp(s.roll, ix * roll_gain, roll_rate, dt)
-	s.yaw -= s.roll * turn_rate * dt * clampf(s.v / 9.0, 0.6, 1.5)
+	s.yaw -= s.roll * turn_rate * turn_scale * dt * clampf(s.v / 9.0, 0.6, 1.5)
 	s.v += (-gravity * sin(s.pitch) - drag * s.v * s.v) * dt
 	s.v = clampf(s.v, min_speed, max_speed)
 	var h := s.pos.y - _surface_under(s.pos)

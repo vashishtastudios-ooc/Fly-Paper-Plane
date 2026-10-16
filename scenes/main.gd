@@ -384,6 +384,10 @@ func _process(delta: float) -> void:
 				x += touch.stick.x
 				y += -touch.stick.y
 				touch.gust_charge = plane.gusts
+				# Stall guard for touch: pulling up fades out as the plane slows toward a stall.
+				if y > 0.0:
+					y *= clampf((plane.state.v - plane.stall_speed - 0.6) / 2.5, 0.0, 1.0)
+			plane.turn_scale = maxf(1.0, Settings.sensitivity)
 			x *= Settings.sensitivity
 			y *= Settings.sensitivity * (-1.0 if Settings.invert_pitch else 1.0)
 			plane.set_controls(clampf(x, -1.0, 1.0), clampf(y, -1.0, 1.0))
