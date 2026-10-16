@@ -98,6 +98,11 @@ var map_id := "linden"
 ## When set, build() gives the screen a frame between its steps (the loading animation keeps
 ## moving); otherwise it builds in one go.
 var yield_while_building := false
+## How far the build has got (0..1), for the loading animation.
+var build_progress := 0.0
+var _steps_done := 0
+## Number of _step_yield() calls in build() (for build_progress).
+var build_steps := 19
 var is_built := false
 
 
@@ -173,6 +178,8 @@ func _process(delta: float) -> void:
 
 
 func _step_yield() -> void:
+	_steps_done += 1
+	build_progress = clampf(float(_steps_done) / build_steps, 0.0, 1.0)
 	if yield_while_building:
 		await get_tree().process_frame
 

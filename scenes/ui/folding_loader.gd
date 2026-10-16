@@ -1,14 +1,21 @@
 class_name FoldingLoader
 extends Control
-## Loading animation: a sheet of notebook paper folds itself into a paper plane (top corners to
-## the middle, the edges in again, then in half), the finished plane flies off along a dashed
-## line, and a fresh sheet starts over. Drawn in 2D; time-based, so it keeps its pace even when
-## frames are slow while the world is being built.
+## Loading animation: a sheet of paper folds itself into a paper plane (top corners to the
+## middle, the edges in again, then in half) in step with the loading, so the last fold lands as
+## loading finishes; then the finished plane flies off and `finished` is emitted.
+
+signal finished
+
+## Returns loading progress 0..1.
+var progress_source: Callable
+var _pos := 0.0
+var _done := false
 
 const SHEET := Vector2(1.0, 1.4)
-const FOLD_TIME := 0.5
-const PAUSE := 0.14
-const FLY_TIME := 0.9
+## Fastest folding speed (folds per second) when catching up with the loading.
+const FOLD_SPEED := 5.0
+const PAUSE := 0.0
+const FLY_TIME := 0.55
 const FRONT := Color("#ffffff")
 const BACK := Color("#efe3c8")
 const EDGE := Color(0.32, 0.25, 0.18, 0.55)
@@ -26,6 +33,7 @@ var _t := 0.0
 ## Paper pieces: {"pts": PackedVector2Array, "back": bool}, drawn in order (later on top).
 var _pieces: Array = []
 var _step := 0
+var _fly := 0.0
 var _label: Label
 
 
@@ -42,18 +50,24 @@ func _reset() -> void:
 	_pieces = [{"pts": PackedVector2Array([Vector2.ZERO, Vector2(SHEET.x, 0), SHEET, Vector2(0, SHEET.y)]), "back": false}]
 	_step = 0
 	_t = 0.0
+	_fly = 0.0
 
 
 func _process(delta: float) -> void:
-	# Big frame gaps (a long build step) don't skip folds: at most a short jump forward.
-	_t += minf(delta, 0.12)
-	var span := FOLD_TIME + PAUSE
-	if _step < _folds.size() and _t >= span:
+	var dt := minf(delta, 0.1)
+	var prog := clampf(float(progress_source.call()), 0.0, 1.0) if progress_source.is_valid() else 1.0
+	# Follow the loading: each fold is a fifth of it; never faster than FOLD_SPEED.
+	var target := prog * _folds.size()
+	_pos = move_toward(_pos, target, FOLD_SPEED * dt)
+	while _step < _folds.size() and _pos >= _step + 1:
 		_apply_fold(_folds[_step])
 		_step += 1
-		_t = 0.0
-	elif _step >= _folds.size() and _t >= FLY_TIME + PAUSE * 2.0:
-		_reset()
+	_t = _pos - _step
+	if _step >= _folds.size():
+		_fly += dt
+		if _fly >= FLY_TIME and not _done:
+			_done = true
+			finished.emit()
 	var s := get_viewport_rect().size
 	_label.size = Vector2(s.x, 60)
 	_label.position = Vector2(0, s.y * 0.5 + _scale() * SHEET.y * 0.5 + 24.0)
@@ -140,7 +154,7 @@ func _draw() -> void:
 		_draw_flying()
 		return
 	var f: Array = _folds[_step]
-	var t := smoothstep(0.0, 1.0, clampf(_t / FOLD_TIME, 0.0, 1.0))
+	var t := smoothstep(0.0, 1.0, clampf(_t, 0.0, 1.0))
 	var flat: Array = []
 	var moving: Array = []
 	for pc in _pieces:
@@ -169,7 +183,7 @@ func _draw() -> void:
 
 func _draw_flying() -> void:
 	var k := _scale()
-	var t := clampf((_t - PAUSE) / FLY_TIME, 0.0, 1.0)
+	var t := clampf(_fly / FLY_TIME, 0.0, 1.0)
 	var start := _to_screen(Vector2(0.5, 0.7))
 	var s := get_viewport_rect().size
 	var end := Vector2(s.x + k, s.y * 0.2)

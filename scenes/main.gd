@@ -18,6 +18,9 @@ extends Node
 @onready var credits: CanvasLayer = $Credits
 
 var _loading: CanvasLayer
+var _loader: FoldingLoader
+## The town being built behind the loading screen (its build_progress drives the folding).
+var _building: TownBuilder
 var _end_timer := -1.0
 var _pending := {}
 var _last_flight_time := 0.0
@@ -54,13 +57,14 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	town.yield_while_building = true
+	_building = town
 	await town.build()
 	collision_debug = CollisionDebug.new()
 	collision_debug.name = "CollisionDebug"
 	collision_debug.plane = plane
 	add_child(collision_debug)
 	_apply_cosmetics()
-	_loading.queue_free()
+	await _finish_loading()
 	go_menu()
 
 
@@ -86,9 +90,17 @@ func switch_map(id: String) -> void:
 	move_child(nt, 0)
 	town = nt
 	town.yield_while_building = true
+	_building = town
 	await town.build()
 	_reel_curves.clear()
 	_reel_i = -1
+	await _finish_loading()
+
+
+## Lets the last fold and the fly-off finish, then removes the loading screen.
+func _finish_loading() -> void:
+	if _loader and not _loader._done:
+		await _loader.finished
 	_loading.queue_free()
 
 
@@ -100,7 +112,10 @@ func _show_loading() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_loading.add_child(bg)
 	# A sheet of paper folding itself into a plane while the world is built.
-	_loading.add_child(FoldingLoader.new())
+	_loader = FoldingLoader.new()
+	_building = null
+	_loader.progress_source = func() -> float: return _building.build_progress if is_instance_valid(_building) else 0.0
+	_loading.add_child(_loader)
 	add_child(_loading)
 
 

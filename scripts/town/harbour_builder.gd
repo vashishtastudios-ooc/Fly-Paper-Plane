@@ -29,6 +29,7 @@ var _houses: Array[Vector3] = []
 
 func _init() -> void:
 	map_id = "harbour"
+	build_steps = 12
 
 
 func build() -> void:
