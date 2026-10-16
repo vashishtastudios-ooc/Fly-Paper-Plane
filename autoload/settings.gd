@@ -32,6 +32,9 @@ var show_tips := true
 ## (a slower, cinematic follow; desktop default). Empty until loaded.
 var camera_style := ""
 var show_fps := false
+## The storybook ink outlines (a full-screen pass). Some phone graphics drivers draw glitches
+## with it, so it can be switched off.
+var ink_outlines := true
 
 const QUALITY_NAMES := ["Low", "Medium", "High"]
 ## Default values (quality: Medium on phones, High on desktop).
@@ -184,6 +187,7 @@ func reset_to_defaults() -> void:
 	show_tips = true
 	camera_style = default_camera_style()
 	show_fps = false
+	ink_outlines = true
 	apply_volumes()
 	apply_quality()
 	_save()
@@ -204,6 +208,7 @@ func set_option(option: String, value: Variant) -> void:
 		"art_style": art_style = value
 		"camera_style": camera_style = value
 		"show_fps": show_fps = value
+		"ink_outlines": ink_outlines = value
 	_save()
 
 
@@ -257,6 +262,7 @@ func _load() -> void:
 		art_style = str(cfg.get_value("video", "art_style", "storybook"))
 		camera_style = str(cfg.get_value("controls", "camera", ""))
 		show_fps = bool(cfg.get_value("video", "show_fps", false))
+		ink_outlines = bool(cfg.get_value("video", "ink_outlines", true))
 
 
 func _save() -> void:
@@ -270,6 +276,7 @@ func _save() -> void:
 	cfg.set_value("controls", "show_tips", show_tips)
 	cfg.set_value("controls", "camera", camera_style)
 	cfg.set_value("video", "show_fps", show_fps)
+	cfg.set_value("video", "ink_outlines", ink_outlines)
 	cfg.set_value("audio", "sfx", sfx_volume)
 	cfg.set_value("audio", "ambience", ambience_volume)
 	cfg.save(settings_file)

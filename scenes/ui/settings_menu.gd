@@ -80,6 +80,7 @@ func _ready() -> void:
 			srow.add_child(b)
 		v.add_child(srow)
 		v.add_child(_note("The art style changes the next time you start the game."))
+	v.add_child(_check_row("ink", "Ink outlines", Settings.ink_outlines, func(on: bool): Settings.set_option("ink_outlines", on)))
 	v.add_child(_check_row("fps", "Show frames per second", Settings.show_fps, func(on: bool): Settings.set_option("show_fps", on)))
 
 	v.add_child(_section("Controls"))
@@ -261,6 +262,7 @@ func _sync() -> void:
 	(_checks.invert as CheckButton).set_pressed_no_signal(Settings.invert_pitch)
 	(_checks.tips as CheckButton).set_pressed_no_signal(Settings.show_tips)
 	(_checks.fps as CheckButton).set_pressed_no_signal(Settings.show_fps)
+	(_checks.ink as CheckButton).set_pressed_no_signal(Settings.ink_outlines)
 	for cid in _camera_buttons:
 		(_camera_buttons[cid] as Button).set_pressed_no_signal(Settings.camera_style == cid)
 	if _checks.has("vibration"):

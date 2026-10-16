@@ -63,10 +63,13 @@ func _ready() -> void:
 	far = 1600.0
 	fov = base_fov
 	_build_storybook_pass()
-	# The web build (Compatibility renderer) has no screen depth for the ink lines: no pass there.
-	var web := OS.has_feature("web")
-	Settings.quality_changed.connect(func(q: int): _post.visible = q >= 1 and not web)
-	_post.visible = Settings.quality >= 1 and not web
+	_update_post()
+
+
+## The ink pass: on from Medium quality up, unless switched off in Settings. The web build
+## (Compatibility renderer) has no screen depth for the lines, so never there.
+func _update_post() -> void:
+	_post.visible = Settings.quality >= 1 and Settings.ink_outlines and not OS.has_feature("web") 		and RenderingServer.get_current_rendering_method() != "gl_compatibility"
 
 
 func set_mode(m: int, snap := false) -> void:
@@ -86,6 +89,7 @@ func shake(amount: float) -> void:
 
 
 func _process(delta: float) -> void:
+	_update_post()
 	_time += delta
 	_since_launch += delta
 	_update(delta, false)
