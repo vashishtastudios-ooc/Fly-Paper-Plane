@@ -26,7 +26,30 @@ func _ready() -> void:
 	rm.emission_enabled = true
 	rm.emission = Color("#ffc94d")
 	rm.emission_energy_multiplier = 1.6
-	_ring.material_override = rm
+	# Green rim and a soft green disc inside it: "land here".
+	var green := StandardMaterial3D.new()
+	green.albedo_color = Color("#3fc463")
+	green.emission_enabled = true
+	green.emission = Color("#5fd47a")
+	green.emission_energy_multiplier = 1.4
+	_ring.material_override = green
+	var disc := MeshInstance3D.new()
+	disc.name = "Disc"
+	var dm := CylinderMesh.new()
+	dm.top_radius = radius
+	dm.bottom_radius = radius
+	dm.height = 0.01
+	dm.radial_segments = 40
+	disc.mesh = dm
+	disc.position.y = 0.025
+	var dmat := StandardMaterial3D.new()
+	dmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	dmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dmat.albedo_color = Color(0.25, 0.8, 0.4, 0.5)
+	dmat.disable_receive_shadows = true
+	disc.material_override = dmat
+	disc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(disc)
 	_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_ring)
 
@@ -39,7 +62,7 @@ func _ready() -> void:
 	inner.mesh = t2
 	inner.scale = Vector3(1, 0.2, 1)
 	inner.position.y = 0.035
-	inner.material_override = Mats.additive(Color(1, 0.86, 0.5, 0.6))
+	inner.material_override = Mats.additive(Color(0.75, 1.0, 0.8, 0.6))
 	inner.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(inner)
 
@@ -68,6 +91,7 @@ func _ready() -> void:
 	beam.position.y = 13.0
 	var sm := ShaderMaterial.new()
 	sm.shader = load("res://shaders/beam.gdshader")
+	sm.set_shader_parameter("tint", Color(0.55, 1.0, 0.65))
 	beam.material_override = sm
 	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(beam)
