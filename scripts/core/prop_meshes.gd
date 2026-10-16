@@ -55,6 +55,51 @@ static func _leafy_clump(radius: float, flatten: float, cards: int, seed_value: 
 	return mesh
 
 
+## Painterly hedge: a 1 m section (along X, 0.9 tall, 0.8 deep) of leaf-brush cards around a
+## rounded core, matching the leafy trees. Long hedges are laid as several sections (Batcher).
+static func _leafy_hedge() -> ArrayMesh:
+	var b := MeshBuilder.new()
+	var core := Color(0.92, 0.92, 0.92)
+	b.box(Mats.get_mat("foliage"), Transform3D(Basis(), Vector3(0, 0.36, 0)), Vector3(1.0, 0.72, 0.62), core, 63 - 8 - 1 - 2)
+	b.cylinder(Mats.get_mat("foliage"), Transform3D(Basis(Vector3.BACK, PI * 0.5), Vector3(0.5, 0.72, 0)), 0.31, 0.31, 1.0, 8, core, false, true)
+	var mesh := b.build()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_material(Mats.get_mat("leaf_cards"))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 77
+	var axis_c := Vector3(0, 0.45, 0)
+	for i in 34:
+		# A point on the hedge's rounded surface: front, back or top.
+		var a := rng.randf_range(-PI * 0.55, PI * 0.55)
+		var x := rng.randf_range(-0.5, 0.5)
+		var d := Vector3(0, cos(a), sin(a))
+		if absf(a) > 0.9:
+			d = Vector3(0, rng.randf_range(-0.6, 0.4), signf(a)).normalized()
+		var p := Vector3(x, 0.45 + d.y * 0.42, d.z * 0.4)
+		p.y = maxf(p.y, 0.12)
+		var size := rng.randf_range(0.42, 0.6)
+		var basis := Basis.looking_at(-d, Vector3.UP if absf(d.y) < 0.95 else Vector3.RIGHT)
+		basis = basis.rotated(d, rng.randf() * TAU)
+		var n := d
+		var tint := rng.randf_range(0.86, 1.06)
+		var corners := [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]
+		var verts := []
+		for c in corners:
+			verts.append(p + basis.x * c.x * size * 0.5 + basis.y * c.y * size * 0.5)
+		for tri in [[0, 1, 2], [0, 2, 3]]:
+			for k in tri:
+				var vp: Vector3 = verts[k]
+				var radial := Vector3(0, vp.y - axis_c.y, vp.z).normalized()
+				st.set_normal((n * 0.7 + radial * 0.3).normalized())
+				st.set_color(Color(tint, tint, tint))
+				var cc: Vector2 = corners[k]
+				st.set_uv(Vector2(cc.x * 0.5 + 0.5, 0.5 - cc.y * 0.5))
+				st.add_vertex(vp)
+	st.commit(mesh)
+	return mesh
+
+
 static func _override(kind: String) -> Mesh:
 	var path := "res://props/overrides/%s.tscn" % kind
 	if not ResourceLoader.exists(path):
@@ -98,6 +143,8 @@ static func _build(kind: String) -> Mesh:
 			b.sphere(bm, Vector3(0, 0.42, 0), Vector3(0.5, 0.42, 0.5), 5, 8, white)
 			b.sphere(bm, Vector3(0.28, 0.32, 0.12), Vector3(0.32, 0.3, 0.32), 4, 7, white)
 			b.sphere(bm, Vector3(-0.25, 0.3, -0.15), Vector3(0.3, 0.28, 0.3), 4, 7, white)
+		"hedge" when Mats.painterly:
+			return _leafy_hedge()
 		"hedge":
 			# 1 m long hedge segment along X, 0.8 wide, 1 m tall. Scale per instance.
 			var hm := Mats.get_mat("foliage")
@@ -108,6 +155,8 @@ static func _build(kind: String) -> Mesh:
 			# Shadow stand-in for the painterly leafy canopy: kept inside the leafy core so the
 			# leaves themselves stay lit, while the ground still gets a round tree shadow.
 			b.sphere(Mats.get_mat("solid"), Vector3.ZERO, Vector3(0.74, 0.68, 0.74), 5, 8, white)
+		"hedge_shadow":
+			b.box(Mats.get_mat("solid"), Transform3D(Basis(), Vector3(0, 0.36, 0)), Vector3(1.0, 0.7, 0.56), white)
 		"bush_shadow":
 			b.sphere(Mats.get_mat("solid"), Vector3(0, 0.38, 0), Vector3(0.38, 0.32, 0.38), 4, 7, white)
 		"canopy" when Mats.painterly:

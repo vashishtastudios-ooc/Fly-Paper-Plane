@@ -17,13 +17,29 @@ var _groups := {}
 var _instances := {}  # key -> MultiMeshInstance3D
 ## Art style: Painterly. Leafy trees and bushes don't cast shadows from every leaf card; a plain
 ## rounded shape cast-shadow-only stands in, so the ground gets one soft tree shadow.
-const SHADOW_PROXY := ["canopy", "bush"]
+const SHADOW_PROXY := ["canopy", "bush", "hedge"]
 var _shadows := {}  # key -> shadow-only MultiMeshInstance3D
 var finalized := false
 
 
 ## Adds one instance. Returns a handle usable with set_visible_instance().
 func add(kind: String, xf: Transform3D, col := Color.WHITE) -> Array:
+	# Painterly hedges are leaf cards: lay a long hedge as ~1.4 m sections so the leaves aren't
+	# stretched along it.
+	if Mats.painterly and kind == "hedge":
+		var length := xf.basis.x.length()
+		if length > 1.6:
+			var n := ceili(length / 1.4)
+			var step := xf.basis.x / float(n)
+			var sec := Basis(step, xf.basis.y, xf.basis.z)
+			var h: Array = []
+			for i in n:
+				h = _add_one(kind, Transform3D(sec, xf.origin + step * (i - (n - 1) * 0.5)), col)
+			return h
+	return _add_one(kind, xf, col)
+
+
+func _add_one(kind: String, xf: Transform3D, col: Color) -> Array:
 	var chunk := int(floor(xf.origin.z / CHUNK))
 	var key := "%s|%d" % [kind, chunk]
 	var g: Dictionary = _groups.get(key, {})
