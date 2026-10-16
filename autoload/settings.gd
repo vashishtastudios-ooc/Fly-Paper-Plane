@@ -79,7 +79,10 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_on_size_changed)
 	_on_size_changed()
 	if is_mobile:
-		Engine.max_fps = 60
+		# 60 fps on 60 and 120 Hz screens; on others (90 Hz...) follow the screen, since 60 fps
+		# can't be shown evenly there and motion looks uneven.
+		var hz := DisplayServer.screen_get_refresh_rate()
+		Engine.max_fps = 0 if hz > 1.0 and fmod(hz + 1.0, 60.0) > 2.0 else 60
 	apply_quality()
 
 

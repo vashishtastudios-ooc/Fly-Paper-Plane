@@ -33,6 +33,9 @@ func _ready() -> void:
 	_wire()
 	cam.plane = plane
 	cam.menu_target = menu_plane
+	# The showreel plane is moved every frame (not by physics), so it must not be interpolated
+	# between physics steps: that made it stutter at phone frame rates.
+	menu_plane.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	if menu_plane.get_child_count() == 0:
 		var mi := MeshInstance3D.new()
 		mi.name = "Model"
