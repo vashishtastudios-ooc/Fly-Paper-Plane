@@ -16,6 +16,7 @@ static func get_tex(kind: String) -> Texture2D:
 		"grass": img = _grass()
 		"gravel": img = _gravel()
 		"siding": img = _siding()
+		"paint_siding": img = _paint_siding()
 		"shingle": img = _shingle()
 		"brick": img = _brick()
 		"stone": img = _stone()
@@ -195,6 +196,99 @@ static func _siding() -> Image:
 			var grain := (nz[i] / 255.0 - 0.5) * 0.05
 			var v := shade + grain
 			_put(d, i * 3, v, v, v)
+	return _img(s, d)
+
+
+## Art style: Painterly. Hand-painted clapboard: each board is laid in with loose horizontal
+## brush strokes in slightly warmer and cooler tones, the shadow under each lap is a soft, uneven
+## cool stroke, a warm highlight catches the lower edge of each board, and broad color patches
+## sit over everything. Near-white overall so the wall color tints it. Tiles seamlessly.
+static func _paint_siding() -> Image:
+	var s := 256
+	var boards := 8
+	var bh := s / boards
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4711
+	var r := PackedFloat32Array()
+	var g := PackedFloat32Array()
+	var bl := PackedFloat32Array()
+	r.resize(s * s)
+	g.resize(s * s)
+	bl.resize(s * s)
+	var patches := _noise(s, 0.01, 77, 2)
+	var dry := _noise(s, 0.09, 78, 2)
+	# Base tone per board.
+	for y in s:
+		var tb := 0.9 + _hash(y / bh, 0, 41) * 0.07
+		for x in s:
+			var i := y * s + x
+			r[i] = tb
+			g[i] = tb
+			bl[i] = tb
+	# Loose horizontal strokes.
+	for k in boards:
+		for n in 30:
+			var cx := rng.randf() * s
+			var cy := k * bh + rng.randf_range(3.0, bh - 3.0)
+			var half_len := rng.randf_range(18.0, 60.0)
+			var half_h := rng.randf_range(2.5, 5.5)
+			var t := 0.9 + rng.randf_range(-0.12, 0.1)
+			var warm := rng.randf_range(-1.0, 1.0)
+			var sr := t + warm * 0.06
+			var sg := t + warm * 0.015
+			var sb := t - warm * 0.06
+			var amt := rng.randf_range(0.45, 0.8)
+			for dy in range(-int(half_h) - 1, int(half_h) + 2):
+				var yy := posmod(int(cy) + dy, s)
+				# Flat body with a crisp edge, like paint laid by a flat brush.
+				var fy := smoothstep(0.0, 0.3, 1.0 - clampf(absf(dy) / (half_h + 0.5), 0.0, 1.0))
+				# Each bristle row carries a slightly different amount of paint.
+				var bristle := (_hash(n * 31 + k, dy + 40, 13) - 0.5) * 0.07
+				# Ragged stroke ends, different on every row of bristles.
+				var row_len := half_len * (0.75 + 0.25 * _hash(int(cx), yy, 9))
+				for dx in range(-int(row_len), int(row_len) + 1):
+					var xx := posmod(int(cx) + dx, s)
+					var fx := 1.0 - pow(absf(dx) / row_len, 8.0)
+					var a := amt * fy * fx
+					if a <= 0.0:
+						continue
+					var i := yy * s + xx
+					r[i] = lerpf(r[i], sr + bristle, a)
+					g[i] = lerpf(g[i], sg + bristle, a)
+					bl[i] = lerpf(bl[i], sb + bristle, a)
+	# Soft cool shadow under each lap, and a warm highlight on each board's lower edge.
+	for k in boards:
+		var y0 := k * bh
+		for x in s:
+			var wob := sin(float(x) / s * TAU * 2.0 + k * 1.7) * 0.9 + sin(float(x) / s * TAU * 3.0 + k) * 0.4
+			var th := 2.4 + (sin(float(x) / s * TAU * 4.0 + k * 2.3) * 0.5 + 0.5) * 1.6
+			for dy in range(-2, 10):
+				var yy := posmod(y0 + dy, s)
+				var i := yy * s + x
+				# Sub-pixel edge so the painted line stays smooth instead of stepping.
+				var fd := float(dy) - wob
+				var dark := smoothstep(-0.8, 0.0, fd) * (1.0 - smoothstep(th - 0.5, th + 2.5, fd))
+				# The painter didn't press evenly: some stretches of the line are strong, some faint.
+				var press := 0.45 + 0.55 * (sin(float(x) / s * TAU * 3.0 + k * 2.9) * 0.5 + 0.5)
+				dark *= press * (0.7 + 0.3 * (dry[i] / 255.0))
+				var m := 1.0 - 0.36 * dark
+				r[i] *= m * (1.0 - 0.05 * dark)
+				g[i] *= m * (1.0 - 0.02 * dark)
+				bl[i] *= m
+			for dy in range(-5, 0):
+				var yy := posmod(y0 + dy, s)
+				var i := yy * s + x
+				var fd := float(dy) - wob
+				var hl := 0.07 * (dry[i] / 255.0) * smoothstep(-5.0, -3.0, fd) * (1.0 - smoothstep(-1.5, -0.5, fd))
+				r[i] += hl
+				g[i] += hl * 0.7
+	# Broad warm and cool patches, like a wash over the whole wall.
+	var d := PackedByteArray()
+	d.resize(s * s * 3)
+	for i in s * s:
+		var p := patches[i] / 255.0 - 0.5
+		var m := 1.0 + p * 0.3
+		_put(d, i * 3, r[i] * m * (1.0 + p * 0.09), g[i] * m * (1.0 + p * 0.02), bl[i] * m * (1.0 - p * 0.09))
 	return _img(s, d)
 
 

@@ -135,8 +135,12 @@ static func _painterly_mat(kind: String) -> Material:
 
 
 ## A painterly material with one of the generated textures (a new one each call).
+## Generated textures that have a hand-painted version for the painterly style.
+const PAINTED_TEX := {"siding": "paint_siding"}
+
+
 static func painterly_textured(tex_kind: String, scale: float) -> ShaderMaterial:
-	return _shader("res://shaders/painterly.gdshader", {"albedo_tex": TexGen.get_tex(tex_kind), "use_tex": true,
+	return _shader("res://shaders/painterly.gdshader", {"albedo_tex": TexGen.get_tex(PAINTED_TEX.get(tex_kind, tex_kind)), "use_tex": true,
 		"uv_scale": Vector2(scale, scale)})
 
 
