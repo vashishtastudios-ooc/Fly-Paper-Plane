@@ -21,7 +21,7 @@ static func get_mesh(kind: String) -> Mesh:
 ## out from the middle, so the whole clump shades like one fluffy volume in the wind.
 static func _leafy_clump(radius: float, flatten: float, cards: int, seed_value: int, center := Vector3.ZERO) -> ArrayMesh:
 	var b := MeshBuilder.new()
-	b.sphere(Mats.get_mat("foliage"), center, Vector3(radius, radius * flatten, radius) * 0.8, 6, 10, Color(0.82, 0.82, 0.82))
+	b.sphere(Mats.get_mat("foliage"), center, Vector3(radius, radius * flatten, radius) * 0.8, 6, 10, Color(0.92, 0.92, 0.92))
 	var mesh := b.build()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -105,10 +105,11 @@ static func _build(kind: String) -> Mesh:
 			for i in 3:
 				b.sphere(hm, Vector3(-0.33 + i * 0.33, 0.88, 0), Vector3(0.24, 0.16, 0.42), 3, 6, white)
 		"canopy_shadow":
-			# Shadow stand-in for the painterly leafy canopy.
-			b.sphere(Mats.get_mat("solid"), Vector3.ZERO, Vector3(0.95, 0.87, 0.95), 5, 8, white)
+			# Shadow stand-in for the painterly leafy canopy: kept inside the leafy core so the
+			# leaves themselves stay lit, while the ground still gets a round tree shadow.
+			b.sphere(Mats.get_mat("solid"), Vector3.ZERO, Vector3(0.74, 0.68, 0.74), 5, 8, white)
 		"bush_shadow":
-			b.sphere(Mats.get_mat("solid"), Vector3(0, 0.42, 0), Vector3(0.5, 0.42, 0.5), 4, 7, white)
+			b.sphere(Mats.get_mat("solid"), Vector3(0, 0.38, 0), Vector3(0.38, 0.32, 0.38), 4, 7, white)
 		"canopy" when Mats.painterly:
 			return _leafy_clump(1.0, 0.92, 120, 7)
 		"canopy":

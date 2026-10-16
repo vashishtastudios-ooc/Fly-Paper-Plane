@@ -18,6 +18,8 @@ uniform float top_light = 0.12;
 uniform float translucency = 0.8;
 // Soft fill so the shady side of a leafy tree stays a readable green.
 uniform float fill = 0.0;
+// Leaf cards: the brush texture is darker than a plain canopy, so lift it to the same brightness.
+uniform float leaf_boost = 1.18;
 
 varying vec3 v_color;
 varying float v_up;
@@ -52,10 +54,22 @@ void fragment() {
 	if (use_leaf_tex) {
 		vec4 lt = texture(leaf_tex, UV);
 		a = lt.a;
-		c *= lt.rgb;
+		c *= lt.rgb * leaf_boost;
 	}
 	if (a < alpha_cut) {
 		discard;
+	}
+	if (use_leaf_tex) {
+		// Both faces of a leaf card shade with the tree's outward normal, so the whole canopy
+		// lights like one soft volume (the back face would otherwise face into the tree).
+		if (!FRONT_FACING) {
+			NORMAL = -NORMAL;
+		}
+		// Leaves right in front of the camera dissolve instead of filling the screen.
+		float near = clamp((length(VERTEX) - 1.2) / 2.0, 0.0, 1.0);
+		if (near < 1.0 && fract(sin(dot(FRAGCOORD.xy, vec2(12.9898, 78.233))) * 43758.5453) > near) {
+			discard;
+		}
 	}
 	c *= 1.0 + top_light * clamp(v_up, 0.0, 1.0);
 	ALBEDO = c;
