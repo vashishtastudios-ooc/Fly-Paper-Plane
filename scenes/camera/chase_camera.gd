@@ -61,8 +61,10 @@ func _ready() -> void:
 	far = 1600.0
 	fov = base_fov
 	_build_storybook_pass()
-	Settings.quality_changed.connect(func(q: int): _post.visible = q >= 1)
-	_post.visible = Settings.quality >= 1
+	# The web build (Compatibility renderer) has no screen depth for the ink lines: no pass there.
+	var web := OS.has_feature("web")
+	Settings.quality_changed.connect(func(q: int): _post.visible = q >= 1 and not web)
+	_post.visible = Settings.quality >= 1 and not web
 
 
 func set_mode(m: int, snap := false) -> void:
