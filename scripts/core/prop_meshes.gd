@@ -104,6 +104,11 @@ static func _build(kind: String) -> Mesh:
 			b.box(hm, Transform3D(Basis(), Vector3(0, 0.45, 0)), Vector3(1.0, 0.9, 0.8), white)
 			for i in 3:
 				b.sphere(hm, Vector3(-0.33 + i * 0.33, 0.88, 0), Vector3(0.24, 0.16, 0.42), 3, 6, white)
+		"canopy_shadow":
+			# Shadow stand-in for the painterly leafy canopy.
+			b.sphere(Mats.get_mat("solid"), Vector3.ZERO, Vector3(0.95, 0.87, 0.95), 5, 8, white)
+		"bush_shadow":
+			b.sphere(Mats.get_mat("solid"), Vector3(0, 0.42, 0), Vector3(0.5, 0.42, 0.5), 4, 7, white)
 		"canopy" when Mats.painterly:
 			return _leafy_clump(1.0, 0.92, 120, 7)
 		"canopy":

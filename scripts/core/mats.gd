@@ -7,6 +7,8 @@ static var _cache := {}
 ## Art style: Painterly swaps the shared lit materials for painterly shaders (set at startup by
 ## Settings, before anything is built).
 static var painterly := false
+## Art style: Painterly keeps the storybook lighting and materials, but uses the hand-painted
+## textures (PaintTex) and leafy brush-card foliage.
 
 const PALETTE_HOUSES := ["#e9b7a1", "#f2d58f", "#a9c9db", "#b9d6a8", "#e6c3da", "#f5f0e5", "#cbbbe8"]
 const ROOF_SLATE := Color("#5b6270")
@@ -22,7 +24,7 @@ static func get_mat(kind: String) -> Material:
 		return _cache[kind]
 	var m: Material
 	if painterly:
-		m = _painterly_mat(kind)
+		m = _painterly_foliage(kind)
 		if m:
 			_cache[kind] = m
 			return m
@@ -110,45 +112,29 @@ static func get_mat(kind: String) -> Material:
 	return m
 
 
-## Painterly material for a kind, or null for kinds that keep their special material
-## (glass, glows, lit windows, water, cloth in the wind, the paper plane).
-static func _painterly_mat(kind: String) -> Material:
-	var textured := {"paint": ["siding", 1.0], "plaster": ["plaster", 0.5], "shingle": ["shingle", 0.8], "brick": ["brick", 0.6],
-		"stone": ["stone", 0.45], "wood": ["wood", 0.7], "asphalt": ["asphalt", 0.25], "cobble": ["cobble", 0.5],
-		"paving": ["paving", 0.5], "grass": ["grass", 0.12], "gravel": ["gravel", 0.4], "awning": ["awning", 1.0],
-		"blanket": ["blanket", 0.6]}
-	if textured.has(kind):
-		return painterly_textured(textured[kind][0], textured[kind][1])
-	match kind:
-		"solid", "metal", "foliage_core":
-			return _shader("res://shaders/painterly.gdshader", {})
-		"rope", "cloth":
-			return _shader("res://shaders/painterly_double.gdshader", {})
-		"foliage":
-			return _shader("res://shaders/foliage_painterly.gdshader", {"sway": 0.09, "rustle": 0.022})
-		"grass_wind":
-			return _shader("res://shaders/foliage_painterly.gdshader", {"sway": 0.13, "rustle": 0.035, "tip_weighted": 1.0, "tip_height": 0.45})
-		"leaf_cards":
-			return _shader("res://shaders/foliage_painterly.gdshader", {"sway": 0.1, "rustle": 0.03,
-				"leaf_tex": TexGen.get_tex("leaf_clump"), "use_leaf_tex": true, "alpha_cut": 0.45})
-	return null
-
-
-## A painterly material with one of the generated textures (a new one each call).
 ## Generated textures that have a hand-painted version for the painterly style.
 const PAINTED_TEX := {"siding": "paint_siding", "shingle": "paint_shingle", "grass": "paint_grass",
 	"asphalt": "paint_asphalt", "paving": "paint_paving", "cobble": "paint_cobble", "brick": "paint_brick",
 	"stone": "paint_stone", "plaster": "paint_plaster", "wood": "paint_wood", "gravel": "paint_gravel"}
 
 
-static func painterly_textured(tex_kind: String, scale: float) -> ShaderMaterial:
-	return _shader("res://shaders/painterly.gdshader", {"albedo_tex": TexGen.get_tex(PAINTED_TEX.get(tex_kind, tex_kind)), "use_tex": true,
-		"uv_scale": Vector2(scale, scale)})
+## Painterly foliage: wind sway, leaf-brush cards and leaves that glow when backlit. Null for
+## every other kind (they use the storybook materials).
+static func _painterly_foliage(kind: String) -> Material:
+	match kind:
+		"foliage":
+			return _shader("res://shaders/foliage_painterly.gdshader", {"sway": 0.09, "rustle": 0.022, "fill": 0.18})
+		"grass_wind":
+			return _shader("res://shaders/foliage_painterly.gdshader", {"sway": 0.13, "rustle": 0.035, "tip_weighted": 1.0, "tip_height": 0.45})
+		"leaf_cards":
+			return _shader("res://shaders/foliage_painterly.gdshader", {"sway": 0.1, "rustle": 0.03,
+				"leaf_tex": TexGen.get_tex("leaf_clump"), "use_leaf_tex": true, "alpha_cut": 0.45, "fill": 0.18})
+	return null
 
 
 static func _tex(tex_kind: String, scale: float, rough: float) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
-	m.albedo_texture = TexGen.get_tex(tex_kind)
+	m.albedo_texture = TexGen.get_tex(PAINTED_TEX.get(tex_kind, tex_kind) if painterly else tex_kind)
 	m.vertex_color_use_as_albedo = true
 	m.vertex_color_is_srgb = true
 	m.roughness = rough

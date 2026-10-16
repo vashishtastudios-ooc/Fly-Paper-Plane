@@ -15,6 +15,10 @@ const NO_SHADOW := ["grass", "flower", "flowerbox", "shutter", "window", "reed",
 
 var _groups := {}
 var _instances := {}  # key -> MultiMeshInstance3D
+## Art style: Painterly. Leafy trees and bushes don't cast shadows from every leaf card; a plain
+## rounded shape cast-shadow-only stands in, so the ground gets one soft tree shadow.
+const SHADOW_PROXY := ["canopy", "bush"]
+var _shadows := {}  # key -> shadow-only MultiMeshInstance3D
 var finalized := false
 
 
@@ -57,6 +61,23 @@ func finalize() -> void:
 			mmi.cast_shadow = Settings.shadows_for_small_props()
 		add_child(mmi)
 		_instances[key] = mmi
+		if Mats.painterly and SHADOW_PROXY.has(g.kind) and mmi.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			var smm := MultiMesh.new()
+			smm.transform_format = MultiMesh.TRANSFORM_3D
+			smm.mesh = PropMeshes.get_mesh(g.kind + "_shadow")
+			smm.instance_count = g.xforms.size()
+			for i in g.xforms.size():
+				smm.set_instance_transform(i, g.xforms[i])
+			var sh := MultiMeshInstance3D.new()
+			sh.name = mmi.name + "_shadow"
+			sh.multimesh = smm
+			sh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+			sh.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+			sh.visibility_range_end = mmi.visibility_range_end
+			sh.visibility_range_end_margin = mmi.visibility_range_end_margin
+			add_child(sh)
+			_shadows[key] = sh
 	finalized = true
 
 
@@ -69,3 +90,5 @@ func set_visible_instance(handle: Array, visible_flag: bool) -> void:
 	if not visible_flag:
 		xf = Transform3D(Basis().scaled(Vector3.ONE * 0.0001), xf.origin + Vector3(0, -50, 0))
 	mmi.multimesh.set_instance_transform(handle[1], xf)
+	if _shadows.has(handle[0]):
+		(_shadows[handle[0]] as MultiMeshInstance3D).multimesh.set_instance_transform(handle[1], xf)

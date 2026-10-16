@@ -1,11 +1,10 @@
 shader_type spatial;
-render_mode cull_disabled, diffuse_lambert, specular_disabled;
+render_mode cull_disabled, diffuse_lambert;
 
-// Painterly vegetation (Art style: Painterly): the wind sway of foliage.gdshader, the shared
-// painterly lighting, and optional leaf-brush cards (alpha texture) whose normals point out
-// from the canopy center so a whole tree shades like one soft, fluffy volume.
-#include "res://shaders/painterly.gdshaderinc"
-
+// Painterly vegetation (Art style: Painterly): the wind sway of foliage.gdshader with the same
+// storybook lighting, plus optional leaf-brush cards (alpha texture) whose normals point out from
+// the canopy center so a whole tree shades like one soft volume. Leaves let warm light through
+// when the sun is behind them, so backlit trees glow instead of turning dark.
 uniform float sway = 0.07;
 uniform float rustle = 0.02;
 uniform float tip_weighted = 0.0;
@@ -14,13 +13,18 @@ uniform vec3 wind_dir = vec3(1.0, 0.0, 0.35);
 uniform sampler2D leaf_tex : source_color, filter_linear_mipmap, repeat_disable;
 uniform bool use_leaf_tex = false;
 uniform float alpha_cut = 0.5;
-// Slightly brighter, warmer tips toward the sky.
-uniform float top_light = 0.18;
+// Slightly brighter tips toward the sky, and how much light shines through the leaves.
+uniform float top_light = 0.12;
+uniform float translucency = 0.8;
+// Soft fill so the shady side of a leafy tree stays a readable green.
+uniform float fill = 0.0;
 
 varying vec3 v_color;
-varying vec3 v_world;
-varying vec3 v_wnormal;
 varying float v_up;
+
+vec3 srgb_to_linear(vec3 c) {
+	return mix(pow((c + vec3(0.055)) / 1.055, vec3(2.4)), c / 12.92, lessThan(c, vec3(0.04045)));
+}
 
 void vertex() {
 	vec3 wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -39,9 +43,7 @@ void vertex() {
 		cos(t * 4.7 + wpos.z * 2.9)) * rustle * w * gust;
 	VERTEX += inverse(mat3(MODEL_MATRIX)) * offs;
 	v_color = srgb_to_linear(COLOR.rgb);
-	v_world = wpos;
-	v_wnormal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
-	v_up = v_wnormal.y;
+	v_up = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).y;
 }
 
 void fragment() {
@@ -56,6 +58,10 @@ void fragment() {
 		discard;
 	}
 	c *= 1.0 + top_light * clamp(v_up, 0.0, 1.0);
-	ALBEDO = c * brush(v_world, v_wnormal);
-	ROUGHNESS = 1.0;
+	ALBEDO = c;
+	ROUGHNESS = 0.95;
+	SPECULAR = 0.25;
+	// Warm light through the leaves from behind.
+	BACKLIGHT = c * vec3(1.0, 0.92, 0.7) * translucency;
+	EMISSION = c * fill;
 }
