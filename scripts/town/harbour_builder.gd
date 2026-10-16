@@ -217,7 +217,8 @@ func _h_quay(b: MeshBuilder) -> void:
 		var z := shore(x)
 		if absf(x - PIER_X) > 4.0:
 			b.cylinder(Mats.get_mat("metal"), Transform3D(Basis(), Vector3(x, QUAY_Y, z + 1.0)), 0.22, 0.18, 0.6, 8, Color("#2f3a40"))
-		if k % 2 == 0 and absf(x - PIER_X) > 5.0 and absf(x - CRANE.x) > 5.0:
+		var no_lamp := _blocks_route(Vector3(x, QUAY_Y, z + 13.0), 5.5, 0.4)
+		if k % 2 == 0 and absf(x - PIER_X) > 5.0 and absf(x - CRANE.x) > 5.0 and not no_lamp:
 			var lp := Vector3(x, QUAY_Y, z + 13.0)
 			batcher.add("lamp", Transform3D(Basis(), lp))
 			_lamp_collider(lp)
@@ -395,8 +396,14 @@ func add_convex_body(points: PackedVector3Array) -> void:
 func _h_boats() -> void:
 	# [kind, position (x, z), yaw, hull color]
 	var boats := [
-		["fishing", Vector2(4, -17.5), 0.0, "#2f6f8f"],
-		["fishing", Vector2(17, -19.0), 0.05, "#c8423b"],
+		["fishing", Vector2(22, -24), 0.0, "#2f6f8f"],
+		["fishing", Vector2(30, -34), 0.05, "#c8423b"],
+		# Flight 6: three sailing boats to slalom round (bows to the north).
+		["sail", Vector2(-2, -21), -PI * 0.5, "#2d4f7c"],
+		["sail", Vector2(-8, -29), -PI * 0.5, "#e0a13a"],
+		["sail", Vector2(-1.5, -38), -PI * 0.5, "#c8423b"],
+		# Flight 6 flies in one side of the ferry's cabin and out the other.
+		["ferry", Vector2(-5, -50), 0.0, "#2f6f8f"],
 		["sail", Vector2(-2, -72), 1.2, "#f6f1e6"],
 		["sail", Vector2(24, -62), 1.5, "#2d4f7c"],
 		["fishing", Vector2(36, -48), 1.9, "#3f7d4f"],
@@ -410,7 +417,13 @@ func _h_boats() -> void:
 		var bt: Node3D = BOAT_SCENE.instantiate()
 		bt.batcher = batcher
 		bt.kind = bd[0]
-		if bd[0] == "sail":
+		if bd[0] == "ferry":
+			bt.length = 14.0
+			bt.beam = 4.4
+			bt.deck_y = 1.0
+			bt.cabin_color = Color("#fbf8f0")
+			bt.bob = false
+		elif bd[0] == "sail":
 			bt.length = 7.0
 			bt.beam = 2.4
 			bt.deck_y = 0.6
@@ -540,7 +553,12 @@ const HARBOUR_PETS := [
 	[10, "cat", "tuxedo", Vector3(-15.6, 1.65, -36.9)],
 	[11, "dog", "beagle", Vector3(6.0, -0.95, -84.0)],
 	[12, "cat", "grey", Vector3(21.6, 2.0, -9.03)],
+	[13, "dog", "golden", Vector3(-7.2, RAFT_TOP, -65.2)],
 ]
+## Flight 6: the attic bedroom it starts in, and the swim raft it lands on.
+const ATTIC_HOUSE := Vector3(6, 1.35, 19.78)
+const RAFT := Vector3(-6, 0, -64)
+const RAFT_TOP := Terrain.WATER_Y + 0.35
 ## Flight 6 starts from a wooden lookout at the top of the hill lane.
 const LOOKOUT := Vector3(40, 0, 108)
 
@@ -567,7 +585,24 @@ func _h_targets() -> void:
 		b.box(wood, Transform3D(Basis(), lk + side + Vector3(0, 4.85, 0)), sz, Color("#e8dfcc"))
 	_static_box("wall", lk + Vector3(0, 3.87, 0), Vector3(3.6, 0.26, 3.6))
 	_static_box("post", lk + Vector3(0, 1.9, 0), Vector3(3.4, 3.8, 3.4))
+	# Swim raft: a wooden pontoon on floats with a little ladder.
+	var rp := Vector3(RAFT.x, RAFT_TOP, RAFT.z)
+	b.box_mm(wood, rp + Vector3(-1.6, -0.18, -1.6), rp + Vector3(1.6, 0.0, 1.6), Color("#c9a27e"))
+	for fx in [-1.1, 1.1]:
+		for fz in [-1.1, 1.1]:
+			b.cylinder(Mats.get_mat("solid"), Transform3D(Basis(), rp + Vector3(fx, -0.55, fz)), 0.35, 0.35, 0.4, 10, Color("#f6f1e6"))
+	b.box(Mats.get_mat("metal"), Transform3D(Basis(), rp + Vector3(0, 0.3, 1.62)), Vector3(0.6, 0.6, 0.05), Color("#c0c6ca"))
+	_static_box("wall", rp + Vector3(0, -0.4, 0), Vector3(3.2, 0.8, 3.2))
 	add_child(b.build_instance("BeachTowel", false))
+	# The attic bedroom flight 6 starts in (its window looks out to sea, -Z).
+	var ah: Node3D = OPEN_HOUSE_SCENE.instantiate()
+	ah.batcher = batcher
+	ah.layout = "attic"
+	ah.wall_color = Color("#a9c9db")
+	ah.roof_color = Mats.ROOF_TERRACOTTA
+	ah.position = ATTIC_HOUSE
+	add_child(ah)
+	_houses.append(ATTIC_HOUSE)
 	for d in HARBOUR_PETS:
 		var li: int = d[0]
 		if li >= Game.levels.size():

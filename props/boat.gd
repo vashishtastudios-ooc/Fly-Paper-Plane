@@ -3,7 +3,8 @@ extends Prop
 ## boat with a tall mast and white sails. Origin = the water surface at the middle of the boat;
 ## the boat lies along local X with the bow toward +X. The deck is a flat landing surface.
 
-## "fishing" or "sail".
+## "fishing", "sail" or "ferry" (a little harbour ferry whose passenger cabin has big open
+## windows on both sides, so the plane can fly straight through it).
 @export var kind := "fishing"
 @export var length := 9.0
 @export var beam := 3.2
@@ -73,7 +74,9 @@ func _build(b: MeshBuilder) -> void:
 	# Transom (flat stern).
 	var ws := _hull_half(-h)
 	b.quad(paint, Vector3(-h, bottom, ws * 0.35), Vector3(-h, bottom, -ws * 0.35), Vector3(-h, rail, -ws), Vector3(-h, rail, ws), hull_color)
-	if kind == "fishing":
+	if kind == "ferry":
+		_build_ferry_cabin(b)
+	elif kind == "fishing":
 		# Wheelhouse toward the stern, a short mast with a boom, nets and floats.
 		var wx := -h * 0.35
 		b.box_mm(paint, Vector3(wx - 1.3, deck_y, -beam * 0.3), Vector3(wx + 1.3, deck_y + 2.1, beam * 0.3), cabin_color)
@@ -97,9 +100,60 @@ func _build(b: MeshBuilder) -> void:
 		b.box_mm(paint, Vector3(-h * 0.45, deck_y, -beam * 0.25), Vector3(0.0, deck_y + 0.55, beam * 0.25), cabin_color)
 
 
+## Ferry cabin: local x -CX..CX, z -CZ..CZ, deck to deck + CH, with an open window in each long
+## side (x -WX..WX, from deck + W0 to deck + W1).
+const CX := 3.5
+const CZ := 1.8
+const CH := 2.35
+const WX := 1.25
+const W0 := 0.8
+const W1 := 2.1
+
+
+func _build_ferry_cabin(b: MeshBuilder) -> void:
+	var paint := Mats.get_mat("paint")
+	var solid := Mats.get_mat("solid")
+	var d := deck_y
+	for s in [-1.0, 1.0]:
+		var z: float = s * CZ
+		var z0: float = minf(z, z - s * 0.12)
+		var z1: float = maxf(z, z - s * 0.12)
+		b.box_mm(paint, Vector3(-CX, d, z0), Vector3(-WX, d + CH, z1), cabin_color)
+		b.box_mm(paint, Vector3(WX, d, z0), Vector3(CX, d + CH, z1), cabin_color)
+		b.box_mm(paint, Vector3(-WX, d, z0), Vector3(WX, d + W0, z1), cabin_color)
+		b.box_mm(paint, Vector3(-WX, d + W1, z0), Vector3(WX, d + CH, z1), cabin_color)
+		# Frame round the open window, and small glazed windows either side.
+		b.box_mm(solid, Vector3(-WX - 0.08, d + W0 - 0.08, z0 - 0.03), Vector3(WX + 0.08, d + W0, z1 + 0.03), hull_color)
+		b.box_mm(solid, Vector3(-WX - 0.08, d + W1, z0 - 0.03), Vector3(WX + 0.08, d + W1 + 0.08, z1 + 0.03), hull_color)
+		for wx in [-2.5, 2.5]:
+			b.box_mm(Mats.get_mat("window_lit"), Vector3(wx - 0.45, d + 1.1, z0 - 0.02), Vector3(wx + 0.45, d + 1.8, z1 + 0.02), Color("#3d5a78"))
+	for s in [-1.0, 1.0]:
+		var x: float = s * CX
+		b.box_mm(paint, Vector3(minf(x, x - s * 0.12), d, -CZ), Vector3(maxf(x, x - s * 0.12), d + CH, CZ), cabin_color)
+	b.box_mm(solid, Vector3(-CX - 0.25, d + CH, -CZ - 0.25), Vector3(CX + 0.25, d + CH + 0.16, CZ + 0.25), hull_color)
+	# Benches inside, below the windows.
+	for s in [-1.0, 1.0]:
+		b.box_mm(Mats.get_mat("wood"), Vector3(-CX + 0.3, d, s * 0.9 - 0.25), Vector3(CX - 0.3, d + 0.45, s * 0.9 + 0.25), Color("#b08a64"))
+	# A funnel and a life ring.
+	b.cylinder(solid, Transform3D(Basis(), Vector3(-CX + 0.8, d + CH + 0.16, 0)), 0.35, 0.3, 1.1, 10, Color("#c8423b"))
+	b.cylinder(solid, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(CX + 0.13, d + 1.4, 0)), 0.35, 0.35, 0.1, 12, Color("#e8873a"))
+
+
 func _build_colliders() -> void:
 	var w := beam * 0.9
 	add_box("wall", Vector3(0, (deck_y - 0.7) * 0.5, 0), Vector3(length * 0.9, deck_y + 0.7, w))
+	if kind == "ferry":
+		var d := deck_y
+		for s in [-1.0, 1.0]:
+			var z: float = s * (CZ - 0.06)
+			add_box("wall", Vector3(-(CX + WX) * 0.5, d + CH * 0.5, z), Vector3(CX - WX, CH, 0.12))
+			add_box("wall", Vector3((CX + WX) * 0.5, d + CH * 0.5, z), Vector3(CX - WX, CH, 0.12))
+			add_box("wall", Vector3(0, d + W0 * 0.5, z), Vector3(WX * 2.0, W0, 0.12))
+			add_box("wall", Vector3(0, d + (W1 + CH) * 0.5, z), Vector3(WX * 2.0, CH - W1, 0.12))
+			add_box("wall", Vector3(s * (CX - 0.06), d + CH * 0.5, 0), Vector3(0.12, CH, CZ * 2.0))
+		add_box("wall", Vector3(0, d + CH + 0.08, 0), Vector3(CX * 2.0 + 0.5, 0.16, CZ * 2.0 + 0.5))
+		add_box("post", Vector3(-CX + 0.8, d + CH + 0.7, 0), Vector3(0.7, 1.1, 0.7))
+		return
 	if kind == "fishing":
 		add_box("wall", Vector3(-length * 0.5 * 0.35, deck_y + 1.15, 0), Vector3(2.9, 2.3, beam * 0.72))
 		add_box("post", Vector3(length * 0.5 * 0.25, deck_y + 2.5, 0), Vector3(0.2, 5.0, 0.2))

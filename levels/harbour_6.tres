@@ -4,43 +4,27 @@
 
 [sub_resource type="Curve3D" id="Curve3D_route"]
 _data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 40, 22.6, 104, 0, 0, 0, 0, 0, 0, 40, 21.4, 94, 0, 0, 0, 0, 0, 0, 40, 19.8, 82, 0, 0, 0, 0, 0, 0, 40, 17.6, 68, 0, 0, 0, 0, 0, 0, 40, 15, 54, 0, 0, 0, 0, 0, 0, 40, 12, 40, 0, 0, 0, 0, 0, 0, 40, 8.8, 26, 0, 0, 0, 0, 0, 0, 39, 6.4, 13, 0, 0, 0, 0, 0, 0, 36.5, 5, 2, 0, 0, 0, 0, 0, 0, 33.5, 4.6, -8, 0, 0, 0, 0, 0, 0, 33, 4.4, -18, 0, 0, 0, 0, 0, 0, 25, 4, -26, 0, 0, 0, 0, 0, 0, 14, 3.4, -32, 0, 0, 0, 0, 0, 0, 2, 2.8, -38, 0, 0, 0, 0, 0, 0, -10, 2, -44, 0, 0, 0, 0, 0, 0, -20, 1.2, -49.5, 0, 0, 0, 0, 0, 0, -28, 0.5, -51.9, 0, 0, 0, 0, 0, 0, -35, 0.7, -52, 0, 0, 0, 0, 0, 0, -46, 1.4, -50, 0, 0, 0, 0, 0, 0, -58, 1.7, -46, 0, 0, 0, 0, 0, 0, -68, 1.6, -41, 0, 0, 0, 0, 0, 0, -76, 1.2, -35, 0, 0, 0, 0, 0, 0, -80.5, 0.8, -29),
-"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 6, 9.35, 22.28, 0, 0, 0, 0, 0, 0, 6, 9.1, 15.28, 0, 0, 0, 0, 0, 0, 6, 8, 10, 0, 0, 0, 0, 0, 0, 6, 6.2, 5, 0, 0, 0, 0, 0, 0, 6, 4.2, 1.8, 0, 0, 0, 0, 0, 0, 6, 2.6, -1.2, 0, 0, 0, 0, 0, 0, 5.5, 2.3, -6, 0, 0, 0, 0, 0, 0, 3, 2.1, -11, 0, 0, 0, 0, 0, 0, -1, 1.9, -15.5, 0, 0, 0, 0, 0, 0, -6, 1.8, -21, 0, 0, 0, 0, 0, 0, -4.5, 1.7, -25, 0, 0, 0, 0, 0, 0, -3, 1.7, -29, 0, 0, 0, 0, 0, 0, -4.5, 1.6, -33, 0, 0, 0, 0, 0, 0, -7, 1.6, -37, 0, 0, 0, 0, 0, 0, -5.5, 1.3, -43, 0, 0, 0, 0, 0, 0, -5, 0.95, -47, 0, 0, 0, 0, 0, 0, -5, 0.9, -50, 0, 0, 0, 0, 0, 0, -5, 0.85, -53, 0, 0, 0, 0, 0, 0, -5.3, 0.6, -57, 0, 0, 0, 0, 0, 0, -5.7, 0, -60.5, 0, 0, 0, 0, 0, 0, -5.9, -0.6, -62.8),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 }
-point_count = 23
+point_count = 21
 
 [resource]
 script = ExtResource("1_data")
-level_name = "Harbour Grand Tour"
+level_name = "Window to the Ferry"
 map = "harbour"
-short_goal = "From the hilltop lookout down the lane, past the crane, under the pier to the beach."
-goal_text = "The long one! Throw from the lookout at the top of the hill and dive down the lane between the houses. Sweep past the crane on the quay, cross the harbour (mind the breeze), slip under the pier between its posts and curve round to the striped towel on the beach. Follow the dotted line and fly through the rings."
-platform_kind = "lookout"
-platform_position = Vector3(40, 22.63, 108)
+short_goal = "Out of the attic window, through the market, round the boats and through the ferry's windows."
+goal_text = "The hardest one! Throw out of the attic bedroom window and dive down through the gap between two market stalls. Over the water, slalom round the three sailing boats (left, right, left), then fly in through one window of the little ferry's cabin and out the other side. Land on the swim raft just beyond. Follow the dotted line and fly through the rings."
+platform_kind = "attic"
+platform_position = Vector3(6, 8.15, 22.98)
 platform_yaw = 0
-aim_point = Vector3(40, 0, 90)
+aim_point = Vector3(6, 0, -10)
 route = SubResource("Curve3D_route")
-gate_radius = 1.4
-pad_position = Vector3(-82, 0.47, -24.5)
-pad_radius = 1.6
-pad_name = "Beach towel"
-par_time = 40
-thermals = [{
-"x": 2,
-"z": -38,
-"radius": 6,
-"strength": 2.6,
-"top": 6,
-"style": "golden"
-}]
-wind_zones = [{
-"x": 10,
-"z": -34,
-"radius": 16,
-"dx": 0,
-"dz": -1,
-"strength": 1.8,
-"top": 12
-}]
-bonus_stars = PackedVector3Array(-28, 0.5, -51.9)
+gate_radius = 1
+pad_position = Vector3(-6, -1.2, -64)
+pad_radius = 1
+pad_name = "Swim raft"
+par_time = 18
+thermals = []
+bonus_stars = PackedVector3Array(-5, 0.9, -50)
 hazard_lines = []
