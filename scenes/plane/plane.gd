@@ -6,6 +6,7 @@ extends Node3D
 
 signal launched
 signal stall_entered
+signal wind_entered
 signal rising_air
 signal entered_thermal
 signal gust_used
@@ -109,6 +110,9 @@ var in_y := 0.0
 var _raw_x := 0.0
 var _raw_y := 0.0
 var stalled := false
+## Inside a sea breeze (for the "Sea breeze" banner).
+var in_wind := false
+var _was_in_wind := false
 ## Extra turn rate (sensitivity above 1 turns faster at full deflection).
 var turn_scale := 1.0
 var lift := 0.0
@@ -275,6 +279,12 @@ func step_state(s: FlightState, ix: float, iy: float, dt: float) -> float:
 	s.flap_v = _damp(s.flap_v, 0.0, flap_damp, dt)
 	var fwd := Vector3(-sin(s.yaw) * cos(s.pitch), 0.0, -cos(s.yaw) * cos(s.pitch))
 	s.pos += fwd * s.v * dt + Vector3(0, s.vy * dt, 0)
+	if level:
+		# Sea breezes push the plane sideways.
+		var wind: Vector3 = level.wind_at(s.pos)
+		s.pos += wind * dt
+		if s == state:
+			in_wind = wind.length() > 0.6
 	return l
 
 
@@ -316,6 +326,9 @@ func _fly(dt: float) -> void:
 	gusts = minf(gust_max, gusts + dt / gust_refill_time)
 
 	# Once stalled, it only counts as recovered with a little speed to spare (no flicker).
+	if in_wind and not _was_in_wind:
+		wind_entered.emit()
+	_was_in_wind = in_wind
 	var now_stalled := state.v < (stall_speed + 0.8 if stalled else stall_speed)
 	if now_stalled and not stalled:
 		stall_entered.emit()

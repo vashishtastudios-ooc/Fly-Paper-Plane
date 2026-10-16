@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 40, 22.6, 104, 0, 0, 0, 0, 0, 0, 40, 21.4, 94, 0, 0, 0, 0, 0, 0, 40, 19.8, 82, 0, 0, 0, 0, 0, 0, 40, 17.6, 68, 0, 0, 0, 0, 0, 0, 40, 15, 54, 0, 0, 0, 0, 0, 0, 40, 12, 40, 0, 0, 0, 0, 0, 0, 40, 8.8, 26, 0, 0, 0, 0, 0, 0, 39, 6.4, 13, 0, 0, 0, 0, 0, 0, 36.5, 5, 2, 0, 0, 0, 0, 0, 0, 33.5, 4.6, -8, 0, 0, 0, 0, 0, 0, 33, 4.4, -18, 0, 0, 0, 0, 0, 0, 25, 4, -26, 0, 0, 0, 0, 0, 0, 14, 3.4, -32, 0, 0, 0, 0, 0, 0, 2, 2.8, -38, 0, 0, 0, 0, 0, 0, -10, 2, -44, 0, 0, 0, 0, 0, 0, -20, 1.2, -49.5, 0, 0, 0, 0, 0, 0, -28, 0.5, -51.9, 0, 0, 0, 0, 0, 0, -35, 0.7, -52, 0, 0, 0, 0, 0, 0, -46, 1.4, -50, 0, 0, 0, 0, 0, 0, -58, 1.7, -46, 0, 0, 0, 0, 0, 0, -68, 1.6, -41, 0, 0, 0, 0, 0, 0, -76, 1.2, -35, 0, 0, 0, 0, 0, 0, -80.5, 0.8, -29),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 23
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Harbour Grand Tour"
+map = "harbour"
+short_goal = "From the hilltop lookout down the lane, past the crane, under the pier to the beach."
+goal_text = "The long one! Throw from the lookout at the top of the hill and dive down the lane between the houses. Sweep past the crane on the quay, cross the harbour (mind the breeze), slip under the pier between its posts and curve round to the striped towel on the beach. Follow the dotted line and fly through the rings."
+platform_kind = "lookout"
+platform_position = Vector3(40, 22.63, 108)
+platform_yaw = 0
+aim_point = Vector3(40, 0, 90)
+route = SubResource("Curve3D_route")
+gate_radius = 1.4
+pad_position = Vector3(-82, 0.47, -24.5)
+pad_radius = 1.6
+pad_name = "Beach towel"
+par_time = 40
+thermals = [{
+"x": 2,
+"z": -38,
+"radius": 6,
+"strength": 2.6,
+"top": 6,
+"style": "golden"
+}]
+wind_zones = [{
+"x": 10,
+"z": -34,
+"radius": 16,
+"dx": 0,
+"dz": -1,
+"strength": 1.8,
+"top": 12
+}]
+bonus_stars = PackedVector3Array(-28, 0.5, -51.9)
+hazard_lines = []

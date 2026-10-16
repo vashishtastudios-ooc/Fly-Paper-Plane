@@ -127,6 +127,7 @@ func _wire() -> void:
 			_last_stall_banner = now
 			hud.banner("Stall! Nose down", Color("#ffb3a1"), 1.2))
 	plane.rising_air.connect(func(): hud.banner("Rising air", UIKit.ROUTE, 1.2))
+	plane.wind_entered.connect(func(): hud.banner("Sea breeze! Steer into it", Color.WHITE, 1.4))
 	plane.barrel_roll_done.connect(func(): hud.float_text(plane.state.pos, "+50"))
 	plane.landed.connect(_on_landed)
 	plane.skipped.connect(func(): hud.banner("Skip!", Color("#bfe3ff"), 0.9))

@@ -400,9 +400,11 @@ func _h_boats() -> void:
 		["sail", Vector2(-2, -72), 1.2, "#f6f1e6"],
 		["sail", Vector2(24, -62), 1.5, "#2d4f7c"],
 		["fishing", Vector2(36, -48), 1.9, "#3f7d4f"],
-		["sail", Vector2(6, -86), 1.3, "#f6f1e6"],
+		# Flight 4 lands on this one's back deck (bow to the north).
+		["sail", Vector2(6, -86), -PI * 0.5, "#f6f1e6"],
 		["sail", Vector2(-60, -90), 0.4, "#e0a13a"],
-		["fishing", Vector2(-14, -36), -0.2, "#e0a13a"],
+		# Flight 3 lands on this one's back deck (bow to the east).
+		["fishing", Vector2(-14, -36.9), 0.0, "#e0a13a"],
 	]
 	for bd in boats:
 		var bt: Node3D = BOAT_SCENE.instantiate()
@@ -448,11 +450,16 @@ func _h_market(b: MeshBuilder) -> void:
 			var fill: Color = [Color("#9fb4c2"), Color("#e8873a"), Color("#d9473d"), Color("#7fae55")][(i + int(cx * 2)) % 4]
 			b.box(solid, Transform3D(Basis(), Vector3(x + cx, y + 1.2, z - 1.05)), Vector3(0.66, 0.06, 0.42), fill)
 		_static_box("wall", Vector3(x, y + 1.3, z - 0.2), Vector3(3.8, 2.6, 3.2))
-	# Stacks of crates and barrels by the crane.
-	for i in 6:
-		var p := Vector3(CRANE.x - 6.0 + (i % 3) * 1.3, QUAY_Y + 0.5 + (i / 3) * 1.0, shore(CRANE.x) + 6.0)
-		b.box(wood, Transform3D(Basis(Vector3.UP, rng.randf_range(-0.1, 0.1)), p), Vector3(1.2, 1.0, 1.2), Color("#b08a64"))
-	_static_box("wall", Vector3(CRANE.x - 4.7, QUAY_Y + 1.0, shore(CRANE.x) + 6.0), Vector3(4.0, 2.0, 1.4))
+	# A row of fish crates by the crane (flight 5 lands on top), one more stacked at the far end.
+	var cz := shore(CRANE.x) + 6.0
+	for i in 5:
+		var p := Vector3(CRANE.x - 8.8 + i * 1.3, QUAY_Y + 0.5, cz)
+		b.box(wood, Transform3D(Basis(Vector3.UP, rng.randf_range(-0.06, 0.06)), p), Vector3(1.2, 1.0, 1.2), Color("#b08a64"))
+		b.box(Mats.get_mat("solid"), Transform3D(Basis(), p + Vector3(0, 0.47, 0)), Vector3(1.05, 0.06, 1.05), Color("#9fb4c2") if i % 2 == 0 else Color("#e8873a"))
+	b.box(wood, Transform3D(Basis(), Vector3(CRANE.x - 2.1, QUAY_Y + 0.5, cz)), Vector3(1.2, 1.0, 1.2), Color("#a07a54"))
+	b.box(wood, Transform3D(Basis(Vector3.UP, 0.08), Vector3(CRANE.x - 2.1, QUAY_Y + 1.5, cz)), Vector3(1.2, 1.0, 1.2), Color("#a07a54"))
+	_static_box("wall", Vector3(CRANE.x - 6.2, QUAY_Y + 0.5, cz), Vector3(6.4, 1.0, 1.4))
+	_static_box("wall", Vector3(CRANE.x - 2.1, QUAY_Y + 1.0, cz), Vector3(1.3, 2.0, 1.3))
 	# The crane: a blue tower with a boom reaching out over the water and a hook.
 	var cb := Vector3(CRANE.x, QUAY_Y, shore(CRANE.x) + 3.0)
 	var blue := Color("#2d6fa3")
@@ -529,7 +536,13 @@ func _near_pad(p: Vector3, r: float) -> bool:
 const HARBOUR_PETS := [
 	[8, "cat", "ginger", Vector3(-85.6, 0.0, -21.6)],
 	[9, "dog", "collie", Vector3(-24.2, PIER_Y, -127.0)],
+	# On the fishing boat's wheelhouse roof, the sailing boat's bow and the fish crates.
+	[10, "cat", "tuxedo", Vector3(-15.6, 1.65, -36.9)],
+	[11, "dog", "beagle", Vector3(6.0, -0.95, -84.0)],
+	[12, "cat", "grey", Vector3(21.6, 2.0, -9.03)],
 ]
+## Flight 6 starts from a wooden lookout at the top of the hill lane.
+const LOOKOUT := Vector3(40, 0, 108)
 
 
 func _h_targets() -> void:
@@ -541,6 +554,19 @@ func _h_targets() -> void:
 		var col := Color("#e8546a") if i % 2 == 0 else Color("#fbf8f0")
 		b.box(cloth, Transform3D(Basis(Vector3.UP, 0.35), t + Basis(Vector3.UP, 0.35) * Vector3(0, 0.02, -1.75 + 0.3 + i * 0.6)), Vector3(2.4, 0.03, 0.6), col)
 	b.cylinder(Mats.get_mat("solid"), Transform3D(Basis(), t + Vector3(2.0, 0, 1.4)), 0.22, 0.28, 0.4, 10, Color("#2f6f8f"))
+	# The hilltop lookout: a wooden deck on posts with a low rail.
+	var lk := Vector3(LOOKOUT.x, _ground(LOOKOUT.x, LOOKOUT.z), LOOKOUT.z)
+	var deck_y := lk.y + 4.0
+	var wood := Mats.get_mat("wood")
+	b.box_mm(wood, lk + Vector3(-1.8, 3.75, -1.8), lk + Vector3(1.8, 4.0, 1.8), Color("#b08a64"))
+	for px in [-1.6, 1.6]:
+		for pz in [-1.6, 1.6]:
+			b.box(wood, Transform3D(Basis(), lk + Vector3(px, 1.9, pz)), Vector3(0.22, 3.9, 0.22), Color("#7a5a40"))
+	for side in [Vector3(0, 0, 1.75), Vector3(-1.75, 0, 0), Vector3(1.75, 0, 0)]:
+		var sz := Vector3(3.6, 0.08, 0.08) if side.x == 0.0 else Vector3(0.08, 0.08, 3.6)
+		b.box(wood, Transform3D(Basis(), lk + side + Vector3(0, 4.85, 0)), sz, Color("#e8dfcc"))
+	_static_box("wall", lk + Vector3(0, 3.87, 0), Vector3(3.6, 0.26, 3.6))
+	_static_box("post", lk + Vector3(0, 1.9, 0), Vector3(3.4, 3.8, 3.4))
 	add_child(b.build_instance("BeachTowel", false))
 	for d in HARBOUR_PETS:
 		var li: int = d[0]
@@ -568,8 +594,9 @@ func _h_town() -> void:
 		while x < 92.0:
 			var jx := x + rng.randf_range(-1.5, 1.5)
 			var z := shore(jx) + d + rng.randf_range(-1.5, 1.5)
-			# Keep the headland clear for the lighthouse, and a gap for the lane up the hill.
-			if (jx > 66.0 and d < 60.0) or absf(jx - 40.0) < 6.0:
+			# Keep the headland clear for the lighthouse, a gap for the lane up the hill, and no
+			# house in the way of a flight.
+			if (jx > 66.0 and d < 60.0) or absf(jx - 40.0) < 6.0 or _blocks_route(Vector3(jx, 0, z), _ground(jx, z) + 13.0, 6.0):
 				x += 16.0
 				continue
 			var h: Node3D = HOUSE_SCENE.instantiate()

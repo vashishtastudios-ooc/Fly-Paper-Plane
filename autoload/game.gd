@@ -21,6 +21,10 @@ const LEVEL_PATHS := [
 	"res://levels/level_8.tres",
 	"res://levels/harbour_1.tres",
 	"res://levels/harbour_2.tres",
+	"res://levels/harbour_3.tres",
+	"res://levels/harbour_4.tres",
+	"res://levels/harbour_5.tres",
+	"res://levels/harbour_6.tres",
 ]
 
 var state: int = State.LOADING
@@ -116,7 +120,7 @@ func has_next_level() -> bool:
 ## open it; "soon" maps show as Coming soon cards on the map page.
 const MAPS := [
 	{"id": "linden", "name": "Linden Lane", "blurb": "Gardens, windows and the old bridge", "levels": [0, 1, 2, 3, 4, 5, 6, 7], "ribbons": 0, "thumb": 2},
-	{"id": "harbour", "name": "Seaside Harbour", "blurb": "Boats, the pier and sea breezes", "levels": [8, 9], "ribbons": 15, "thumb": 9},
+	{"id": "harbour", "name": "Seaside Harbour", "blurb": "Boats, the pier and sea breezes", "levels": [8, 9, 10, 11, 12, 13], "ribbons": 15, "thumb": 9},
 	{"id": "farm", "name": "Maple Farm", "blurb": "Barns, fields and the windmill", "levels": [], "ribbons": 30, "soon": true},
 	{"id": "snow", "name": "Snowy Village", "blurb": "Chimney smoke and twinkling lights", "levels": [], "ribbons": 45, "soon": true},
 	{"id": "city", "name": "City Rooftops", "blurb": "Water towers and narrow alleys", "levels": [], "ribbons": 60, "soon": true},

@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 97, 23.8, -84, 0, 0, 0, 0, 0, 0, 87, 21.8, -91, 0, 0, 0, 0, 0, 0, 76, 19.6, -101, 0, 0, 0, 0, 0, 0, 64, 17.4, -113, 0, 0, 0, 0, 0, 0, 52, 15.4, -124, 0, 0, 0, 0, 0, 0, 40, 13.6, -131, 0, 0, 0, 0, 0, 0, 28, 11.9, -135, 0, 0, 0, 0, 0, 0, 16, 10.3, -136, 0, 0, 0, 0, 0, 0, 4, 8.8, -134, 0, 0, 0, 0, 0, 0, -5, 7.4, -129, 0, 0, 0, 0, 0, 0, -8, 6.2, -122, 0, 0, 0, 0, 0, 0, -5, 5, -114, 0, 0, 0, 0, 0, 0, 0.5, 3.8, -106, 0, 0, 0, 0, 0, 0, 4.5, 2.6, -98.5, 0, 0, 0, 0, 0, 0, 6, 1.4, -93.5, 0, 0, 0, 0, 0, 0, 6, 0.2, -90.8),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 16
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Sea Breeze"
+map = "harbour"
+short_goal = "Out over the sea against the breeze, in through the harbour mouth, onto a sailing boat."
+goal_text = "Throw from the lighthouse and head out over the open sea. Out there a breeze blows toward the breakwater: steer into it to stay on the line. Come back in through the harbour mouth between the breakwater light and the end of the pier, and land on the back deck of the sailing boat, before its cabin. Follow the dotted line and fly through the rings."
+platform_kind = "tower"
+platform_position = Vector3(101.2, 24.458, -82)
+platform_yaw = 2
+aim_point = Vector3(90, 0, -90)
+route = SubResource("Curve3D_route")
+gate_radius = 1.6
+pad_position = Vector3(6, -0.95, -88.6)
+pad_radius = 0.8
+pad_name = "Sailing boat"
+par_time = 26
+thermals = []
+wind_zones = [{
+"x": 30,
+"z": -134,
+"radius": 24,
+"dx": 0,
+"dz": 1,
+"strength": 2.4,
+"top": 22
+}]
+bonus_stars = PackedVector3Array(-8, 6.2, -122)
+hazard_lines = []

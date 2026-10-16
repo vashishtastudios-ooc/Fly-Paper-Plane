@@ -28,6 +28,7 @@ var curve: Curve3D
 var route_length := 0.0
 
 var thermals: Array[Thermal] = []
+var winds: Array[WindZone] = []
 var stars: Array[StarPickup] = []
 var gates: Array[Gate] = []
 var hazards: Array[HazardLine] = []
@@ -68,6 +69,7 @@ func build(level_data: LevelData, town_builder: TownBuilder) -> void:
 	_content.name = "Content"
 	add_child(_content)
 	thermals.clear()
+	winds.clear()
 	stars.clear()
 	gates.clear()
 	hazards.clear()
@@ -99,6 +101,15 @@ func build(level_data: LevelData, town_builder: TownBuilder) -> void:
 		t.position = Vector3(th.x, th.get("base", Terrain.ground_height(th.x, th.z)), th.z)
 		_content.add_child(t)
 		thermals.append(t)
+	for wz in data.wind_zones:
+		var w := WindZone.new()
+		w.radius = wz.get("radius", 18.0)
+		w.direction = Vector3(wz.get("dx", 0.0), 0.0, wz.get("dz", 1.0))
+		w.strength = wz.get("strength", 2.5)
+		w.top = wz.get("top", 25.0)
+		w.position = Vector3(wz.x, Terrain.surface_height(wz.x, wz.z), wz.z)
+		_content.add_child(w)
+		winds.append(w)
 
 	for i in STAR_COUNT:
 		var off := route_length * (0.1 + 0.8 * float(i) / float(STAR_COUNT - 1))
@@ -333,6 +344,14 @@ func process_flight(prev: Vector3, pos: Vector3) -> void:
 
 
 # --- Air -----------------------------------------------------------------------------------
+
+## Sideways wind (m/s) at a point, from the level's sea breezes.
+func wind_at(p: Vector3) -> Vector3:
+	var w := Vector3.ZERO
+	for z in winds:
+		w += z.wind_at(p)
+	return w
+
 
 func lift_at(p: Vector3) -> float:
 	var l := 0.0

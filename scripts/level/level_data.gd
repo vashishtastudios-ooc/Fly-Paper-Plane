@@ -48,6 +48,8 @@ extends Resource
 ## Each entry: {"x", "z", "radius", "strength", "top", "style"} where style is "golden" or "smoke".
 ## Optional "base": height the column starts at (e.g. a classroom floor); defaults to the ground.
 @export var thermals: Array = []
+## Sea breezes: [{x, z, radius, dx, dz, strength, top}] (see WindZone).
+@export var wind_zones: Array = []
 @export var bonus_stars: PackedVector3Array = PackedVector3Array()
 @export var has_bonus_ring := false
 @export var bonus_ring_position := Vector3.ZERO

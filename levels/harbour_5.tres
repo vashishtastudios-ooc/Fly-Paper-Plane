@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -58.5, 8.4, -17.6, 0, 0, 0, 0, 0, 0, -52, 7, -16.6, 0, 0, 0, 0, 0, 0, -46, 5.6, -15.4, 0, 0, 0, 0, 0, 0, -40, 4.4, -14.36, 0, 0, 0, 0, 0, 0, -34, 3.5, -12.3, 0, 0, 0, 0, 0, 0, -28, 3.1, -10.44, 0, 0, 0, 0, 0, 0, -20, 2.9, -8.35, 0, 0, 0, 0, 0, 0, -12, 2.8, -6.87, 0, 0, 0, 0, 0, 0, -4, 2.8, -6.1, 0, 0, 0, 0, 0, 0, 4, 2.9, -6.1, 0, 0, 0, 0, 0, 0, 10, 2.8, -6.6, 0, 0, 0, 0, 0, 0, 13, 2.3, -7.6, 0, 0, 0, 0, 0, 0, 15.2, 1.6, -8.6),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 13
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Market Run"
+map = "harbour"
+short_goal = "From the boathouse roof, low along the quay past the market, to the fish crates."
+goal_text = "Throw from the boathouse roof and drop down to the quay. Race low along it between the market stalls and the water, past the benches and lamps, then settle onto the quay right in front of the fish crates by the crane. It's a small spot with the crates right behind it: come in slow or you'll bump into them. Follow the dotted line and fly through the rings."
+platform_kind = "roof"
+platform_position = Vector3(-62, 8.6, -18)
+platform_yaw = -1.571
+aim_point = Vector3(-50, 0, -16)
+route = SubResource("Curve3D_route")
+gate_radius = 1.2
+pad_position = Vector3(17.2, 1.02, -9)
+pad_radius = 1.1
+pad_name = "By the fish crates"
+par_time = 14
+thermals = [{
+"x": -2,
+"z": -6.2,
+"radius": 4,
+"strength": 2.6,
+"top": 4.4,
+"style": "golden"
+}]
+bonus_stars = PackedVector3Array(-4, 2.3, -6.1)
+hazard_lines = []

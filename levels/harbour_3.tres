@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -62, 11, 74, 0, 0, 0, 0, 0, 0, -62, 10.6, 64, 0, 0, 0, 0, 0, 0, -62, 10.6, 52, 0, 0, 0, 0, 0, 0, -62, 9.8, 40, 0, 0, 0, 0, 0, 0, -62, 8.2, 28, 0, 0, 0, 0, 0, 0, -62, 6.4, 16, 0, 0, 0, 0, 0, 0, -62, 4.8, 4, 0, 0, 0, 0, 0, 0, -62, 3.6, -8, 0, 0, 0, 0, 0, 0, -62, 3, -16, 0, 0, 0, 0, 0, 0, -62, 2.8, -26, 0, 0, 0, 0, 0, 0, -62, 2.6, -36, 0, 0, 0, 0, 0, 0, -61.5, 2.3, -41, 0, 0, 0, 0, 0, 0, -57, 1.9, -44.5, 0, 0, 0, 0, 0, 0, -49, 1.5, -42, 0, 0, 0, 0, 0, 0, -40, 1.2, -38, 0, 0, 0, 0, 0, 0, -34, 0.9, -36.9, 0, 0, 0, 0, 0, 0, -28, 0.35, -36.9, 0, 0, 0, 0, 0, 0, -23, -0.15, -36.9, 0, 0, 0, 0, 0, 0, -19.8, -0.45, -36.9),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 19
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Boathouse Doors"
+map = "harbour"
+short_goal = "Down the hill, through the boathouse and onto the back of the fishing boat."
+goal_text = "Throw from the hillside and glide down toward the old red boathouse. Fly in through its open doors, straight through and out over the water, then swing left, slip under the pier and settle onto the back deck of the fishing boat. Don't overshoot: the wheelhouse is right in front! Follow the dotted line and fly through the rings."
+platform_kind = "hill"
+platform_position = Vector3(-62, 10.88, 78)
+platform_yaw = 0
+aim_point = Vector3(-62, 0, 60)
+route = SubResource("Curve3D_route")
+gate_radius = 1.4
+pad_position = Vector3(-17.6, -0.65, -36.9)
+pad_radius = 0.8
+pad_name = "Fishing boat"
+par_time = 22
+thermals = [{
+"x": -62,
+"z": 48,
+"radius": 7,
+"strength": 3.4,
+"top": 14,
+"style": "golden"
+}]
+bonus_stars = PackedVector3Array(-62, 2.8, -26)
+hazard_lines = []
