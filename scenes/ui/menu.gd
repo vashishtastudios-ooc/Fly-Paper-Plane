@@ -289,9 +289,9 @@ func _layout() -> void:
 			shown = _map_cards.duplicate()
 			_grid(shown, area, 2 if portrait else 3, k, 0.9)
 		else:
-			for c in _cards:
-				if c.visible:
-					shown.append(c)
+			# In the map's flight order (not the order the flights were added).
+			for i in Game.MAPS[_map].levels:
+				shown.append(_cards[i])
 			_grid(shown, area, 2 if portrait else 4, k, 1.05)
 		_page.queue_redraw()
 		# Buttons under the page: Hangar, Play, Back on Flights; Back on Maps.

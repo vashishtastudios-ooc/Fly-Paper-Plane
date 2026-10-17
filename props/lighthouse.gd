@@ -95,13 +95,13 @@ func _after_build() -> void:
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
-	m.albedo_color = Color(1.0, 0.85, 0.5, 0.16)
+	m.albedo_color = Color(1.0, 0.85, 0.5, 0.06)
 	m.disable_receive_shadows = true
 	for s in [-1.0, 1.0]:
 		var cone := MeshInstance3D.new()
 		var cm := CylinderMesh.new()
 		cm.top_radius = 0.3
-		cm.bottom_radius = 5.0
+		cm.bottom_radius = 3.2
 		cm.height = 70.0
 		cm.cap_top = false
 		cm.cap_bottom = false
