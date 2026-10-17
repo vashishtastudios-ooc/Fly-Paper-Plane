@@ -159,6 +159,13 @@ func apply_quality() -> void:
 		_env.ssr_depth_tolerance = 0.4
 	if _sun:
 		_sun.shadow_enabled = true
+		if is_mobile:
+			# Phones: one shadow layer covering only what is near the plane.
+			_sun.shadow_blur = 0.9
+			_sun.directional_shadow_max_distance = 50.0 if quality == 0 else 60.0
+			_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+			quality_changed.emit(quality)
+			return
 		match quality:
 			0:
 				_sun.shadow_blur = 0.8

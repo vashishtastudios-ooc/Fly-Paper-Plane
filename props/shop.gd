@@ -28,6 +28,22 @@ const OPEN_HEAD := 2.7
 const WALL_T := 0.25
 
 
+## Far-away shop: a block with its flat roof, shop front, awning strip and upstairs windows.
+func _build_far(b: MeshBuilder) -> void:
+	var solid := Mats.get_mat("solid")
+	var glass := Mats.get_mat("window_lit")
+	var hw := width * 0.5
+	var rh := roof_height()
+	b.box_mm(solid, Vector3(-hw, 0, -depth), Vector3(hw, rh + 0.55, 0), wall_color, 63 - 8)
+	b.box_mm(solid, Vector3(-hw + 0.45, 0, 0), Vector3(hw - 0.45, ground_height - 0.2, 0.06), front_color, 16)
+	b.box_mm(glass, Vector3(-hw + 0.6, 0.6, 0.06), Vector3(hw - 0.6, ground_height - 1.1, 0.09), Color("#4a6a86"), 16)
+	b.box(solid, Transform3D(Basis(Vector3.RIGHT, 0.35), Vector3(0, ground_height - 0.3, 0.8)), Vector3(width - 0.6, 0.08, 1.8), awning_a, 4 | 8 | 16)
+	for s in storeys - 1:
+		var y := ground_height + s * upper_height + 1.5
+		for x in [-hw * 0.55, 0.0, hw * 0.55]:
+			b.box_mm(glass, Vector3(x - 0.5, y - 0.7, 0.0), Vector3(x + 0.5, y + 0.7, 0.03), Color("#3d5a78"), 16)
+
+
 func roof_height() -> float:
 	return ground_height + (storeys - 1) * upper_height
 

@@ -8,6 +8,9 @@ extends Prop
 ## A landing this close to the pet (horizontally) makes it react.
 @export var watch_radius := 5.0
 
+## Distance beyond which a pet isn't drawn (it would be a few pixels).
+const PET_RANGE := 45.0
+
 var _t := 0.0
 var _happy := 0.0
 var _sparkles: GPUParticles3D
@@ -133,4 +136,7 @@ func _mesh_node(st: SurfaceTool, node_name: String) -> MeshInstance3D:
 	mi.name = node_name
 	mi.mesh = st.commit()
 	mi.material_override = Mats.get_mat("solid")
+	# Pets are detailed but small: only drawn near the camera.
+	mi.visibility_range_end = PET_RANGE
+	mi.visibility_range_end_margin = 4.0
 	return mi

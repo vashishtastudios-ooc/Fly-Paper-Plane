@@ -11,6 +11,11 @@ const RANGES := {
 	"bunting_flag": 160.0, "grass": 70.0, "bush": 180.0, "hedge": 200.0, "mailbox": 90.0, "bench": 110.0,
 	"lamp": 200.0, "reed": 90.0, "rock": 150.0, "cobble_post": 90.0, "shirt": 120.0, "sheet": 120.0,
 }
+## Shorter draw distances for small details on phones (a chunk is up to 40 m from its centre).
+const PHONE_RANGES := {
+	"window": 110.0, "shutter": 100.0, "flowerbox": 80.0, "picket": 70.0, "mailbox": 60.0,
+	"flower": 50.0, "reed": 60.0, "bench": 80.0, "cobble_post": 60.0, "rock": 100.0,
+}
 const NO_SHADOW := ["grass", "flower", "flowerbox", "shutter", "window", "reed", "bunting_flag", "cobble_post", "rock"]
 
 var _groups := {}
@@ -67,6 +72,9 @@ func finalize() -> void:
 		mmi.multimesh = mm
 		mmi.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		var r: float = RANGES.get(g.kind, 0.0)
+		# Phones: small details only near the camera (far houses use their simple version).
+		if Settings.is_mobile and PHONE_RANGES.has(g.kind):
+			r = minf(r, PHONE_RANGES[g.kind])
 		if r > 0.0:
 			mmi.visibility_range_end = r
 			mmi.visibility_range_end_margin = 10.0

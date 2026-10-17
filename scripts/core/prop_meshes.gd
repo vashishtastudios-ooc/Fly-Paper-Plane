@@ -129,6 +129,9 @@ static func _build(kind: String) -> Mesh:
 			b.poly(m, PackedVector3Array([Vector3(0.045, 0.84, -t), Vector3(-0.045, 0.84, -t), Vector3(0, 0.95, -t)]), white)
 			b.quad(m, Vector3(0.045, 0.84, t), Vector3(0.045, 0.84, -t), Vector3(0, 0.95, -t), Vector3(0, 0.95, t), white)
 			b.quad(m, Vector3(-0.045, 0.84, -t), Vector3(-0.045, 0.84, t), Vector3(0, 0.95, t), Vector3(0, 0.95, -t), white)
+		"flower" when Settings.is_mobile:
+			var fm3 := Mats.get_mat("foliage")
+			b.sphere(fm3, Vector3(0, 0.1, 0), Vector3(0.08, 0.06, 0.08), 3, 5, white)
 		"flower":
 			# A small blossom clump, ~0.14 m, base at origin. Tinted by instance color.
 			var fm := Mats.get_mat("foliage")
@@ -161,6 +164,12 @@ static func _build(kind: String) -> Mesh:
 			b.sphere(Mats.get_mat("solid"), Vector3(0, 0.38, 0), Vector3(0.38, 0.32, 0.38), 4, 7, white)
 		"canopy" when Mats.painterly:
 			return _leafy_clump(1.0, 0.92, 120, 7)
+		"canopy" when Settings.is_mobile:
+			# Phones: the same lumpy canopy with fewer facets.
+			var cm2 := Mats.get_mat("foliage")
+			b.sphere(cm2, Vector3(0, 0, 0), Vector3(1.0, 0.92, 1.0), 5, 8, white)
+			b.sphere(cm2, Vector3(0.45, 0.35, 0.25), Vector3(0.6, 0.55, 0.6), 3, 6, white)
+			b.sphere(cm2, Vector3(-0.42, 0.28, -0.3), Vector3(0.62, 0.55, 0.62), 3, 6, white)
 		"canopy":
 			# Round stylized canopy, radius ~1, centered at origin. Scale per instance.
 			var cm := Mats.get_mat("foliage")

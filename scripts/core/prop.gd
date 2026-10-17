@@ -7,6 +7,8 @@ extends Node3D
 
 const LAYER_WORLD := 1
 const LAYER_PADS := 2
+## Distance at which props switch to their simple far-away version (phones).
+const FAR_LOD := 60.0
 
 ## Shared instancing batcher. When null the prop creates and finalizes its own.
 var batcher: Batcher
@@ -27,6 +29,18 @@ func _ready() -> void:
 			var model := b.build_instance("Model", _casts_shadow())
 			model.visibility_range_end = _draw_distance()
 			add_child(model)
+			# Phones: a simple far-away version (if the prop has one) past FAR_LOD metres.
+			if Settings.is_mobile:
+				var fb := MeshBuilder.new()
+				_build_far(fb)
+				if not fb.is_empty():
+					model.visibility_range_end = FAR_LOD
+					model.visibility_range_end_margin = 3.0
+					var far := fb.build_instance("Far", false)
+					far.visibility_range_begin = FAR_LOD
+					far.visibility_range_begin_margin = 3.0
+					far.visibility_range_end = _draw_distance()
+					add_child(far)
 	_build_colliders()
 	_after_build()
 	if _local_batcher:
@@ -35,6 +49,12 @@ func _ready() -> void:
 
 ## Override: add procedural geometry to the builder (local space).
 func _build(_b: MeshBuilder) -> void:
+	pass
+
+
+## Override: a simple far-away version of the model (a few dozen triangles), used on phones
+## beyond FAR_LOD metres. Leave empty for props that don't need one.
+func _build_far(_b: MeshBuilder) -> void:
 	pass
 
 

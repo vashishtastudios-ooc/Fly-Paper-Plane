@@ -126,6 +126,29 @@ func _build(b: MeshBuilder) -> void:
 				b.box_mm(solid, Vector3(px - 0.06, 0, fz - 0.06), Vector3(px + 0.06, 1.05, fz + 0.06), trim)
 
 
+## Far-away house: walls, roof, chimney, door and flat dark windows, in two materials.
+func _build_far(b: MeshBuilder) -> void:
+	var solid := Mats.get_mat("solid")
+	var glass := Mats.get_mat("window_lit")
+	var wh := _wall_h()
+	var rise := depth * 0.36
+	var hw := width * 0.5
+	var zc := -depth * 0.5
+	b.box_mm(solid, Vector3(-hw, 0, -depth), Vector3(hw, wh, 0), wall_color, 63 - 8)
+	var roof_xf := Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(0, wh, zc))
+	b.gable_wall(solid, roof_xf, depth, rise, hw, 1.0, wall_color)
+	b.gable_wall(solid, roof_xf, depth, rise, -hw, -1.0, wall_color)
+	b.gable_roof(solid, roof_xf, depth, width, rise, 0.45, 0.18, roof_color)
+	if has_chimney:
+		var top := wh + rise + 1.0
+		b.box_mm(solid, Vector3(chimney_pos.x - 0.45, wh, chimney_pos.y - 0.45), Vector3(chimney_pos.x + 0.45, top, chimney_pos.y + 0.45), Color("#b8644a"), 63 - 8)
+	b.box_mm(solid, Vector3(porch_offset - 0.55, plinth, 0.0), Vector3(porch_offset + 0.55, plinth + 2.25, 0.04), door_color, 16)
+	for upper in [false, true]:
+		var y: float = plinth + (storey_height + 1.5 if upper else 1.55)
+		for x in _window_xs_front(upper):
+			b.box_mm(glass, Vector3(x - 0.5, y - 0.7, 0.0), Vector3(x + 0.5, y + 0.7, 0.03), Color("#3d5a78"), 16)
+
+
 func _build_balcony(b: MeshBuilder) -> void:
 	var solid := Mats.get_mat("solid")
 	var trim := Mats.TRIM
