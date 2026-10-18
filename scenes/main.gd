@@ -64,6 +64,7 @@ func _ready() -> void:
 	collision_debug.plane = plane
 	add_child(collision_debug)
 	_apply_cosmetics()
+	await _prewarm()
 	await _finish_loading()
 	go_menu()
 
@@ -94,7 +95,41 @@ func switch_map(id: String) -> void:
 	await town.build()
 	_reel_curves.clear()
 	_reel_i = -1
+	await _prewarm()
 	await _finish_loading()
+
+
+## Flights whose effects are drawn once behind the loading screen, per map (so the first time a
+## ring, star, rising air, breeze or fireworks appears in a flight doesn't make the game hitch while
+## the phone prepares it).
+const PREWARM := {"linden": [0], "harbour": [11, 14]}
+
+
+func _prewarm() -> void:
+	var ids: Array = PREWARM.get(town.map_id, [])
+	cam.set_process(false)
+	for li in ids:
+		if li >= Game.levels.size():
+			continue
+		var data: LevelData = Game.levels[li]
+		level.build(data, town)
+		var pts := data.route_points()
+		cam.global_position = data.platform_position + Vector3(0, 2.5, 0)
+		var look: Vector3 = pts[mini(3, pts.size() - 1)]
+		if cam.global_position.distance_to(look) > 0.5:
+			cam.look_at(look, Vector3.UP)
+		# The trail too, right in front of the camera.
+		_menu_trail.active = true
+		menu_plane.global_position = cam.global_position - cam.global_transform.basis.z * 3.0
+		for i in 4:
+			menu_plane.global_position += cam.global_transform.basis.x * 0.3
+			await get_tree().process_frame
+	_menu_trail.active = false
+	_menu_trail.clear()
+	level.clear_content()
+	level.hide_guides()
+	town.set_time_of_day("golden")
+	cam.set_process(true)
 
 
 ## Lets the last fold and the fly-off finish, then removes the loading screen.
@@ -395,6 +430,7 @@ func _process(delta: float) -> void:
 	match Game.state:
 		Game.State.MENU:
 			_update_menu_plane(delta)
+			_auto_quality(delta)
 		Game.State.FLYING:
 			var x := Input.get_axis("turn_left", "turn_right")
 			var y := Input.get_axis("dive", "climb")
@@ -402,10 +438,6 @@ func _process(delta: float) -> void:
 				x += touch.stick.x
 				y += -touch.stick.y
 				touch.gust_charge = plane.gusts
-				# Stall guard for touch: pulling up fades out as the plane slows toward a stall.
-				if y > 0.0:
-					y *= clampf((plane.state.v - plane.stall_speed - 0.6) / 2.5, 0.0, 1.0)
-			plane.turn_scale = maxf(1.0, Settings.sensitivity)
 			x *= Settings.sensitivity
 			y *= Settings.sensitivity * (-1.0 if Settings.invert_pitch else 1.0)
 			plane.set_controls(clampf(x, -1.0, 1.0), clampf(y, -1.0, 1.0))
@@ -590,6 +622,28 @@ func _tip(id: String, text: String, duration := 2.6) -> void:
 		return
 	Game.mark_tip_seen(id)
 	hud.banner(text, Color.WHITE, duration)
+
+
+var _aq_time := 0.0
+var _aq_frames := 0
+
+
+## Phones: measure the frame rate on the menu once (seconds 1.5 to 5.5); if the phone can't keep
+## about 50 fps, switch to Low quality (unless the player picked a quality themselves).
+func _auto_quality(delta: float) -> void:
+	if not Settings.is_mobile or Settings.quality_auto_done or Settings.quality_chosen or Settings.quality == 0:
+		return
+	_aq_time += delta
+	if _aq_time < 1.5:
+		return
+	_aq_frames += 1
+	if _aq_time >= 5.5:
+		var fps := _aq_frames / (_aq_time - 1.5)
+		Settings.quality_auto_done = true
+		if fps < 50.0:
+			Settings.set_quality(0)
+		else:
+			Settings.set_quality(Settings.quality)
 
 
 func _flight_hints(delta: float) -> void:

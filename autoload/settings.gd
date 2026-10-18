@@ -32,6 +32,10 @@ var show_tips := true
 ## (a slower, cinematic follow; desktop default). Empty until loaded.
 var camera_style := ""
 var show_fps := false
+## Phones measure themselves once on the menu and drop to Low if they can't keep up, unless the
+## player has picked a quality themselves.
+var quality_auto_done := false
+var quality_chosen := false
 ## The storybook ink outlines (a full-screen pass). Some phone graphics drivers draw glitches
 ## with it, so it can be switched off.
 var ink_outlines := true
@@ -84,8 +88,7 @@ func _ready() -> void:
 	if is_mobile:
 		# 60 fps on 60 and 120 Hz screens; on others (90 Hz...) follow the screen, since 60 fps
 		# can't be shown evenly there and motion looks uneven.
-		var hz := DisplayServer.screen_get_refresh_rate()
-		Engine.max_fps = 0 if hz > 1.0 and fmod(hz + 1.0, 60.0) > 2.0 else 60
+		Engine.max_fps = 60
 	apply_quality()
 
 
@@ -200,6 +203,12 @@ func reset_to_defaults() -> void:
 	_save()
 
 
+## The player picked a quality in Settings (the automatic check then leaves it alone).
+func choose_quality(q: int) -> void:
+	quality_chosen = true
+	set_quality(q)
+
+
 func set_quality(q: int) -> void:
 	quality = clampi(q, 0, 2)
 	apply_quality()
@@ -220,11 +229,11 @@ func set_option(option: String, value: Variant) -> void:
 
 
 func default_sensitivity() -> float:
-	return 1.2 if is_mobile else DEFAULT_SENSITIVITY
+	return DEFAULT_SENSITIVITY
 
 
 func default_camera_style() -> String:
-	return "responsive" if is_mobile else "smooth"
+	return "responsive"
 
 
 ## Short haptic tick on phones (when enabled).
@@ -268,6 +277,12 @@ func _load() -> void:
 		show_tips = bool(cfg.get_value("controls", "show_tips", true))
 		art_style = str(cfg.get_value("video", "art_style", "storybook"))
 		camera_style = str(cfg.get_value("controls", "camera", ""))
+		if int(cfg.get_value("controls", "version", 0)) < 2:
+			camera_style = ""
+			if is_equal_approx(sensitivity, 1.2):
+				sensitivity = -1.0
+		quality_auto_done = bool(cfg.get_value("video", "quality_auto_done", false))
+		quality_chosen = bool(cfg.get_value("video", "quality_chosen", false))
 		show_fps = bool(cfg.get_value("video", "show_fps", false))
 		ink_outlines = bool(cfg.get_value("video", "ink_outlines", true))
 
@@ -282,6 +297,9 @@ func _save() -> void:
 	cfg.set_value("controls", "vibration", vibration)
 	cfg.set_value("controls", "show_tips", show_tips)
 	cfg.set_value("controls", "camera", camera_style)
+	cfg.set_value("controls", "version", 2)
+	cfg.set_value("video", "quality_auto_done", quality_auto_done)
+	cfg.set_value("video", "quality_chosen", quality_chosen)
 	cfg.set_value("video", "show_fps", show_fps)
 	cfg.set_value("video", "ink_outlines", ink_outlines)
 	cfg.set_value("audio", "sfx", sfx_volume)

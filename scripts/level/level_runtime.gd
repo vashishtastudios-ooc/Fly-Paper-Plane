@@ -448,6 +448,18 @@ func update_guides(plane: PaperPlane) -> void:
 		_marker.visible = false
 
 
+## Removes the built flight (rings, stars, rising air...), e.g. after warming up effects.
+func clear_content() -> void:
+	if _content:
+		_content.queue_free()
+		_content = null
+	thermals.clear()
+	winds.clear()
+	stars.clear()
+	gates.clear()
+	hazards.clear()
+
+
 func hide_guides() -> void:
 	_arrow.visible = false
 	_marker.visible = false

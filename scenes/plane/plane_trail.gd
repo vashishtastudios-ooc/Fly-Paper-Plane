@@ -11,8 +11,10 @@ var source: Node3D
 var active := false
 var style := "white"
 
-const MIN_STEP := 0.16
-const MAX_POINTS := 90
+## Spacing of the trail samples and how many are kept (phones keep fewer: the ribbons are rebuilt
+## every frame).
+var MIN_STEP := 0.16
+var MAX_POINTS := 90
 
 var _pts: Array = []  # Each: [left, right, center, time, distance]
 var _dist := 0.0
@@ -26,6 +28,9 @@ var _fx2: GPUParticles3D
 
 func _ready() -> void:
 	top_level = true
+	if Settings.is_mobile:
+		MIN_STEP = 0.3
+		MAX_POINTS = 48
 	_mesh = ImmediateMesh.new()
 	_node = MeshInstance3D.new()
 	_node.name = "Ribbons"
@@ -53,6 +58,11 @@ func _ready() -> void:
 	_fx = _make_fx("TrailFX")
 	_fx2 = _make_fx("TrailFX2")
 	set_style(style)
+
+
+## Particle count for a style (halved on phones).
+func _amt(n: int) -> int:
+	return maxi(4, n / 2) if Settings.is_mobile else n
 
 
 func _make_fx(fx_name: String) -> GPUParticles3D:
@@ -144,7 +154,7 @@ func set_style(s: String) -> void:
 	match style:
 		"rainbow":
 			# Twinkling rainbow sparkles drifting down behind the plane.
-			_fx.amount = 40
+			_fx.amount = _amt(40)
 			_fx.lifetime = 1.1
 			pm.initial_velocity_min = 0.2
 			pm.initial_velocity_max = 0.8
@@ -162,7 +172,7 @@ func set_style(s: String) -> void:
 			pm2.initial_velocity_max = 0.3
 			pm2.scale_min = 1.0
 			pm2.scale_max = 1.8
-			_fx2.amount = 16
+			_fx2.amount = _amt(16)
 			_fx2.lifetime = 0.9
 			_fx2.process_material = pm2
 			var q2 := QuadMesh.new()
@@ -171,7 +181,7 @@ func set_style(s: String) -> void:
 			_fx2.draw_pass_1 = q2
 			_fx2.visible = true
 		"gold":
-			_fx.amount = 36
+			_fx.amount = _amt(36)
 			_fx.lifetime = 1.0
 			pm.initial_velocity_min = 0.3
 			pm.initial_velocity_max = 1.0
@@ -182,7 +192,7 @@ func set_style(s: String) -> void:
 			q.size = Vector2(0.17, 0.17)
 			q.material = _additive_particles("star_glint")
 		"confetti":
-			_fx.amount = 44
+			_fx.amount = _amt(44)
 			_fx.lifetime = 1.4
 			pm.initial_velocity_min = 0.5
 			pm.initial_velocity_max = 1.6
@@ -201,7 +211,7 @@ func set_style(s: String) -> void:
 			cm.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 			q.material = cm
 		"comet":
-			_fx.amount = 48
+			_fx.amount = _amt(48)
 			_fx.lifetime = 0.55
 			pm.spread = 12.0
 			pm.emission_box_extents = Vector3(0.1, 0.03, 0.05)
@@ -220,7 +230,7 @@ func set_style(s: String) -> void:
 			q.material = _additive_particles("soft_dot")
 		_:
 			# Classic white: faint wisps of air off the wingtips.
-			_fx.amount = 14
+			_fx.amount = _amt(14)
 			_fx.lifetime = 0.7
 			pm.initial_velocity_min = 0.1
 			pm.initial_velocity_max = 0.4

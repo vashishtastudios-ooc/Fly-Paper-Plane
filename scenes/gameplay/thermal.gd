@@ -15,6 +15,22 @@ extends Node3D
 @export var ceiling := INF
 
 
+var _column: MeshInstance3D
+
+
+## The see-through column isn't drawn at all when the camera is near, inside or above it (it
+## would fill the screen and cost a lot to draw while hardly being visible).
+func _process(_delta: float) -> void:
+	if _column == null:
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var c := cam.global_position
+	var d := Vector2(c.x - global_position.x, c.z - global_position.z).length()
+	_column.visible = d > radius * 1.6 + 6.0 and c.y < top + 1.0
+
+
 ## Vertical air speed contributed at a world position (m/s).
 func lift_at(p: Vector3) -> float:
 	var dx := p.x - global_position.x
@@ -53,6 +69,7 @@ func _ready() -> void:
 		sm.set_shader_parameter("tint", Color(1.0, 0.6, 0.3))
 		sm.set_shader_parameter("intensity", 0.13)
 	col.material_override = sm
+	_column = col
 	col.position = Vector3(0, h * 0.5, 0)
 	col.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(col)
@@ -98,7 +115,7 @@ func _ready() -> void:
 		q.material = mat
 	else:
 		# Sparkles flowing up the column (fewer than they used to be, no leaves).
-		p.amount = 24 if Settings.is_mobile else 44
+		p.amount = 12 if Settings.is_mobile else 44
 		p.lifetime = clampf(h / 2.2, 2.0, 9.0)
 		p.preprocess = p.lifetime
 		pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING

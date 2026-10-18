@@ -59,7 +59,7 @@ func _ready() -> void:
 		b.toggle_mode = true
 		b.button_group = group
 		var q := i
-		b.pressed.connect(func(): Settings.set_quality(q))
+		b.pressed.connect(func(): Settings.choose_quality(q))
 		qrow.add_child(b)
 		_quality_buttons.append(b)
 	v.add_child(qrow)
