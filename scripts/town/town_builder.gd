@@ -9,6 +9,9 @@ signal built
 const SEED := 20261013
 ## The cats and dogs by the landing spots (off: each was as heavy to draw as several houses).
 const SHOW_PETS := false
+## Painterly: replace the lane houses with the hand-shaped cottages (off: the same houses in
+## both art styles, only the textures and plants differ).
+const USE_COTTAGES := false
 const RIVER_Z := Terrain.RIVER_Z
 const WATER_Y := Terrain.WATER_Y
 const LANE_START := 14.0
@@ -518,7 +521,7 @@ func _lane_houses() -> void:
 		h.rotation.y = -PI * 0.5 if side > 0 else PI * 0.5
 		# Painterly: a cottage in its place, except the launch balconies and the smoking chimney
 		# of flight 1, which gameplay depends on.
-		if Mats.painterly and h.balcony_height == 0.0 and not (side < 0 and is_equal_approx(hz, -74.0)):
+		if USE_COTTAGES and Mats.painterly and h.balcony_height == 0.0 and not (side < 0 and is_equal_approx(hz, -74.0)):
 			var c: Node3D = COTTAGE_SCENE.instantiate()
 			c.batcher = batcher
 			c.name = h.name

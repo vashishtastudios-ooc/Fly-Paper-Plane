@@ -15,7 +15,8 @@ func _ready() -> void:
 	add_theme_constant_override("margin_right", 30)
 	add_theme_constant_override("margin_top", 26)
 	add_theme_constant_override("margin_bottom", 26)
-	rotation = deg_to_rad(tilt_degrees)
+	# Kept straight: thin lines on a tilted page come out as broken streaks on some phones.
+	rotation = 0.0
 	resized.connect(_on_resized)
 	_on_resized()
 
@@ -25,27 +26,21 @@ func _on_resized() -> void:
 	queue_redraw()
 
 
+## Drawn like the map page (MenuUI.ScrapPage): a torn scrapbook page with a spiral binding,
+## faint rules and a soft shadow.
 func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
-	# Soft drop shadow.
-	for i in 4:
-		var o := 3.0 + i * 3.0
-		draw_rect(Rect2(r.position + Vector2(o * 0.6, o), r.size), Color(0.25, 0.15, 0.05, 0.05))
-	draw_rect(r, UIKit.PAPER)
-	# Ruled lines.
-	var y := 46.0
-	while y < size.y - 6.0:
-		draw_line(Vector2(0, y), Vector2(size.x, y), Color(UIKit.RULE, 0.8), 1.5)
-		y += line_spacing
-	# Red margin line.
-	draw_line(Vector2(MARGIN_X, 0), Vector2(MARGIN_X, size.y), Color(UIKit.MARGIN, 0.85), 2.0)
-	# Binder holes.
+	var seed_value := int(size.x) % 17 + 3
+	draw_colored_polygon(MenuUI.torn_rect(Rect2(r.position + Vector2(8, 12), r.size), 5.0, seed_value + 4), Color(0.2, 0.1, 0.02, 0.28))
+	draw_colored_polygon(MenuUI.torn_rect(r, 5.0, seed_value), UIKit.PAPER)
+	var y := 70.0
+	while y < size.y - 12.0:
+		draw_rect(Rect2(54.0, y, size.x - 64.0, 1.0), Color(UIKit.RULE, 0.35))
+		y += line_spacing + 4.0
+	# Spiral binding down the left edge.
 	if holes:
-		var n := 3 if size.y > 360 else 2
+		var n := int(size.y / 34.0)
 		for i in n:
-			var hy := size.y * (0.18 + 0.64 * float(i) / float(n - 1))
-			draw_circle(Vector2(26, hy), 11.0, Color(0.86, 0.8, 0.72))
-			draw_circle(Vector2(26, hy + 1.5), 9.5, Color(0.42, 0.36, 0.3, 0.55))
-			draw_circle(Vector2(26, hy), 8.0, Color(0.32, 0.28, 0.24, 0.35))
-	# Slightly darker edge.
-	draw_rect(r, Color(0.6, 0.55, 0.45, 0.35), false, 1.5)
+			var cy := 24.0 + i * 34.0
+			draw_circle(Vector2(26, cy), 6.0, Color(0.32, 0.27, 0.22, 0.85))
+			draw_arc(Vector2(16, cy), 11.0, -1.2, 1.9, 10, Color("#8a8f94"), 3.0, true)
