@@ -106,6 +106,17 @@ func show_landing(score: Dictionary, stats: Dictionary, is_best: bool, has_next:
 	(_next if has_next else _retry).grab_focus()
 
 
+## Adds the achievements earned on this flight under the result.
+func show_achievements(list: Array) -> void:
+	if list.is_empty():
+		return
+	var names := []
+	for d in list:
+		names.append(str(d.title))
+	_best.text += ("   " if _best.text != "" else "") + "Achievement: " + ", ".join(names)
+	_layout()
+
+
 func show_crash(message: String, stars: int, stars_total: int, time: float, kind := "") -> void:
 	_clear_rows()
 	_headline.text = message

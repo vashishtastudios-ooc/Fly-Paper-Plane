@@ -23,12 +23,17 @@ var _loader: FoldingLoader
 var _building: TownBuilder
 var _end_timer := -1.0
 var _pending := {}
+## Achievements earned on the flight that just ended (shown on the result card).
+var _pending_achievements := []
 var _last_flight_time := 0.0
 var _slow_cooldown := 0.0
 var _last_stall_banner := -100000
 var _lessons: FlyingLessons
 var _respawn_timer := -1.0
 var collision_debug: CollisionDebug
+var pilot_log: PilotLog
+## Replays the best run on the current flight, and records this one.
+var ghost: GhostPlane
 
 
 func _ready() -> void:
@@ -51,6 +56,12 @@ func _ready() -> void:
 	add_child(_menu_trail)
 	_menu_trail.set_style("rainbow")
 	plane.level = level
+	ghost = GhostPlane.new()
+	ghost.name = "Ghost"
+	add_child(ghost)
+	pilot_log = PilotLog.new()
+	pilot_log.name = "PilotLog"
+	add_child(pilot_log)
 	kid.visible = false
 	hud.visible = false
 	# Let the loading card render before the heavy town build.
@@ -161,6 +172,15 @@ func _wire() -> void:
 		if now - _last_stall_banner > 4000:
 			_last_stall_banner = now
 			hud.banner("Whoa, stalling! Nose down", Color("#ffb3a1"), 1.2))
+	# Lifetime stats for the Pilot log and achievements.
+	plane.barrel_roll_done.connect(func(): Profile.count("rolls"))
+	plane.gust_used.connect(func(): Profile.count("gusts"))
+	plane.entered_thermal.connect(func(): Profile.count("thermals"))
+	plane.skipped.connect(func(): Profile.count("skips"))
+	level.star_collected.connect(func(_p: Vector3): Profile.count("stars"))
+	level.ring_passed.connect(func(_p: Vector3): Profile.count("rings"))
+	level.bonus_ring_passed.connect(func(_p: Vector3, _pts: int, _m: String): Profile.count("bonus_rings"))
+	Profile.achievement_unlocked.connect(func(d: Dictionary): hud.banner("Achievement: " + str(d.title), UIKit.GOLD, 1.8))
 	plane.rising_air.connect(func(): hud.banner("Rising air! Wheee", UIKit.ROUTE, 1.2))
 	plane.wind_entered.connect(func(): hud.banner("Sea breeze! Lean into it", Color.WHITE, 1.4))
 	plane.barrel_roll_done.connect(func(): hud.float_text(plane.state.pos, "+50"))
@@ -172,6 +192,7 @@ func _wire() -> void:
 	Game.cosmetics_changed.connect(_apply_cosmetics)
 	menu.hangar_pressed.connect(func(): hangar.open())
 	menu.settings_pressed.connect(func(): settings_menu.open())
+	menu.pilot_pressed.connect(func(): pilot_log.open())
 	settings_menu.connect("credits_pressed", func(): credits.open())
 	hangar.closed.connect(func(): menu.refresh())
 	pause_ui.settings_pressed.connect(func(): settings_menu.open())
@@ -223,6 +244,7 @@ func go_menu() -> void:
 	hud.visible = false
 	touch.close()
 	plane.reset()
+	ghost.visible = false
 	level.hide_guides()
 	kid.visible = false
 	menu_plane.visible = true
@@ -256,6 +278,7 @@ func start_level(index: int) -> void:
 			_respawn_in_lesson())
 		add_child(_lessons)
 		_lessons.visible = false
+	ghost.set_run(PackedFloat32Array())
 	level.build(data, town)
 	town.clear_trees_for_level(data)
 	hud.reset()
@@ -294,6 +317,12 @@ func throw_plane() -> void:
 func _on_released(hand: Vector3) -> void:
 	var data := Game.level()
 	plane.launch(hand, data.start_yaw())
+	ghost.start_recording()
+	ghost.set_run(PackedFloat32Array())
+	if not Game.in_lessons():
+		Profile.begin_flight(Game.level_id(Game.current_level))
+		if Settings.show_ghost:
+			ghost.set_run(Profile.load_ghost(Game.level_id(Game.current_level)))
 	Audio.play("throw", -2.0)
 	Game.set_state(Game.State.FLYING)
 	cam.set_mode(ChaseCamera.Mode.FOLLOW)
@@ -358,7 +387,20 @@ func _on_landed(info: Dictionary) -> void:
 	}
 	var score := Game.compute_landing_score(stats)
 	var ribbons_before := Game.total_ribbons()
+	var id := Game.level_id(Game.current_level)
+	var star_ids := []
+	for k in level.stars.size():
+		if level.stars[k].collected:
+			star_ids.append(k)
+	Profile.record_landing(id, stats, score, star_ids)
 	var is_best := Game.record_landing(Game.current_level, score.total, score.ribbons)
+	# The ghost is the best run; flights without one yet (e.g. records from older versions) keep
+	# this one.
+	if is_best or not Profile.has_ghost(id):
+		Profile.save_ghost(id, ghost.recording())
+	ghost.visible = false
+	_pending_achievements = Profile.check_achievements()
+	Profile.save()
 	var unlocks := Cosmetics.newly_unlocked(ribbons_before, Game.total_ribbons())
 	_pending = {"kind": "land", "score": score, "stats": stats, "best": is_best, "unlocks": unlocks}
 	Settings.vibrate(60)
@@ -382,6 +424,10 @@ func _on_crashed(message: String, _kind: String) -> void:
 		touch.close()
 		_respawn_timer = 1.3
 		return
+	ghost.visible = false
+	Profile.record_crash(Game.level_id(Game.current_level), _kind)
+	_pending_achievements = Profile.check_achievements()
+	Profile.save()
 	_pending = {"kind": "crash", "message": message, "crash_kind": _kind, "stars": level.stars_collected,
 		"stars_total": level.stars_total(), "time": plane.flight_time}
 	if _kind != "stopped" and _kind != "soaked":
@@ -407,6 +453,8 @@ func _show_result() -> void:
 		result.show_landing(_pending.score, _pending.stats, _pending.best, Game.has_next_level(), _pending.unlocks)
 	else:
 		result.show_crash(_pending.message, _pending.stars, _pending.stars_total, _pending.time, _pending.crash_kind)
+	result.show_achievements(_pending_achievements)
+	_pending_achievements = []
 
 
 func pause_game() -> void:
@@ -441,6 +489,9 @@ func _process(delta: float) -> void:
 			x *= Settings.sensitivity
 			y *= Settings.sensitivity * (-1.0 if Settings.invert_pitch else 1.0)
 			plane.set_controls(clampf(x, -1.0, 1.0), clampf(y, -1.0, 1.0))
+			Profile.add_air("" if Game.in_lessons() else Game.level_id(Game.current_level), delta, plane.state.v * delta)
+			ghost.record(plane.flight_time, plane, (plane.get_node("Visual") as Node3D).rotation.z)
+			ghost.play(plane.flight_time)
 			_flight_hints(delta)
 			hud.update_flight(plane, level, cam, plane.flight_time, delta)
 			level.update_guides(plane)

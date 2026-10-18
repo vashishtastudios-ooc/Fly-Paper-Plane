@@ -27,6 +27,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 Settings="*res://autoload/settings.gd"
+Profile="*res://autoload/profile.gd"
 Game="*res://autoload/game.gd"
 Audio="*res://autoload/audio.gd"
 

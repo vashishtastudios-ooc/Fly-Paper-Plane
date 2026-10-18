@@ -39,6 +39,8 @@ var quality_chosen := false
 ## The storybook ink outlines (a full-screen pass). Some phone graphics drivers draw glitches
 ## with it, so it can be switched off.
 var ink_outlines := true
+## A see-through plane replays your best run on each flight.
+var show_ghost := true
 
 const QUALITY_NAMES := ["Low", "Medium", "High"]
 ## Default values (quality: Medium on phones, High on desktop).
@@ -198,6 +200,7 @@ func reset_to_defaults() -> void:
 	camera_style = default_camera_style()
 	show_fps = false
 	ink_outlines = true
+	show_ghost = true
 	apply_volumes()
 	apply_quality()
 	_save()
@@ -225,6 +228,7 @@ func set_option(option: String, value: Variant) -> void:
 		"camera_style": camera_style = value
 		"show_fps": show_fps = value
 		"ink_outlines": ink_outlines = value
+		"show_ghost": show_ghost = value
 	_save()
 
 
@@ -285,6 +289,7 @@ func _load() -> void:
 		quality_chosen = bool(cfg.get_value("video", "quality_chosen", false))
 		show_fps = bool(cfg.get_value("video", "show_fps", false))
 		ink_outlines = bool(cfg.get_value("video", "ink_outlines", true))
+		show_ghost = bool(cfg.get_value("controls", "show_ghost", true))
 
 
 func _save() -> void:
@@ -302,6 +307,7 @@ func _save() -> void:
 	cfg.set_value("video", "quality_chosen", quality_chosen)
 	cfg.set_value("video", "show_fps", show_fps)
 	cfg.set_value("video", "ink_outlines", ink_outlines)
+	cfg.set_value("controls", "show_ghost", show_ghost)
 	cfg.set_value("audio", "sfx", sfx_volume)
 	cfg.set_value("audio", "ambience", ambience_volume)
 	cfg.save(settings_file)

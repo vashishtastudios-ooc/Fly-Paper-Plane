@@ -9,6 +9,7 @@ extends CanvasLayer
 signal level_chosen(index: int)
 signal hangar_pressed
 signal settings_pressed
+signal pilot_pressed
 
 const TITLE := "Paper Plane Playground"
 const SUBTITLE := "Fun paper plane flying challenges"
@@ -28,6 +29,7 @@ var _cards: Array[PhotoCard] = []
 var _map_cards: Array[MapCard] = []
 var _play: PaperChip
 var _settings_chip: PaperChip
+var _pilot_chip: PaperChip
 var _hangar_chip: PaperChip
 var _back_chip: PaperChip
 var _hint: KeyHint
@@ -85,6 +87,7 @@ func _ready() -> void:
 			_show("maps"))
 	_root.add_child(_play)
 	_settings_chip = _chip("Settings", "gear", func(): settings_pressed.emit())
+	_pilot_chip = _chip("Pilot log", "book", func(): pilot_pressed.emit())
 	_hangar_chip = _chip("Hangar", "hanger", func(): hangar_pressed.emit())
 	_back_chip = _chip("Back", "back", _go_back)
 	_hint = KeyHint.new()
@@ -135,6 +138,7 @@ func _show(screen: String) -> void:
 	_banner.visible = home
 	_page.visible = not home
 	_settings_chip.visible = home
+	_pilot_chip.visible = home
 	_play.visible = home or flights
 	_hangar_chip.visible = flights
 	_back_chip.visible = not home
@@ -253,11 +257,15 @@ func _layout() -> void:
 		_play.size = play_size
 		_play.position = Vector2((s.x - play_size.x) * 0.5, s.y - play_size.y - (110.0 if portrait else 46.0) * ck)
 		_settings_chip.size = chip_size
+		_pilot_chip.size = chip_size
 		var chip_y := _play.position.y + (play_size.y - chip_size.y) * 0.5
 		if portrait:
-			_settings_chip.position = Vector2((s.x - chip_size.x) * 0.5, _play.position.y + play_size.y + 14 * ck)
+			var total := chip_size.x * 2 + 24 * ck
+			_pilot_chip.position = Vector2((s.x - total) * 0.5, _play.position.y + play_size.y + 14 * ck)
+			_settings_chip.position = _pilot_chip.position + Vector2(chip_size.x + 24 * ck, 0)
 		else:
 			_settings_chip.position = Vector2(_play.position.x + play_size.x + 30 * ck, chip_y)
+			_pilot_chip.position = Vector2(_play.position.x - chip_size.x - 30 * ck, chip_y)
 	else:
 		var page: Rect2
 		if portrait:
@@ -310,7 +318,7 @@ func _layout() -> void:
 		else:
 			_hangar_chip.position = Vector2(_play.position.x - chip_size.x - 30 * ck, chip_y)
 			_back_chip.position = Vector2(_play.position.x + play_size.x + 30 * ck, chip_y)
-	for c in [_play, _settings_chip, _hangar_chip, _back_chip]:
+	for c in [_play, _settings_chip, _pilot_chip, _hangar_chip, _back_chip]:
 		c.k = ck
 		c.pivot_offset = c.size * 0.5
 		c.queue_redraw()

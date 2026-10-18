@@ -9,7 +9,8 @@ Paper Plane Playground is a game by Vashishta Studios.
 - The game has no accounts, ads, analytics, tracking or in-app purchases.
 - The game makes no network connections.
 - Your progress and settings are saved only on your own device:
-  - best scores, ribbons, unlocked flights and selected plane look in `save.cfg`
+  - your pilot name (optional, a nickname you type), progress, best scores, ribbons, flight records, play statistics and achievements in `profile.json` (with a backup copy)
+  - recordings of your best run on each flight (for the ghost plane) in the `ghosts` folder
   - sound, graphics and control settings in `settings.cfg`
 - Uninstalling the game deletes this data. It is never sent anywhere.
 - The only device permission the game requests is **vibration**, for small haptic taps. You can switch it off in Settings.

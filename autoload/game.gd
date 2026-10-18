@@ -71,6 +71,8 @@ func in_lessons() -> bool:
 
 func finish_lessons() -> void:
 	lessons_done = true
+	Profile.progress().lessons_done = true
+	Profile.check_achievements()
 	save_game()
 
 
@@ -214,8 +216,41 @@ func record_landing(level_index: int, total: int, ribbons: int) -> bool:
 
 
 # --- Save ------------------------------------------------------------------
+# Progress lives in the player's Profile (user://profile.json). The old save.cfg is only read
+# once, to carry earlier progress over.
+
+## A flight's stable id for the save: its file name (level_1, harbour_3...); "lessons" for the
+## Flying Lessons.
+func level_id(i: int) -> String:
+	if i == LESSONS:
+		return "lessons"
+	return LEVEL_PATHS[i].get_file().get_basename()
+
 
 func load_save() -> void:
+	if Profile.is_new:
+		_load_old_save()
+		save_game()
+		return
+	var pr := Profile.progress()
+	unlocked = clampi(int(pr.get("unlocked", 1)), 1, LEVEL_PATHS.size())
+	lessons_done = bool(pr.get("lessons_done", false))
+	tips_seen = (pr.get("tips_seen", {}) as Dictionary).duplicate()
+	var cs := Profile.cosmetics()
+	for kind in Cosmetics.DEFAULTS:
+		cosmetics[kind] = str(cs.get(kind, Cosmetics.DEFAULTS[kind]))
+	for i in LEVEL_PATHS.size():
+		var id := level_id(i)
+		if Profile.has_flight(id):
+			var f := Profile.flight(id)
+			if int(f.best_score) >= 0:
+				best_scores[i] = int(f.best_score)
+			if int(f.ribbons) > 0:
+				best_ribbons[i] = int(f.ribbons)
+
+
+## Progress from the save file used before the profile (version 1.1.4 and earlier).
+func _load_old_save() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(SAVE_PATH) != OK:
 		return
@@ -226,23 +261,27 @@ func load_save() -> void:
 	lessons_done = bool(cfg.get_value("progress", "lessons_done", false))
 	for i in LEVEL_PATHS.size():
 		var key := "level_%d" % (i + 1)
+		var f := Profile.flight(level_id(i))
 		if cfg.has_section_key(key, "best_score"):
 			best_scores[i] = int(cfg.get_value(key, "best_score"))
+			f.best_score = best_scores[i]
+			f.landings = maxi(int(f.landings), 1)
 		if cfg.has_section_key(key, "ribbons"):
 			best_ribbons[i] = int(cfg.get_value(key, "ribbons"))
+			f.ribbons = best_ribbons[i]
 
 
 func save_game() -> void:
-	var cfg := ConfigFile.new()
-	cfg.set_value("progress", "unlocked", unlocked)
-	cfg.set_value("progress", "lessons_done", lessons_done)
+	var pr := Profile.progress()
+	pr.unlocked = unlocked
+	pr.lessons_done = lessons_done
+	pr.tips_seen = tips_seen.duplicate()
+	var cs := Profile.cosmetics()
 	for kind in cosmetics:
-		cfg.set_value("cosmetics", kind, cosmetics[kind])
-	cfg.set_value("tips", "seen", tips_seen)
+		cs[kind] = cosmetics[kind]
 	for i in LEVEL_PATHS.size():
-		var key := "level_%d" % (i + 1)
-		if best_scores.has(i):
-			cfg.set_value(key, "best_score", best_scores[i])
-		if best_ribbons.has(i):
-			cfg.set_value(key, "ribbons", best_ribbons[i])
-	cfg.save(SAVE_PATH)
+		if best_scores.has(i) or best_ribbons.has(i):
+			var f := Profile.flight(level_id(i))
+			f.best_score = maxi(int(f.best_score), int(best_scores.get(i, -1)))
+			f.ribbons = maxi(int(f.ribbons), int(best_ribbons.get(i, 0)))
+	Profile.save()

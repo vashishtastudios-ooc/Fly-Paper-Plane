@@ -103,6 +103,7 @@ func _ready() -> void:
 		_camera_buttons[cid] = b
 	v.add_child(crow)
 	v.add_child(_note("Responsive swings round quickly with the plane; Smooth follows more slowly."))
+	v.add_child(_check_row("ghost", "Race your best-run ghost", Settings.show_ghost, func(on: bool): Settings.set_option("show_ghost", on)))
 	v.add_child(_check_row("invert", "Invert climb and dive", Settings.invert_pitch, func(on: bool): Settings.set_option("invert_pitch", on)))
 	if Settings.is_mobile:
 		v.add_child(_check_row("vibration", "Vibration", Settings.vibration, func(on: bool): Settings.set_option("vibration", on)))
@@ -263,6 +264,7 @@ func _sync() -> void:
 	(_checks.tips as CheckButton).set_pressed_no_signal(Settings.show_tips)
 	(_checks.fps as CheckButton).set_pressed_no_signal(Settings.show_fps)
 	(_checks.ink as CheckButton).set_pressed_no_signal(Settings.ink_outlines)
+	(_checks.ghost as CheckButton).set_pressed_no_signal(Settings.show_ghost)
 	for cid in _camera_buttons:
 		(_camera_buttons[cid] as Button).set_pressed_no_signal(Settings.camera_style == cid)
 	if _checks.has("vibration"):
