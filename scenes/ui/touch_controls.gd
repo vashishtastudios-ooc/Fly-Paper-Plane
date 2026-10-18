@@ -6,6 +6,7 @@ signal gust_pressed
 signal roll_pressed(direction: float)
 signal pause_pressed
 
+## Where the steering hint and the idle stick are shown (steering itself starts anywhere).
 const STICK_REGION := 0.72
 const STICK_MAX := 44.0
 ## Response curve for turning: small drags already turn noticeably (1 = linear).
@@ -142,7 +143,8 @@ func _on_press(index: int, p: Vector2) -> void:
 		_canvas.queue_redraw()
 		get_viewport().set_input_as_handled()
 		return
-	if p.x < s.x * STICK_REGION and _stick_index == -1:
+	# Anywhere that isn't a button starts steering (the buttons were checked above).
+	if _stick_index == -1:
 		_stick_index = index
 		_origin = p
 		_pos = p
