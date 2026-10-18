@@ -637,7 +637,7 @@ func _h_targets() -> void:
 	ah.position = ATTIC_HOUSE
 	add_child(ah)
 	_houses.append(ATTIC_HOUSE)
-	for d in HARBOUR_PETS:
+	for d in (HARBOUR_PETS if SHOW_PETS else []):
 		var li: int = d[0]
 		if li >= Game.levels.size():
 			continue

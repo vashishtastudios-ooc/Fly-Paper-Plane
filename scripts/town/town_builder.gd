@@ -7,6 +7,8 @@ extends Node3D
 signal built
 
 const SEED := 20261013
+## The cats and dogs by the landing spots (off: each was as heavy to draw as several houses).
+const SHOW_PETS := false
 const RIVER_Z := Terrain.RIVER_Z
 const WATER_Y := Terrain.WATER_Y
 const LANE_START := 14.0
@@ -159,7 +161,9 @@ func build() -> void:
 	await _step_yield()
 	_grand_tour()
 	await _step_yield()
-	_pets()
+	# Pets are switched off (too heavy to draw for what they add); see SHOW_PETS.
+	if SHOW_PETS:
+		_pets()
 	batcher.finalize()
 	_on_quality(Settings.quality)
 	is_built = true
