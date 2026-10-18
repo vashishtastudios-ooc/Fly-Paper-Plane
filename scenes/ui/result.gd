@@ -88,7 +88,7 @@ func _row(label: String, value: String, bold := false) -> void:
 func show_landing(score: Dictionary, stats: Dictionary, is_best: bool, has_next: bool, unlocks: Array = []) -> void:
 	_clear_rows()
 	_headline.text = score.headline
-	_sub.text = "Touched down %.1f m from the center at %d km/h." % [stats.dist, roundi(stats.speed * 3.6)]
+	_sub.text = "%s  %.1f m from the centre at %d km/h." % [Quips.landing(score.ribbons), stats.dist, roundi(stats.speed * 3.6)]
 	_ribbons.visible = true
 	_ribbons.set_filled(score.ribbons)
 	_row("Accuracy", str(score.accuracy))
@@ -106,10 +106,10 @@ func show_landing(score: Dictionary, stats: Dictionary, is_best: bool, has_next:
 	(_next if has_next else _retry).grab_focus()
 
 
-func show_crash(message: String, stars: int, stars_total: int, time: float) -> void:
+func show_crash(message: String, stars: int, stars_total: int, time: float, kind := "") -> void:
 	_clear_rows()
 	_headline.text = message
-	_sub.text = "The plane got a little crumpled. Smooth it out and try again."
+	_sub.text = Quips.crash(kind)
 	_ribbons.visible = false
 	_row("Stars collected", "%d of %d" % [stars, stars_total])
 	_row("Time in the air", "%.1f s" % time)
@@ -142,5 +142,9 @@ func _layout() -> void:
 	# Give wrapping labels their width up front so the sheet height is computed sensibly.
 	_sub.custom_minimum_size.x = w - 140.0
 	var h := 560.0 if _ribbons.visible else 430.0
+	# A crash card is only as tall as its text needs.
+	_sheet.size.x = w
+	if not _ribbons.visible:
+		h = minf(h, maxf(_sheet.get_combined_minimum_size().y + 36.0, 280.0))
 	_sheet.size = Vector2(w, minf(h, s.y - 24.0))
 	_sheet.position = (s - _sheet.size) * 0.5

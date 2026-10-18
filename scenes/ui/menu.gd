@@ -17,7 +17,7 @@ const MAPS_SUBTITLE := "Earn ribbons to open new places"
 const THUMB_PATH := "res://ui/thumbs/flight_%d.jpg"
 const PAPER := Color("#fbf6ea")
 const TAPE := Color("#f4a7b5")
-const HIGHLIGHT := Color("#f8d24a")
+const HIGHLIGHT := Color("#f6a96b")
 
 var _root: Control
 var _banner: HomeBanner

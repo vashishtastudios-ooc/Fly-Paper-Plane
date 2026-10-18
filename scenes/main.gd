@@ -160,12 +160,12 @@ func _wire() -> void:
 		var now := Time.get_ticks_msec()
 		if now - _last_stall_banner > 4000:
 			_last_stall_banner = now
-			hud.banner("Stall! Nose down", Color("#ffb3a1"), 1.2))
-	plane.rising_air.connect(func(): hud.banner("Rising air", UIKit.ROUTE, 1.2))
-	plane.wind_entered.connect(func(): hud.banner("Sea breeze! Steer into it", Color.WHITE, 1.4))
+			hud.banner("Whoa, stalling! Nose down", Color("#ffb3a1"), 1.2))
+	plane.rising_air.connect(func(): hud.banner("Rising air! Wheee", UIKit.ROUTE, 1.2))
+	plane.wind_entered.connect(func(): hud.banner("Sea breeze! Lean into it", Color.WHITE, 1.4))
 	plane.barrel_roll_done.connect(func(): hud.float_text(plane.state.pos, "+50"))
 	plane.landed.connect(_on_landed)
-	plane.skipped.connect(func(): hud.banner("Skip!", Color("#bfe3ff"), 0.9))
+	plane.skipped.connect(func(): hud.banner("Skip! Like a pebble", Color("#bfe3ff"), 0.9))
 	plane.crashed.connect(_on_crashed)
 	plane.gust_used.connect(func(): Settings.vibrate(20))
 	plane.entered_thermal.connect(func(): _tip("thermal", "Rising air! Circle inside it to climb"))
@@ -382,7 +382,7 @@ func _on_crashed(message: String, _kind: String) -> void:
 		touch.close()
 		_respawn_timer = 1.3
 		return
-	_pending = {"kind": "crash", "message": message, "stars": level.stars_collected,
+	_pending = {"kind": "crash", "message": message, "crash_kind": _kind, "stars": level.stars_collected,
 		"stars_total": level.stars_total(), "time": plane.flight_time}
 	if _kind != "stopped" and _kind != "soaked":
 		cam.shake(0.9)
@@ -406,7 +406,7 @@ func _show_result() -> void:
 	if _pending.kind == "land":
 		result.show_landing(_pending.score, _pending.stats, _pending.best, Game.has_next_level(), _pending.unlocks)
 	else:
-		result.show_crash(_pending.message, _pending.stars, _pending.stars_total, _pending.time)
+		result.show_crash(_pending.message, _pending.stars, _pending.stars_total, _pending.time, _pending.crash_kind)
 
 
 func pause_game() -> void:
@@ -662,4 +662,4 @@ func _flight_hints(delta: float) -> void:
 	_slow_cooldown -= delta
 	if plane.state.v < 6.0 and not plane.stalled and _slow_cooldown <= 0.0:
 		_slow_cooldown = 6.0
-		hud.banner("Too slow! Ease the nose down", Color("#ffd9a1"), 1.0)
+		hud.banner("Running out of puff! Nose down", Color("#ffd9a1"), 1.0)

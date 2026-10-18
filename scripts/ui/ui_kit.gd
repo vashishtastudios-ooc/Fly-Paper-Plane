@@ -113,7 +113,7 @@ static func paper_button(text: String, primary := false, size := 30) -> Button:
 	pressed.bg_color = INK.darkened(0.15) if primary else Color(INK, 0.2)
 	var focus := normal.duplicate() as StyleBoxFlat
 	focus.bg_color = Color(0, 0, 0, 0)
-	focus.border_color = GOLD_DEEP
+	focus.border_color = Color("#ee9256")
 	focus.set_border_width_all(3)
 	focus.draw_center = false
 	b.add_theme_stylebox_override("normal", normal)

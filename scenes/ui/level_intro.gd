@@ -68,18 +68,25 @@ func close() -> void:
 	visible = false
 
 
+## The sheet is only as tall as its text needs (plus a little breathing room).
+func _fit_height() -> float:
+	return maxf(_sheet.get_combined_minimum_size().y + 36.0, 300.0)
+
+
 func _layout() -> void:
 	var s := Settings.viewport_size()
 	var m := Settings.safe_margins()
 	if s.y > s.x:
 		var w := minf(s.x - 24.0, 620.0)
-		var h := minf(s.y * 0.5, 560.0)
+		_sheet.size.x = w
+		var h := minf(_fit_height(), minf(s.y * 0.5, 560.0))
 		_sheet.size = Vector2(w, h)
 		_sheet.position = Vector2((s.x - w) * 0.5, s.y - h - m.w - 16.0)
 		_name.add_theme_font_size_override("font_size", 42)
 	else:
 		var w2 := clampf(s.x * 0.42, 380.0, 560.0)
-		var h2 := minf(s.y - 48.0, 560.0)
+		_sheet.size.x = w2
+		var h2 := minf(_fit_height(), minf(s.y - 48.0, 560.0))
 		_sheet.size = Vector2(w2, h2)
 		_sheet.position = Vector2(m.x + 24.0, (s.y - h2) * 0.5)
 		_name.add_theme_font_size_override("font_size", 48)

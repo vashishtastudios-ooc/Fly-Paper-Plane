@@ -376,7 +376,7 @@ func _apply_transform() -> void:
 func _check_collisions(prev: Vector3, prev_vy: float) -> void:
 	var pos := state.pos
 	if Terrain.out_of_bounds(pos):
-		_crash("Blown out of town", "out", pos)
+		_crash("Whoosh! Out of town", "out", pos)
 		return
 	# Analytic landing window around the pad.
 	if level and level.is_landing(prev, pos):
@@ -436,25 +436,25 @@ func _check_collisions(prev: Vector3, prev_vy: float) -> void:
 			_start_slide(Vector3(pos.x, ground, pos.z))
 			return
 		var near: bool = level != null and level.horizontal_distance_to_pad(pos) < short_landing_distance + level.pad_radius()
-		_crash("Touched down short" if near else "Crash landing", "ground", Vector3(pos.x, ground + 0.05, pos.z))
+		_crash("Just short!" if near else "Crash landing!", "ground", Vector3(pos.x, ground + 0.05, pos.z))
 
 
 func _message_for(kind: String, at: Vector3) -> String:
 	match kind:
-		"tree": return "Snagged in a tree"
+		"tree": return "Stuck in a tree!"
 		"bridge": return "Bonk! Into the bridge"
 		"wall", "car": return "Bonk! Into a wall"
 		"water": return "Splash! Into the river"
-		"fan": return "Whacked by the ceiling fan"
-		"glass": return "Bonk! The window was closed"
-		"greenhouse": return "Bonk! Into the greenhouse glass"
-		"lamp": return "Clonk! Into the hanging lamp"
-		"furniture": return "Bumped into the furniture"
-		"banister": return "Clipped the banister"
+		"fan": return "Whacked by the fan!"
+		"glass": return "Bonk! Window closed"
+		"greenhouse": return "Bonk! Greenhouse glass"
+		"lamp": return "Clonk! Into a lamp"
+		"furniture": return "Bonk! Into the furniture"
+		"banister": return "Clipped the banister!"
 		"ceiling": return "Bonk! Into the ceiling"
 	if level and level.horizontal_distance_to_pad(at) < short_landing_distance + level.pad_radius() and at.y < level.pad_top() + 2.0:
-		return "Touched down short"
-	return "Crash landing"
+		return "Just short!"
+	return "Crash landing!"
 
 
 func _land(contact: Vector3) -> void:
@@ -608,7 +608,7 @@ func _slide(dt: float) -> void:
 	if state.v < 0.3 or _skid_t > 4.0:
 		# Came to rest off the target: no crumple, just short.
 		var near: bool = level != null and level.horizontal_distance_to_pad(state.pos) < short_landing_distance + level.pad_radius()
-		_crash("Touched down short" if near else "Landed off target", "stopped", state.pos)
+		_crash("Just short!" if near else "Wrong spot!", "stopped", state.pos)
 
 
 # --- Water: skip, skim, splash ----------------------------------------------------------

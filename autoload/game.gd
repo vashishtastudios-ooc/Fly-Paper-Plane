@@ -172,11 +172,11 @@ func compute_landing_score(stats: Dictionary) -> Dictionary:
 	var bonus_pts: int = stats.bonus
 	var total := accuracy + soft + stars_pts + time_bonus + ring_pts + roll_pts + bonus_pts
 
-	var headline := "Bumpy landing"
+	var headline := "Bumpy, but home!"
 	if soft_frac > 0.8 and acc_frac > 0.6:
-		headline = "Feather landing"
+		headline = "Feather-soft!"
 	elif soft_frac > 0.5:
-		headline = "Smooth landing"
+		headline = "Smooth landing!"
 
 	var missed: int = stats.stars_total - stats.stars
 	var ribbons := 1
