@@ -115,7 +115,7 @@ func switch_map(id: String) -> void:
 ## Flights whose effects are drawn once behind the loading screen, per map (so the first time a
 ## ring, star, rising air, breeze or fireworks appears in a flight doesn't make the game hitch while
 ## the phone prepares it).
-const PREWARM := {"linden": [0], "harbour": [11, 14], "city": [16]}
+const PREWARM := {"linden": [0], "harbour": [11, 14], "city": [16, 17]}
 
 
 func _prewarm() -> void:

@@ -72,6 +72,51 @@ func _lot(b: MeshBuilder, lot: Dictionary) -> void:
 			_shopfront(b, r, int(face), aw)
 	for f in lot.get("roof", []):
 		_roof_feature(b, r, top, str(f), rng)
+	if int(lot.get("fire_face", -1)) >= 0:
+		_fire_escape(b, r, int(lot.fire_face), int(lot.storeys))
+
+
+## Fire escape on the face +X (3) or -X (2): a platform at every upper storey with a zig-zag
+## stair between them, sticking out FIRE_DEPTH from the wall.
+const FIRE_DEPTH := 0.8
+
+
+static func fire_platforms(r: Rect2, face: int, storeys: int) -> Array:
+	var out := []
+	var x_wall := r.end.x if face == 3 else r.position.x
+	var dir := 1.0 if face == 3 else -1.0
+	var zc := r.get_center().y
+	for s in range(1, storeys):
+		var y := GROUND_FLOOR + (s - 1) * STOREY
+		out.append(AABB(Vector3(minf(x_wall, x_wall + dir * FIRE_DEPTH), y - 0.06, zc - 2.6), Vector3(FIRE_DEPTH, 0.08, 5.2)))
+	return out
+
+
+func _fire_escape(b: MeshBuilder, r: Rect2, face: int, storeys: int) -> void:
+	var metal := Mats.get_mat("metal")
+	var iron := Color("#3b3f46")
+	var dir := 1.0 if face == 3 else -1.0
+	var x_wall := r.end.x if face == 3 else r.position.x
+	var plats := fire_platforms(r, face, storeys)
+	for k in plats.size():
+		var p: AABB = plats[k]
+		b.box_mm(metal, p.position, p.end, iron)
+		# Railing on the outer edge.
+		var xo := x_wall + dir * (FIRE_DEPTH - 0.04)
+		b.box_mm(metal, Vector3(xo - 0.03, p.end.y + 0.9, p.position.z), Vector3(xo + 0.03, p.end.y + 0.95, p.end.z), iron)
+		for zz in [p.position.z, p.get_center().z, p.end.z]:
+			b.box_mm(metal, Vector3(xo - 0.03, p.end.y, zz - 0.03), Vector3(xo + 0.03, p.end.y + 0.95, zz + 0.03), iron)
+		# A stair up to the next platform, zig-zagging.
+		if k + 1 < plats.size():
+			var z_a := p.position.z + 0.6 if k % 2 == 0 else p.end.z - 0.6
+			var z_b := p.end.z - 0.6 if k % 2 == 0 else p.position.z + 0.6
+			var y_a := p.end.y
+			var y_b: float = (plats[k + 1] as AABB).position.y
+			var xm := x_wall + dir * FIRE_DEPTH * 0.5
+			var mid := Vector3(xm, (y_a + y_b) * 0.5, (z_a + z_b) * 0.5)
+			var run := Vector3(0, y_b - y_a, z_b - z_a)
+			var basis := Basis(Vector3.RIGHT, -atan2(run.y, run.z) if run.z > 0.0 else atan2(run.y, -run.z))
+			b.box(metal, Transform3D(basis, mid), Vector3(FIRE_DEPTH * 0.7, 0.06, run.length()), iron)
 
 
 func _parapets(r: Rect2, top: float) -> Array:
@@ -218,6 +263,10 @@ func _build_colliders() -> void:
 				add_box("wall", (e[0] + e[1]) * 0.5 + Vector3(0, 0.03, 0), e[1] - e[0] + Vector3(0, 0.06, 0))
 		var hx := r.size.x * 0.5
 		var hz := r.size.y * 0.5
+		if int(lot.get("fire_face", -1)) >= 0:
+			for p: AABB in fire_platforms(r, int(lot.fire_face), int(lot.storeys)):
+				# The platform and its railing.
+				add_box("wall", p.get_center() + Vector3(0, 0.45, 0), p.size + Vector3(0, 0.9, 0))
 		for f in lot.get("roof", []):
 			match str(f):
 				"tank": add_cylinder("post", c + Vector3(-hx * 0.45, top, hz * 0.4), 1.6, 6.25)

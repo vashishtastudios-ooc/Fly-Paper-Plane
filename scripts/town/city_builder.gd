@@ -14,6 +14,12 @@ const START_LOT := Rect2(-23, 30, 15, 16)
 const START_STOREYS := 9
 const GARDEN_LOT := Rect2(8, -142, 15, 16)
 const GARDEN_STOREYS := 4
+## Flight 2 (Alley Run): the roof it dives off into the long alley at x = -72, and the alley
+## itself (flight routes inside it don't lower the buildings either side: they are its walls).
+const ALLEY_START_LOT := Rect2(-90, 51, 15, 15)
+const ALLEY_START_STOREYS := 6
+const ALLEY := Rect2(-75, -120, 6, 200)
+const CAFE := Vector3(-72, 0.15, -82)
 ## The park: one whole block beside Main Avenue.
 const PARK_BLOCK := Rect2(8, -66, 34, 36)
 
@@ -45,6 +51,7 @@ func build() -> void:
 		if k % 6 == 5:
 			await _step_yield()
 	_c_park()
+	_c_cafe()
 	await _step_yield()
 	_c_streets()
 	await _step_yield()
@@ -98,7 +105,7 @@ func _c_ground() -> void:
 func _c_block(r: Rect2) -> void:
 	if r == PARK_BLOCK:
 		return
-	var a := CityTerrain.ALLEY_W
+	var a := CityTerrain.alley_width(r)
 	var lw := (r.size.x - a) * 0.5
 	var ld := (r.size.y - a) * 0.5
 	var rects := [
@@ -146,6 +153,12 @@ func _lot_for(wr: Rect2, block: Rect2) -> Dictionary:
 		lot.parapet = false
 		lot.roof = ["tank", "ac"]
 		return lot
+	if wr == ALLEY_START_LOT:
+		lot.storeys = ALLEY_START_STOREYS
+		lot.parapet = false
+		lot.roof = ["tank"]
+		lot.fire_face = 3
+		return lot
 	if wr == GARDEN_LOT:
 		lot.storeys = GARDEN_STOREYS
 		lot.parapet = false
@@ -186,6 +199,11 @@ func _lot_for(wr: Rect2, block: Rect2) -> Dictionary:
 		if top + float(tall[f]) <= cap:
 			kept.append(f)
 	lot.roof = kept
+	# Fire escapes on some of the walls lining the long alley.
+	if is_equal_approx(wr.end.x, ALLEY.position.x) and rng.randf() < 0.6:
+		lot.fire_face = 3
+	elif is_equal_approx(wr.position.x, ALLEY.end.x) and rng.randf() < 0.6:
+		lot.fire_face = 2
 	return lot
 
 
@@ -200,12 +218,35 @@ func _route_cap(wr: Rect2) -> float:
 		var n := maxi(2, int(Vector2(b.x - a.x, b.z - a.z).length()))
 		for i in n + 1:
 			var p := a.lerp(b, float(i) / n)
+			if ALLEY.has_point(Vector2(p.x, p.z)) and p.y < 20.0:
+				continue
 			if g.has_point(Vector2(p.x, p.z)):
 				cap = minf(cap, p.y - 3.5)
 	for pad in _pad_keepouts:
+		if ALLEY.has_point(Vector2(pad.x, pad.z)):
+			continue
 		if g.grow(4.0).has_point(Vector2(pad.x, pad.z)):
 			cap = minf(cap, pad.y - 3.5)
 	return cap
+
+
+# --- The café terrace at the end of the alley (Flight 2 lands here) ---------------------------
+
+func _c_cafe() -> void:
+	var cols := [["#c8423b", "#fbf6ea"], ["#2f6f8f", "#f7eedd"], ["#5f9a45", "#fbf6ea"]]
+	for k in 3:
+		var t: Node3D = CAFE_SCENE.instantiate()
+		t.batcher = batcher
+		t.umbrella_a = Color(cols[k][0])
+		t.umbrella_b = Color(cols[k][1])
+		t.position = CAFE + Vector3([-1.6, 1.6, -1.6][k], 0, -6.5 - k * 2.6)
+		add_child(t)
+	# A chalkboard sign by the wall.
+	var b := MeshBuilder.new()
+	var s := CAFE + Vector3(2.4, 0, 2.5)
+	b.box_mm(Mats.get_mat("wood"), s + Vector3(-0.35, 0, -0.05), s + Vector3(0.35, 1.0, 0.05), Color("#7a5a40"))
+	b.box_mm(Mats.get_mat("solid"), s + Vector3(-0.3, 0.35, -0.07), s + Vector3(0.3, 0.95, -0.05), Color("#2f3a36"))
+	add_child(b.build_instance("CafeSign", false))
 
 
 # --- The park ---------------------------------------------------------------------------------

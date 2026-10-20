@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -75.6, 19.6, 59.8, 0, 0, 0, 0, 0, 0, -74.2, 18.2, 55, 0, 0, 0, 0, 0, 0, -72.6, 16, 49, 0, 0, 0, 0, 0, 0, -72, 13.5, 42, 0, 0, 0, 0, 0, 0, -72, 11, 34, 0, 0, 0, 0, 0, 0, -72, 9, 26, 0, 0, 0, 0, 0, 0, -72, 7.4, 18, 0, 0, 0, 0, 0, 0, -72, 6.2, 8, 0, 0, 0, 0, 0, 0, -72, 5.6, 0, 0, 0, 0, 0, 0, 0, -72, 5.4, -10, 0, 0, 0, 0, 0, 0, -72, 5.2, -20, 0, 0, 0, 0, 0, 0, -72, 5, -30, 0, 0, 0, 0, 0, 0, -72, 5, -40, 0, 0, 0, 0, 0, 0, -72, 4.6, -50, 0, 0, 0, 0, 0, 0, -72, 4, -60, 0, 0, 0, 0, 0, 0, -72, 3, -68, 0, 0, 0, 0, 0, 0, -72, 1.8, -74, 0, 0, 0, 0, 0, 0, -72, 1, -78, 0, 0, 0, 0, 0, 0, -72, 0.45, -81),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 19
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Alley Run"
+map = "city"
+short_goal = "Dive into the long alley and fly it all the way to the café."
+goal_text = "Dive off the roof into the long alley! Duck under the washing, hop over the low line, dodge the fire escapes and land on the café terrace. Croissants await!"
+platform_kind = "roof"
+platform_position = Vector3(-76, 18.63, 60.5)
+platform_yaw = -0.31
+aim_point = Vector3(-72, 0, 40)
+route = SubResource("Curve3D_route")
+gate_radius = 1.2
+pad_position = Vector3(-72, 0.17, -82)
+pad_radius = 2
+pad_name = "Café terrace"
+par_time = 18
+thermals = []
+bonus_stars = PackedVector3Array(-70.4, 7.6, -10)
+hazard_lines = [{
+"a": Vector3(-75, 8, 6),
+"b": Vector3(-69, 8, 6),
+"sag": 0.5,
+"kind": "washing",
+"posts": false
+}, {
+"a": Vector3(-75, 3.6, -36),
+"b": Vector3(-69, 3.6, -36),
+"sag": 0.3,
+"kind": "washing",
+"posts": false
+}, {
+"a": Vector3(-75, 6.7, -56),
+"b": Vector3(-69, 6.7, -56),
+"sag": 0.4,
+"kind": "washing",
+"posts": false
+}]
