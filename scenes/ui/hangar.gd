@@ -5,7 +5,7 @@ extends CanvasLayer
 
 signal closed
 
-const KINDS := [["paper", "Paper"], ["trail", "Trail"], ["sticker", "Sticker"]]
+const KINDS := [["shape", "Plane"], ["paper", "Paper"], ["trail", "Trail"], ["sticker", "Sticker"]]
 
 var _sheet: NotebookSheet
 var _ribbons_label: Label
@@ -202,7 +202,7 @@ func _refresh() -> void:
 					nm = it.name
 			b.text = nm if unlocked else "%s  (%d ribbons)" % [nm, req]
 			b.set_pressed_no_signal(Game.cosmetics.get(kind, "") == id)
-	Cosmetics.apply(_preview_plane, Game.cosmetics.paper, Game.cosmetics.sticker)
+	Cosmetics.apply(_preview_plane, Game.cosmetics.paper, Game.cosmetics.sticker, Game.cosmetics.shape)
 	if _trail.style != Game.cosmetics.trail:
 		_trail.set_style(Game.cosmetics.trail)
 		_trail.clear()

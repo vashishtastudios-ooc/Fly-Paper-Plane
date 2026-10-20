@@ -29,6 +29,12 @@ func _ready() -> void:
 	visible = false
 
 
+## The ghost shows the same plane design as the player's.
+func set_shape(shape: String) -> void:
+	if _model:
+		_model.mesh = PaperPlaneMesh.get_mesh(shape)
+
+
 ## Loads the best run to replay (empty: no ghost).
 func set_run(samples: PackedFloat32Array) -> void:
 	_samples = samples

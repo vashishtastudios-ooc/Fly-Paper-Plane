@@ -302,8 +302,9 @@ func _process(_delta: float) -> void:
 	var now := Time.get_ticks_msec() * 0.001
 	if source and active and source.is_visible_in_tree():
 		var xf := source.get_global_transform_interpolated()
-		var l := xf * PaperPlaneMesh.TIP_LEFT
-		var r := xf * PaperPlaneMesh.TIP_RIGHT
+		var shape: String = Game.cosmetics.get("shape", "dart")
+		var l := xf * PaperPlaneMesh.tip(shape, -1.0)
+		var r := xf * PaperPlaneMesh.tip(shape, 1.0)
 		var c := xf * Vector3(0, 0.02, 0.42)
 		var head := [l, r, c, now, _dist]
 		if _pts.is_empty():

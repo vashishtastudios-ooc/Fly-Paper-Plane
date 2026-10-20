@@ -660,10 +660,11 @@ func _hide_reel() -> void:
 
 func _apply_cosmetics() -> void:
 	var c := Game.cosmetics
-	Cosmetics.apply(plane.get_node_or_null("Visual/Model") as MeshInstance3D, c.paper, c.sticker)
-	Cosmetics.apply(menu_plane.get_node_or_null("Model") as MeshInstance3D, c.paper, c.sticker)
+	Cosmetics.apply(plane.get_node_or_null("Visual/Model") as MeshInstance3D, c.paper, c.sticker, c.shape)
+	Cosmetics.apply(menu_plane.get_node_or_null("Model") as MeshInstance3D, c.paper, c.sticker, c.shape)
 	if kid.has_method("held_plane"):
-		Cosmetics.apply(kid.held_plane(), c.paper, c.sticker)
+		Cosmetics.apply(kid.held_plane(), c.paper, c.sticker, c.shape)
+	ghost.set_shape(c.shape)
 	plane.set_trail_style(c.trail)
 
 

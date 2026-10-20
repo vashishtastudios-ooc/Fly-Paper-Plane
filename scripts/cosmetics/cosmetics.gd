@@ -1,8 +1,19 @@
 class_name Cosmetics
 extends RefCounted
-## Cosmetic plane customization: paper, trail and wing sticker. Purely visual (no stat changes).
+## Cosmetic plane customization: plane design, paper, trail and wing sticker. Purely visual (no stat changes).
 ## Items unlock with the total number of ribbons earned across all flights.
 
+## Plane designs (PaperPlaneMesh.SHAPES). Every design flies exactly the same.
+const SHAPES := [
+	{"id": "dart", "name": "Classic Dart", "req": 0},
+	{"id": "glider", "name": "Wide Glider", "req": 1},
+	{"id": "stubby", "name": "Stubby", "req": 3},
+	{"id": "speedster", "name": "Speedster", "req": 5},
+	{"id": "swallow", "name": "Swallow Tail", "req": 8},
+	{"id": "handmade", "name": "Handmade", "req": 11},
+	{"id": "biplane", "name": "Double Wing", "req": 14},
+	{"id": "ring", "name": "Ring Wing", "req": 18},
+]
 const PAPERS := [
 	{"id": "notebook", "name": "Notebook", "req": 0},
 	{"id": "graph", "name": "Graph paper", "req": 2},
@@ -27,7 +38,7 @@ const STICKERS := [
 	{"id": "bolt", "name": "Lightning", "req": 6},
 	{"id": "seven", "name": "Lucky 7", "req": 11},
 ]
-const DEFAULTS := {"paper": "notebook", "trail": "white", "sticker": "none"}
+const DEFAULTS := {"shape": "dart", "paper": "notebook", "trail": "white", "sticker": "none"}
 
 static var _paper_mats := {}
 static var _sticker_meshes := {}
@@ -35,6 +46,7 @@ static var _sticker_meshes := {}
 
 static func items(kind: String) -> Array:
 	match kind:
+		"shape": return SHAPES
 		"paper": return PAPERS
 		"trail": return TRAILS
 		"sticker": return STICKERS
@@ -55,7 +67,7 @@ static func is_unlocked(kind: String, id: String, ribbons: int) -> bool:
 ## Items that unlock exactly at `ribbons` (used to announce new unlocks).
 static func newly_unlocked(before: int, after: int) -> Array[String]:
 	var out: Array[String] = []
-	for kind in ["paper", "trail", "sticker"]:
+	for kind in ["shape", "paper", "trail", "sticker"]:
 		for it in items(kind):
 			if it.req > before and it.req <= after:
 				out.append(it.name)
@@ -79,11 +91,12 @@ static func paper_material(id: String) -> Material:
 
 
 ## A pair of sticker decals sitting on top of both wings (plane space, forward = -Z).
-static func sticker_mesh(id: String) -> Mesh:
+static func sticker_mesh(id: String, shape := "dart") -> Mesh:
 	if id == "none" or id == "":
 		return null
-	if _sticker_meshes.has(id):
-		return _sticker_meshes[id]
+	var key := id + "/" + shape
+	if _sticker_meshes.has(key):
+		return _sticker_meshes[key]
 	var m := StandardMaterial3D.new()
 	m.albedo_texture = TexGen.get_tex("sticker_" + id)
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
@@ -93,9 +106,11 @@ static func sticker_mesh(id: String) -> Mesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var k := PaperPlaneMesh.SCALE
-	var half := 0.055 * k
+	var spec: Dictionary = PaperPlaneMesh.SHAPES.get(shape, PaperPlaneMesh.SHAPES.dart)
+	var half: float = spec.sticker_size * k
+	var at: Vector3 = spec.sticker
 	for side in [-1.0, 1.0]:
-		var c := Vector3(side * 0.15, 0.04, 0.17) * k
+		var c := Vector3(side * absf(at.x), at.y, at.z) * k
 		# Corners: u along +x, v toward the nose so the sticker reads upright from behind.
 		var p00 := c + Vector3(-half, 0, half)
 		var p10 := c + Vector3(half, 0, half)
@@ -107,14 +122,15 @@ static func sticker_mesh(id: String) -> Mesh:
 			st.add_vertex(v[0])
 	var mesh := st.commit()
 	mesh.surface_set_material(0, m)
-	_sticker_meshes[id] = mesh
+	_sticker_meshes[key] = mesh
 	return mesh
 
 
-## Applies paper and sticker to a MeshInstance3D showing the paper plane mesh.
-static func apply(mi: MeshInstance3D, paper: String, sticker: String) -> void:
+## Applies design, paper and sticker to a MeshInstance3D showing the paper plane.
+static func apply(mi: MeshInstance3D, paper: String, sticker: String, shape := "dart") -> void:
 	if mi == null:
 		return
+	mi.mesh = PaperPlaneMesh.get_mesh(shape)
 	mi.material_override = null if paper == "notebook" else paper_material(paper)
 	var decal: MeshInstance3D = mi.get_node_or_null("Sticker")
 	if decal == null:
@@ -122,7 +138,7 @@ static func apply(mi: MeshInstance3D, paper: String, sticker: String) -> void:
 		decal.name = "Sticker"
 		decal.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		mi.add_child(decal)
-	decal.mesh = sticker_mesh(sticker)
+	decal.mesh = sticker_mesh(sticker, shape)
 	decal.visible = decal.mesh != null
 
 
