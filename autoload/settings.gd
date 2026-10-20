@@ -288,7 +288,6 @@ func _load() -> void:
 		quality_auto_done = bool(cfg.get_value("video", "quality_auto_done", false))
 		quality_chosen = bool(cfg.get_value("video", "quality_chosen", false))
 		show_fps = bool(cfg.get_value("video", "show_fps", false))
-		ink_outlines = bool(cfg.get_value("video", "ink_outlines", true))
 		show_ghost = bool(cfg.get_value("controls", "show_ghost", true))
 
 
@@ -306,7 +305,6 @@ func _save() -> void:
 	cfg.set_value("video", "quality_auto_done", quality_auto_done)
 	cfg.set_value("video", "quality_chosen", quality_chosen)
 	cfg.set_value("video", "show_fps", show_fps)
-	cfg.set_value("video", "ink_outlines", ink_outlines)
 	cfg.set_value("controls", "show_ghost", show_ghost)
 	cfg.set_value("audio", "sfx", sfx_volume)
 	cfg.set_value("audio", "ambience", ambience_volume)

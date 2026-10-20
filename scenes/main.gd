@@ -512,8 +512,8 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	# F3: show collision shapes (testing builds only).
-	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).keycode == KEY_F3 			and (OS.is_debug_build() or Game.UNLOCK_ALL_FOR_TESTING):
+	# F3: show collision shapes (only when run from the Godot editor).
+	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).keycode == KEY_F3 			and OS.has_feature("editor"):
 		collision_debug.toggle()
 		get_viewport().set_input_as_handled()
 		return
