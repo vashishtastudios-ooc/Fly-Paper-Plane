@@ -532,13 +532,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		Game.State.FLYING:
 			if event.is_action_pressed("gust"):
 				plane.use_gust()
-			# Q / E roll, unless the plane is already turning that way: then they sharpen the turn.
+			# Q / E always roll; held while turning that way they also sharpen the turn.
 			elif event.is_action_pressed("roll_left"):
-				if _steer_x() > -0.2:
-					plane.barrel_roll(-1.0)
+				plane.barrel_roll(-1.0)
 			elif event.is_action_pressed("roll_right"):
-				if _steer_x() < 0.2:
-					plane.barrel_roll(1.0)
+				plane.barrel_roll(1.0)
 
 
 func _notification(what: int) -> void:

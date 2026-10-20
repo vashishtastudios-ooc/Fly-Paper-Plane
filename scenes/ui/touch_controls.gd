@@ -142,11 +142,9 @@ func _on_press(index: int, p: Vector2) -> void:
 	if p.distance_to(_roll_center()) < ROLL_RADIUS + 12.0:
 		_roll_index = index
 		_flash_roll = 0.2
-		# Already steering: hold for a sharp turn. Stick centred: a barrel roll.
-		if absf(stick.x) > 0.25:
-			sharp_held = true
-		else:
-			roll_pressed.emit(1.0 if stick.x >= 0.0 else -1.0)
+		# A barrel roll toward the steering side; held while steering, also a sharp turn.
+		sharp_held = true
+		roll_pressed.emit(1.0 if stick.x >= 0.0 else -1.0)
 		_canvas.queue_redraw()
 		get_viewport().set_input_as_handled()
 		return
