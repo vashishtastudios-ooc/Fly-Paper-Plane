@@ -19,7 +19,10 @@ const GARDEN_STOREYS := 4
 const ALLEY_START_LOT := Rect2(-90, 51, 15, 15)
 const ALLEY_START_STOREYS := 6
 const ALLEY := Rect2(-75, -120, 6, 200)
-const CAFE := Vector3(-72, 0.15, -82)
+## Flight 2 lands at the café on the corner where x = -48 meets z = -72.
+const CAFE := Vector3(-48, 0.0, -70)
+## Warm steam from a manhole where x = -96 meets z = -24 (Flight 2 climbs on it).
+const MANHOLE := Vector3(-96, 0.0, -24)
 ## The park: one whole block beside Main Avenue.
 const PARK_BLOCK := Rect2(8, -66, 34, 36)
 
@@ -83,8 +86,8 @@ func _c_ground() -> void:
 		b.box_mm(paving, Vector3(g.position.x, 0, g.position.y), Vector3(g.end.x, 0.15, g.end.y), Color("#ddd5c6"), 63 - 8)
 	# Dashed centre line and zebra crossings on Main Avenue.
 	var paint := Mats.get_mat("solid")
-	var z := 110.0
-	while z > -260.0:
+	var z := 132.0
+	while z > -276.0:
 		var near_street := false
 		for sz in CityTerrain.STREETS_Z:
 			if absf(z - sz) < 8.0:
@@ -169,6 +172,9 @@ func _lot_for(wr: Rect2, block: Rect2) -> Dictionary:
 	var storeys := rng.randi_range(3, 7) + int(downtown * 3.0)
 	if rng.randf() < 0.12:
 		storeys += rng.randi_range(3, 5)
+	# The west blocks are Flight 2's alleys: tall enough to feel like a canyon.
+	if block.get_center().x < -60.0 and block.get_center().x > -100.0:
+		storeys = maxi(storeys, 4)
 	var roof := []
 	if rng.randf() < 0.4:
 		roof.append("tank")
@@ -207,11 +213,12 @@ func _lot_for(wr: Rect2, block: Rect2) -> Dictionary:
 	return lot
 
 
-## The highest a roof may reach over this lot: 3.5 m under any flight route passing within 3 m
-## (INF when none does).
+## The highest a roof may reach over this lot: 3.5 m under any flight route passing over it
+## (INF when none does). Routes flying beside a building (down an alley or a street) leave it
+## alone: it is the wall of that alley.
 func _route_cap(wr: Rect2) -> float:
 	var cap := INF
-	var g := wr.grow(3.0)
+	var g := wr.grow(1.0)
 	for seg in _route_keepouts:
 		var a: Vector3 = seg[0]
 		var b: Vector3 = seg[1]
@@ -225,7 +232,7 @@ func _route_cap(wr: Rect2) -> float:
 	for pad in _pad_keepouts:
 		if ALLEY.has_point(Vector2(pad.x, pad.z)):
 			continue
-		if g.grow(4.0).has_point(Vector2(pad.x, pad.z)):
+		if g.has_point(Vector2(pad.x, pad.z)):
 			cap = minf(cap, pad.y - 3.5)
 	return cap
 
@@ -241,8 +248,10 @@ func _c_cafe() -> void:
 		t.umbrella_b = Color(cols[k][1])
 		t.position = CAFE + Vector3([-1.6, 1.6, -1.6][k], 0, -6.5 - k * 2.6)
 		add_child(t)
-	# A chalkboard sign by the wall.
+	# A chalkboard sign by the wall, and the manhole cover the steam rises from.
 	var b := MeshBuilder.new()
+	b.cylinder(Mats.get_mat("metal"), Transform3D(Basis(), MANHOLE + Vector3(0, 0.005, 0)), 0.9, 0.9, 0.03, 16, Color("#4a4f55"))
+	b.cylinder(Mats.get_mat("metal"), Transform3D(Basis(), MANHOLE + Vector3(0, 0.035, 0)), 0.6, 0.6, 0.01, 16, Color("#3b3f46"))
 	var s := CAFE + Vector3(2.4, 0, 2.5)
 	b.box_mm(Mats.get_mat("wood"), s + Vector3(-0.35, 0, -0.05), s + Vector3(0.35, 1.0, 0.05), Color("#7a5a40"))
 	b.box_mm(Mats.get_mat("solid"), s + Vector3(-0.3, 0.35, -0.07), s + Vector3(0.3, 0.95, -0.05), Color("#2f3a36"))
@@ -282,8 +291,8 @@ func _c_streets() -> void:
 	var cols := ["#a9c9db", "#e9b7a1", "#f2d58f", "#b9d6a8", "#cbbbe8", "#c8423b", "#f5f0e5", "#6d8fd6"]
 	var k := 0
 	for sx in [-1.0, 1.0]:
-		var z := 104.0
-		while z > -250.0:
+		var z := 128.0
+		while z > -262.0:
 			var crossing := false
 			for sz in CityTerrain.STREETS_Z:
 				if absf(z - sz) < 9.0:
@@ -315,7 +324,7 @@ func _c_skyline() -> void:
 		tries += 1
 		var x := rng.randf_range(-330.0, 330.0)
 		var z := rng.randf_range(-470.0, 300.0)
-		if absf(x) < 190.0 and z > -320.0 and z < 175.0:
+		if absf(x) < 200.0 and z > -330.0 and z < 185.0:
 			continue
 		var w := rng.randf_range(14.0, 30.0)
 		var d := rng.randf_range(14.0, 30.0)

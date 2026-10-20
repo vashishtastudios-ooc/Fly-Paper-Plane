@@ -5,8 +5,10 @@ extends RefCounted
 ## the streets hold the buildings (CityBlock), split into four lots by two narrow alleys.
 
 ## Centre lines of the north-south streets and the east-west streets.
-const STREETS_X := [-96.0, -48.0, 0.0, 48.0, 96.0]
-const STREETS_Z := [72.0, 24.0, -24.0, -72.0, -120.0, -168.0, -216.0]
+## The outermost ones only frame the city (a ring of blocks so every street has buildings on
+## both sides).
+const STREETS_X := [-144.0, -96.0, -48.0, 0.0, 48.0, 96.0, 144.0]
+const STREETS_Z := [120.0, 72.0, 24.0, -24.0, -72.0, -120.0, -168.0, -216.0, -264.0]
 const STREET_W := 12.0
 const AVENUE_W := 16.0
 const ALLEY_W := 4.0
@@ -14,9 +16,9 @@ const ALLEY_W := 4.0
 const WIDE_ALLEY_W := 6.0
 const ALLEY_RUN_X := -72.0
 const SIDEWALK := 2.2
-const BOUNDS_X := 150.0
-const BOUNDS_Z_MAX := 130.0
-const BOUNDS_Z_MIN := -280.0
+const BOUNDS_X := 165.0
+const BOUNDS_Z_MAX := 140.0
+const BOUNDS_Z_MIN := -285.0
 
 
 static func ground_height(_x: float, _z: float) -> float:
@@ -42,7 +44,7 @@ static func blocks() -> Array[Rect2]:
 
 ## Width of the alleys inside a block.
 static func alley_width(block: Rect2) -> float:
-	return WIDE_ALLEY_W if block.get_center().x < -60.0 else ALLEY_W
+	return WIDE_ALLEY_W if block.get_center().x < -60.0 and block.get_center().x > -100.0 else ALLEY_W
 
 
 static func water_name(_x: float, _z: float) -> String:
