@@ -50,7 +50,7 @@ thermals = [{
 "top": 10,
 "style": "golden"
 }]
-bonus_stars = PackedVector3Array(-5.5, 5.4, 51.5, 1.5, 9.5, -28)
+bonus_stars = PackedVector3Array(-0.5, 7, 3, 1.5, 9.5, -28)
 hazard_lines = [{
 "a": Vector3(-7.8, 7.15, 52),
 "b": Vector3(7.8, 7.15, 52),
