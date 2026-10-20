@@ -94,6 +94,8 @@ func switch_map(id: String) -> void:
 	var nt: TownBuilder
 	if id == "harbour":
 		nt = HarbourBuilder.new()
+	elif id == "city":
+		nt = CityBuilder.new()
 	else:
 		nt = load("res://scenes/town/town.tscn").instantiate()
 	nt.name = "Town"
@@ -113,7 +115,7 @@ func switch_map(id: String) -> void:
 ## Flights whose effects are drawn once behind the loading screen, per map (so the first time a
 ## ring, star, rising air, breeze or fireworks appears in a flight doesn't make the game hitch while
 ## the phone prepares it).
-const PREWARM := {"linden": [0], "harbour": [11, 14]}
+const PREWARM := {"linden": [0], "harbour": [11, 14], "city": [16]}
 
 
 func _prewarm() -> void:

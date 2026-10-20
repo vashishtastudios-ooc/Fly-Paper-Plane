@@ -2,7 +2,8 @@ class_name Terrain
 extends RefCounted
 ## Analytic terrain: ground height, river and town bounds. Shared by the town builder,
 ## the flight model, the camera and props (kept separate to avoid preload cycles).
-## `map` picks the world: "linden" (Linden Lane) or "harbour" (Seaside Harbour, HarbourTerrain).
+## `map` picks the world: "linden" (Linden Lane), "harbour" (Seaside Harbour, HarbourTerrain) or
+## "city" (City Rooftops, CityTerrain).
 
 const RIVER_Z := -300.0
 const WATER_Y := -1.55
@@ -26,6 +27,8 @@ static var map := "linden"
 static func ground_height(x: float, z: float) -> float:
 	if map == "harbour":
 		return HarbourTerrain.ground_height(x, z)
+	if map == "city":
+		return CityTerrain.ground_height(x, z)
 	if pond_at(x, z) >= 0:
 		return POND_BED
 	return land_height(x, z)
@@ -35,6 +38,8 @@ static func ground_height(x: float, z: float) -> float:
 static func land_height(x: float, z: float) -> float:
 	if map == "harbour":
 		return HarbourTerrain.ground_height(x, z)
+	if map == "city":
+		return CityTerrain.ground_height(x, z)
 	var h := 0.0
 	var ax := absf(x)
 	var hill := smoothstep(44.0, 78.0, ax)
@@ -72,6 +77,8 @@ static func water_height(x: float, z: float) -> float:
 static func water_name(x: float, z: float) -> String:
 	if map == "harbour":
 		return HarbourTerrain.water_name(x, z)
+	if map == "city":
+		return CityTerrain.water_name(x, z)
 	var i := pond_at(x, z)
 	return PONDS[i][2] if i >= 0 else "the river"
 
@@ -88,4 +95,6 @@ static func is_water(x: float, z: float) -> bool:
 static func out_of_bounds(p: Vector3) -> bool:
 	if map == "harbour":
 		return HarbourTerrain.out_of_bounds(p)
+	if map == "city":
+		return CityTerrain.out_of_bounds(p)
 	return absf(p.x) > BOUNDS_X or p.z > BOUNDS_Z_MAX or p.z < BOUNDS_Z_MIN

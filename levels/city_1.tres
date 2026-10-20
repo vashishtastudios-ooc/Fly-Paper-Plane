@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -15.5, 28.6, 30.5, 0, 0, 0, 0, 0, 0, -14, 27.8, 25, 0, 0, 0, 0, 0, 0, -11, 26.6, 12, 0, 0, 0, 0, 0, 0, -7, 25.2, -4, 0, 0, 0, 0, 0, 0, -3, 23.8, -20, 0, 0, 0, 0, 0, 0, 0, 22.4, -36, 0, 0, 0, 0, 0, 0, 1, 21.4, -50, 0, 0, 0, 0, 0, 0, 2, 21, -64, 0, 0, 0, 0, 0, 0, 4, 20, -78, 0, 0, 0, 0, 0, 0, 6, 18.6, -92, 0, 0, 0, 0, 0, 0, 9, 17, -106, 0, 0, 0, 0, 0, 0, 12, 15.5, -118, 0, 0, 0, 0, 0, 0, 14, 14.2, -126, 0, 0, 0, 0, 0, 0, 15, 13.2, -131, 0, 0, 0, 0, 0, 0, 15.5, 12.7, -134),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 15
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Rooftop Hop"
+map = "city"
+short_goal = "From a rooftop water tower down Main Avenue to a rooftop garden."
+goal_text = "Hop off the roof by the water tower, glide down Main Avenue on the warm air and land in the little rooftop garden. Mind the pigeons!"
+platform_kind = "roof"
+platform_position = Vector3(-15.5, 27.63, 31.4)
+platform_yaw = 0
+aim_point = Vector3(-11, 0, 10)
+route = SubResource("Curve3D_route")
+pad_position = Vector3(15.5, 12.68, -134)
+pad_radius = 2.6
+pad_name = "Rooftop garden"
+par_time = 22
+thermals = [{
+"x": 1,
+"z": -52,
+"radius": 9,
+"strength": 3.4,
+"top": 24,
+"style": "golden"
+}]
+bonus_stars = PackedVector3Array(1.5, 23.8, -54)
+hazard_lines = []

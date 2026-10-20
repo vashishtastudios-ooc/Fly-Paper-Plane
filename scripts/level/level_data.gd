@@ -3,7 +3,7 @@ extends Resource
 ## Everything that defines one flight. Positions are in world meters (town runs along -Z).
 
 @export var level_name := "Flight"
-## The map this flight is flown on (see Game.MAPS): "linden" or "harbour".
+## The map this flight is flown on (see Game.MAPS): "linden", "harbour" or "city".
 @export var map := "linden"
 @export var short_goal := ""
 @export_multiline var goal_text := ""
