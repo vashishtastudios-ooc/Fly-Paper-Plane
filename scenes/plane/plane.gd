@@ -29,6 +29,9 @@ enum Mode { IDLE, FLYING, SLIDING, SKIMMING, LANDED, CRASHED }
 @export var roll_gain := 0.95
 @export var roll_rate := 3.2
 @export var turn_rate := 1.2
+## Sharp turn (Q/E or the Roll button held while already turning that way): banks this much
+## harder, so it turns this much faster.
+@export var sharp_turn_gain := 1.25
 @export var input_damp := 10.0
 
 @export_group("Speed and sink")
@@ -116,6 +119,8 @@ var _was_in_wind := false
 var lift := 0.0
 var agl := 0.0
 var rolls_done := 0
+## -1 / 1 while a sharp turn is held to the left / right (only counts when steering that way).
+var sharp_dir := 0.0
 var flight_time := 0.0
 var autopilot: Callable  # Optional: returns Vector2(in_x, in_y) (used by tests).
 
@@ -182,6 +187,7 @@ func launch(pos: Vector3, yaw: float) -> void:
 	in_y = 0.0
 	stalled = false
 	rolls_done = 0
+	sharp_dir = 0.0
 	flight_time = 0.0
 	_roll_t = -1.0
 	_was_rising = false
@@ -261,7 +267,10 @@ func step_state(s: FlightState, ix: float, iy: float, dt: float) -> float:
 	var stall := s.v < stall_speed
 	var target_pitch := stall_pitch if stall else clampf(trim_pitch + iy * pitch_input_gain, pitch_min, pitch_max)
 	s.pitch = _damp(s.pitch, target_pitch, pitch_rate_stall if stall else pitch_rate, dt)
-	s.roll = _damp(s.roll, ix * roll_gain, roll_rate, dt)
+	var bank := roll_gain
+	if sharp_dir != 0.0 and signf(ix) == sharp_dir and absf(ix) > 0.2:
+		bank *= sharp_turn_gain
+	s.roll = _damp(s.roll, ix * bank, roll_rate, dt)
 	s.yaw -= s.roll * turn_rate * dt * clampf(s.v / 9.0, 0.6, 1.5)
 	s.v += (-gravity * sin(s.pitch) - drag * s.v * s.v) * dt
 	s.v = clampf(s.v, min_speed, max_speed)

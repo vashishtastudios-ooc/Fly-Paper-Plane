@@ -905,7 +905,7 @@ class KeyHint extends Control:
 	var k := 1.0
 
 	func _items() -> Array:
-		return [["Drag", "steer"], ["Gust", "lift"]] if Settings.touch_ui else [["A", "D", "Turn"], ["W", "S", "Climb / Dive"], ["SPACE", "Gust"]]
+		return [["Drag", "steer"], ["Gust", "lift"]] if Settings.touch_ui else [["A", "D", "Turn"], ["W", "S", "Climb / Dive"], ["Q", "E", "Sharp turn"], ["SPACE", "Gust"]]
 
 	## Width needed for all the key caps and labels at height h.
 	func content_width(h: float) -> float:

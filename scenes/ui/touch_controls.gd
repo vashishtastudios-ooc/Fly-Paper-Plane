@@ -23,6 +23,8 @@ const HINT_TIME := 5.0
 ## Stick deflection: x right, y down, each -1..1.
 var stick := Vector2.ZERO
 var gust_charge := 3.0
+## The Roll button is held while steering: a sharp turn instead of a roll.
+var sharp_held := false
 
 var _canvas: Control
 var _stick_index := -1
@@ -69,6 +71,7 @@ func _release_all() -> void:
 	_stick_index = -1
 	_gust_index = -1
 	_roll_index = -1
+	sharp_held = false
 	stick = Vector2.ZERO
 	if _canvas:
 		_canvas.queue_redraw()
@@ -139,7 +142,11 @@ func _on_press(index: int, p: Vector2) -> void:
 	if p.distance_to(_roll_center()) < ROLL_RADIUS + 12.0:
 		_roll_index = index
 		_flash_roll = 0.2
-		roll_pressed.emit(1.0 if stick.x >= 0.0 else -1.0)
+		# Already steering: hold for a sharp turn. Stick centred: a barrel roll.
+		if absf(stick.x) > 0.25:
+			sharp_held = true
+		else:
+			roll_pressed.emit(1.0 if stick.x >= 0.0 else -1.0)
 		_canvas.queue_redraw()
 		get_viewport().set_input_as_handled()
 		return
@@ -161,6 +168,7 @@ func _on_release(index: int) -> void:
 		_gust_index = -1
 	if index == _roll_index:
 		_roll_index = -1
+		sharp_held = false
 	_canvas.queue_redraw()
 
 

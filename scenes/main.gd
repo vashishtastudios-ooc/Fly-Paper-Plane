@@ -480,15 +480,22 @@ func _process(delta: float) -> void:
 			_update_menu_plane(delta)
 			_auto_quality(delta)
 		Game.State.FLYING:
-			var x := Input.get_axis("turn_left", "turn_right")
+			var x := _steer_x()
 			var y := Input.get_axis("dive", "climb")
 			if touch.visible:
-				x += touch.stick.x
 				y += -touch.stick.y
 				touch.gust_charge = plane.gusts
 			x *= Settings.sensitivity
 			y *= Settings.sensitivity * (-1.0 if Settings.invert_pitch else 1.0)
 			plane.set_controls(clampf(x, -1.0, 1.0), clampf(y, -1.0, 1.0))
+			# Sharp turn: E (or Q) held while already turning right (or left), or the touch Roll
+			# button held while steering.
+			var sharp := 0.0
+			if x > 0.2 and (Input.is_action_pressed("roll_right") or touch.sharp_held):
+				sharp = 1.0
+			elif x < -0.2 and (Input.is_action_pressed("roll_left") or touch.sharp_held):
+				sharp = -1.0
+			plane.sharp_dir = sharp
 			Profile.add_air("" if Game.in_lessons() else Game.level_id(Game.current_level), delta, plane.state.v * delta)
 			ghost.record(plane.flight_time, plane, (plane.get_node("Visual") as Node3D).rotation.z)
 			ghost.play(plane.flight_time)
@@ -525,10 +532,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		Game.State.FLYING:
 			if event.is_action_pressed("gust"):
 				plane.use_gust()
+			# Q / E roll, unless the plane is already turning that way: then they sharpen the turn.
 			elif event.is_action_pressed("roll_left"):
-				plane.barrel_roll(-1.0)
+				if _steer_x() > -0.2:
+					plane.barrel_roll(-1.0)
 			elif event.is_action_pressed("roll_right"):
-				plane.barrel_roll(1.0)
+				if _steer_x() < 0.2:
+					plane.barrel_roll(1.0)
 
 
 func _notification(what: int) -> void:
@@ -698,10 +708,20 @@ func _auto_quality(delta: float) -> void:
 			Settings.set_quality(Settings.quality)
 
 
+## Steering input (keys, stick and touch), before sensitivity.
+func _steer_x() -> float:
+	var x := Input.get_axis("turn_left", "turn_right")
+	if touch.visible:
+		x += touch.stick.x
+	return x
+
+
 func _flight_hints(delta: float) -> void:
 	if Game.in_lessons():
 		return
 	var t := plane.flight_time
+	if t > 3.0 and absf(plane.in_x) > 0.7:
+		_tip("sharp", "Hold Roll while steering for a sharper turn" if touch.visible else "Turning? Hold E (right) or Q (left) too for a sharper turn")
 	if t > 0.8:
 		_tip("steer", "Drag left or right to steer, up to climb" if touch.visible else "A / D to steer, W / S to climb and dive")
 	if t > 4.5:
