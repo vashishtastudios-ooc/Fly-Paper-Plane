@@ -48,7 +48,8 @@ func _lot(b: MeshBuilder, lot: Dictionary) -> void:
 		for part in tunnel_parts(lot):
 			b.box_mm(wall_mat, part.position, part.end, wall, 63 - 8 if part.position.y > 0.0 else 63 - 8 - 4)
 		_tunnel_room(b, lot)
-	b.box_mm(stone, Vector3(x0 - 0.08, GROUND_FLOOR - 0.12, z0 - 0.08), Vector3(x1 + 0.08, GROUND_FLOOR + 0.1, z1 + 0.08), trim, 63 - 8)
+	# (Sides only: its top would cover the floor of a 1st-floor fly-through apartment.)
+	b.box_mm(stone, Vector3(x0 - 0.08, GROUND_FLOOR - 0.12, z0 - 0.08), Vector3(x1 + 0.08, GROUND_FLOOR + 0.1, z1 + 0.08), trim, 63 - 8 - 4)
 	b.box_mm(stone, Vector3(x0 - 0.22, top - 0.32, z0 - 0.22), Vector3(x1 + 0.22, top, z1 + 0.22), trim, 63)
 	# Roof.
 	b.box_mm(Mats.get_mat("gravel"), Vector3(x0 + 0.2, top, z0 + 0.2), Vector3(x1 - 0.2, top + 0.03, z1 - 0.2), Color("#b7b0a3"), 4)
@@ -87,56 +88,161 @@ func _lot(b: MeshBuilder, lot: Dictionary) -> void:
 		_fire_escape(b, r, int(lot.fire_face), int(lot.storeys))
 
 
-## The solid pieces of a lot with a fly-through apartment: below it, above it, and either side.
+## Fly-through apartments: the room spans the tunnel width; each end wall (north = entry,
+## south = exit) has window openings WIN_W x WIN_H. "in"/"out" are the open ones and
+## "closed_in"/"closed_out" glazed ones (offsets from the room centre). Optional "lamp":
+## [x offset, depth fraction] hanging low in the room, and "divider": [depth fraction, door
+## offset], a bookshelf wall across the room with one doorway.
+const WIN_W := 3.0
+const WIN_H := 2.3
+const SILL := 0.35
+const END_WALL := 0.3
+const DOOR_W := 2.4
+const DOOR_H := 2.4
+
+
+static func _flat_y(t: Dictionary) -> float:
+	return GROUND_FLOOR + (int(t.storey) - 1) * STOREY
+
+
+## The solid pieces of a lot with a fly-through apartment: below and above it, either side,
+## and the two end walls round their windows.
 static func tunnel_parts(lot: Dictionary) -> Array[AABB]:
 	var r: Rect2 = lot.rect
 	var top := lot_top(lot)
 	var t: Dictionary = lot.tunnel
-	var y0 := GROUND_FLOOR + (int(t.storey) - 1) * STOREY
+	var y0 := _flat_y(t)
 	var y1 := y0 + STOREY
-	var tx0 := float(t.x) - float(t.w) * 0.5
-	var tx1 := float(t.x) + float(t.w) * 0.5
+	var tx := float(t.x)
+	var tx0 := tx - float(t.w) * 0.5
+	var tx1 := tx + float(t.w) * 0.5
 	var out: Array[AABB] = []
 	out.append(AABB(Vector3(r.position.x, 0, r.position.y), Vector3(r.size.x, y0, r.size.y)))
 	out.append(AABB(Vector3(r.position.x, y1, r.position.y), Vector3(r.size.x, top - y1, r.size.y)))
 	out.append(AABB(Vector3(r.position.x, y0, r.position.y), Vector3(tx0 - r.position.x, STOREY, r.size.y)))
 	out.append(AABB(Vector3(tx1, y0, r.position.y), Vector3(r.end.x - tx1, STOREY, r.size.y)))
+	for end in [[r.end.y - END_WALL, t.get("in", 0.0), t.get("closed_in", [])], [r.position.y, t.get("out", 0.0), t.get("closed_out", [])]]:
+		var z: float = end[0]
+		var holes := [float(end[1])]
+		for c in end[2]:
+			holes.append(float(c))
+		holes.sort()
+		var x := tx0
+		for h in holes:
+			var hx0: float = tx + h - WIN_W * 0.5
+			var hx1: float = tx + h + WIN_W * 0.5
+			if hx0 > x:
+				out.append(AABB(Vector3(x, y0, z), Vector3(hx0 - x, STOREY, END_WALL)))
+			out.append(AABB(Vector3(hx0, y0, z), Vector3(WIN_W, SILL, END_WALL)))
+			out.append(AABB(Vector3(hx0, y0 + SILL + WIN_H, z), Vector3(WIN_W, STOREY - SILL - WIN_H, END_WALL)))
+			x = hx1
+		if x < tx1:
+			out.append(AABB(Vector3(x, y0, z), Vector3(tx1 - x, STOREY, END_WALL)))
 	return out
 
 
-## Inside the fly-through apartment: a wooden floor, papered walls, a ceiling lamp, pictures and
-## a rug, and a white frame round both open windows.
+## The bookshelf wall pieces either side of and above its doorway (empty without one).
+static func divider_parts(lot: Dictionary) -> Array[AABB]:
+	var t: Dictionary = lot.tunnel
+	var out: Array[AABB] = []
+	if not t.has("divider"):
+		return out
+	var r: Rect2 = lot.rect
+	var y0 := _flat_y(t)
+	var tx := float(t.x)
+	var tx0 := tx - float(t.w) * 0.5
+	var tx1 := tx + float(t.w) * 0.5
+	var z := lerpf(r.end.y - END_WALL, r.position.y + END_WALL, float(t.divider[0])) - 0.2
+	var d := tx + float(t.divider[1])
+	out.append(AABB(Vector3(tx0, y0, z), Vector3(d - DOOR_W * 0.5 - tx0, STOREY, 0.4)))
+	out.append(AABB(Vector3(d + DOOR_W * 0.5, y0, z), Vector3(tx1 - d - DOOR_W * 0.5, STOREY, 0.4)))
+	out.append(AABB(Vector3(d - DOOR_W * 0.5, y0 + DOOR_H, z), Vector3(DOOR_W, STOREY - DOOR_H, 0.4)))
+	return out
+
+
+## Centre of the hanging lamp shade, or null.
+static func lamp_pos(lot: Dictionary) -> Variant:
+	var t: Dictionary = lot.tunnel
+	if not t.has("lamp"):
+		return null
+	var r: Rect2 = lot.rect
+	return Vector3(float(t.x) + float(t.lamp[0]), _flat_y(t) + STOREY - 1.15, lerpf(r.end.y - END_WALL, r.position.y + END_WALL, float(t.lamp[1])))
+
+
+## Inside the fly-through apartment: wooden floor, papered walls, rug, pictures, a ceiling
+## light, the bookshelf and the hanging lamp when it has them, and frames round every window
+## (glass in the closed ones).
 func _tunnel_room(b: MeshBuilder, lot: Dictionary) -> void:
 	var r: Rect2 = lot.rect
 	var t: Dictionary = lot.tunnel
-	var y0 := GROUND_FLOOR + (int(t.storey) - 1) * STOREY
+	var y0 := _flat_y(t)
 	var y1 := y0 + STOREY
-	var tx0 := float(t.x) - float(t.w) * 0.5
-	var tx1 := float(t.x) + float(t.w) * 0.5
-	var z0 := r.position.y
-	var z1 := r.end.y
-	var paper: Color = [Color("#f3e3c8"), Color("#dfe9e0"), Color("#f1d9d2"), Color("#e2e4ef")][int(lot.get("seed", 0)) % 4]
+	var tx := float(t.x)
+	var tx0 := tx - float(t.w) * 0.5
+	var tx1 := tx + float(t.w) * 0.5
+	var z0 := r.position.y + END_WALL
+	var z1 := r.end.y - END_WALL
+	var seed_i := int(lot.get("seed", 0))
+	var paper: Color = [Color("#f3e3c8"), Color("#dfe9e0"), Color("#f1d9d2"), Color("#e2e4ef")][seed_i % 4]
 	var plaster := Mats.get_mat("plaster")
-	b.box_mm(Mats.get_mat("wood"), Vector3(tx0, y0, z0 + 0.02), Vector3(tx1, y0 + 0.04, z1 - 0.02), Color("#b98a5e"), 4)
-	b.quad(plaster, Vector3(tx0, y1 - 0.01, z0), Vector3(tx1, y1 - 0.01, z0), Vector3(tx1, y1 - 0.01, z1), Vector3(tx0, y1 - 0.01, z1), Color("#f6f1e6"))
+	var solid := Mats.get_mat("solid")
+	b.box_mm(Mats.get_mat("wood"), Vector3(tx0, y0, z0), Vector3(tx1, y0 + 0.04, z1), Color("#b98a5e"), 4)
+	b.quad(plaster, Vector3(tx0, y1 - 0.04, z0), Vector3(tx1, y1 - 0.04, z0), Vector3(tx1, y1 - 0.04, z1), Vector3(tx0, y1 - 0.04, z1), Color("#f6f1e6"))
 	b.quad(plaster, Vector3(tx0 + 0.01, y0, z1), Vector3(tx0 + 0.01, y0, z0), Vector3(tx0 + 0.01, y1, z0), Vector3(tx0 + 0.01, y1, z1), paper)
 	b.quad(plaster, Vector3(tx1 - 0.01, y0, z0), Vector3(tx1 - 0.01, y0, z1), Vector3(tx1 - 0.01, y1, z1), Vector3(tx1 - 0.01, y1, z0), paper)
-	var zc := r.get_center().y
-	b.box_mm(Mats.get_mat("cloth"), Vector3(tx0 + 0.6, y0 + 0.04, zc - 2.0), Vector3(tx1 - 0.6, y0 + 0.06, zc + 2.0), Color(["#c8423b", "#2f6f8f", "#8a5aa8"][int(lot.get("seed", 0)) % 3]), 4)
-	b.cylinder(Mats.get_mat("metal"), Transform3D(Basis(), Vector3(float(t.x), y1 - 0.5, zc)), 0.02, 0.02, 0.5, 4, Color("#3b3f46"))
-	b.sphere(Mats.get_mat("glow"), Vector3(float(t.x), y1 - 0.6, zc), Vector3(0.22, 0.16, 0.22), 4, 8, Color("#ffd27a"))
+	var zc := (z0 + z1) * 0.5
+	b.box_mm(Mats.get_mat("cloth"), Vector3(tx - 1.6, y0 + 0.04, zc - 2.4), Vector3(tx + 1.6, y0 + 0.06, zc + 2.4), Color(["#c8423b", "#2f6f8f", "#8a5aa8"][seed_i % 3]), 4)
 	for side in [-1.0, 1.0]:
 		var wx := tx0 + 0.03 if side < 0.0 else tx1 - 0.03
 		for k in 2:
 			var pz := lerpf(z0 + 3.0, z1 - 3.0, k)
-			b.box_mm(Mats.get_mat("solid"), Vector3(wx - 0.02, y0 + 1.3, pz - 0.45), Vector3(wx + 0.02, y0 + 2.1, pz + 0.45), Color(["#6ec6ff", "#f6a96b", "#8fe3b0", "#ff7eb6"][(k + int(side) + 1) % 4]))
-	# White frames round the two open windows.
-	var frame := Mats.get_mat("solid")
-	for zf in [z0 - 0.05, z1 + 0.05]:
-		b.box_mm(frame, Vector3(tx0 - 0.18, y0 - 0.05, zf - 0.06), Vector3(tx0, y1 + 0.05, zf + 0.06), Color("#f6f1e6"))
-		b.box_mm(frame, Vector3(tx1, y0 - 0.05, zf - 0.06), Vector3(tx1 + 0.18, y1 + 0.05, zf + 0.06), Color("#f6f1e6"))
-		b.box_mm(frame, Vector3(tx0 - 0.18, y1, zf - 0.06), Vector3(tx1 + 0.18, y1 + 0.18, zf + 0.06), Color("#f6f1e6"))
-		b.box_mm(frame, Vector3(tx0 - 0.25, y0 - 0.12, zf - 0.12), Vector3(tx1 + 0.25, y0, zf + 0.12), Color("#e4dccd"))
+			b.box_mm(solid, Vector3(wx - 0.02, y0 + 1.3, pz - 0.45), Vector3(wx + 0.02, y0 + 2.1, pz + 0.45), Color(["#6ec6ff", "#f6a96b", "#8fe3b0", "#ff7eb6"][(k + int(side) + 1) % 4]))
+	# Window frames (and glass in the closed ones) on both end walls, inside and out.
+	var white := Color("#f6f1e6")
+	for end in [[r.end.y, t.get("in", 0.0), t.get("closed_in", [])], [r.position.y, t.get("out", 0.0), t.get("closed_out", [])]]:
+		var zf: float = end[0]
+		var inward := -1.0 if zf > zc else 1.0
+		var all := [[float(end[1]), false]]
+		for c in end[2]:
+			all.append([float(c), true])
+		for w in all:
+			var hx := tx + float(w[0])
+			var wy0 := y0 + SILL
+			var wy1 := wy0 + WIN_H
+			for zz in [zf - inward * 0.05, zf + inward * (END_WALL + 0.05)]:
+				b.box_mm(solid, Vector3(hx - WIN_W * 0.5 - 0.16, wy0 - 0.05, zz - 0.05), Vector3(hx - WIN_W * 0.5, wy1 + 0.05, zz + 0.05), white)
+				b.box_mm(solid, Vector3(hx + WIN_W * 0.5, wy0 - 0.05, zz - 0.05), Vector3(hx + WIN_W * 0.5 + 0.16, wy1 + 0.05, zz + 0.05), white)
+				b.box_mm(solid, Vector3(hx - WIN_W * 0.5 - 0.16, wy1, zz - 0.05), Vector3(hx + WIN_W * 0.5 + 0.16, wy1 + 0.16, zz + 0.05), white)
+				b.box_mm(solid, Vector3(hx - WIN_W * 0.5 - 0.22, wy0 - 0.1, zz - 0.1), Vector3(hx + WIN_W * 0.5 + 0.22, wy0, zz + 0.1), Color("#e4dccd"))
+			if w[1]:
+				# Closed: glass with a cross bar.
+				var zg := zf + inward * END_WALL * 0.5
+				b.box_mm(Mats.get_mat("glass"), Vector3(hx - WIN_W * 0.5, wy0, zg - 0.02), Vector3(hx + WIN_W * 0.5, wy1, zg + 0.02), Color("#a9c9db"))
+				b.box_mm(solid, Vector3(hx - 0.04, wy0, zg - 0.04), Vector3(hx + 0.04, wy1, zg + 0.04), white)
+				b.box_mm(solid, Vector3(hx - WIN_W * 0.5, (wy0 + wy1) * 0.5 - 0.04, zg - 0.04), Vector3(hx + WIN_W * 0.5, (wy0 + wy1) * 0.5 + 0.04, zg + 0.04), white)
+	# The bookshelf wall with its doorway: wood, with rows of coloured books on both sides.
+	var books := [Color("#c8423b"), Color("#2f6f8f"), Color("#e0a43a"), Color("#5f9a45"), Color("#8a5aa8")]
+	for part in divider_parts(lot):
+		b.box_mm(Mats.get_mat("wood"), part.position, part.end, Color("#8a6a52"))
+		if part.size.y > 1.0:
+			for row in 4:
+				var yy := part.position.y + 0.35 + row * 0.62
+				var xx := part.position.x + 0.1
+				var k := row
+				while xx < part.end.x - 0.25:
+					var bw := 0.12 + float((k * 7) % 5) * 0.03
+					for zz in [part.position.z - 0.02, part.end.z]:
+						b.box_mm(solid, Vector3(xx, yy, zz), Vector3(xx + bw, yy + 0.42, zz + 0.02), books[k % books.size()])
+					xx += bw + 0.03
+					k += 1
+	# The hanging lamp: a cord and a big round shade (solid: fly round it).
+	var lp: Variant = lamp_pos(lot)
+	if lp != null:
+		b.cylinder(Mats.get_mat("metal"), Transform3D(Basis(), lp + Vector3(0, 0.3, 0)), 0.015, 0.015, y1 - lp.y - 0.3, 4, Color("#3b3f46"))
+		b.cylinder(Mats.get_mat("cloth"), Transform3D(Basis(), lp - Vector3(0, 0.25, 0)), 0.42, 0.18, 0.55, 12, Color("#f2d58f"))
+		b.sphere(Mats.get_mat("glow"), lp - Vector3(0, 0.22, 0), Vector3(0.14, 0.12, 0.14), 3, 6, Color("#ffd27a"))
+	else:
+		b.sphere(Mats.get_mat("glow"), Vector3(tx, y1 - 0.12, zc), Vector3(0.22, 0.08, 0.22), 3, 8, Color("#ffd27a"))
 
 
 ## Fire escape on the face +X (3) or -X (2): a platform at every upper storey with a zig-zag
@@ -325,6 +431,16 @@ func _build_colliders() -> void:
 		else:
 			for part in tunnel_parts(lot):
 				add_box("wall", part.get_center(), part.size)
+			for part in divider_parts(lot):
+				add_box("furniture", part.get_center(), part.size)
+			var t: Dictionary = lot.tunnel
+			for end in [[r.end.y, t.get("closed_in", [])], [r.position.y, t.get("closed_out", [])]]:
+				for cx in end[1]:
+					var zg: float = end[0] - END_WALL * 0.5 if end[0] > r.get_center().y else end[0] + END_WALL * 0.5
+					add_box("glass", Vector3(float(t.x) + float(cx), _flat_y(t) + SILL + WIN_H * 0.5, zg), Vector3(WIN_W, WIN_H, 0.1))
+			var lp: Variant = lamp_pos(lot)
+			if lp != null:
+				add_cylinder("lamp", lp - Vector3(0, 0.55, 0), 0.42, 0.6)
 		if lot.get("parapet", true):
 			for e in _parapets(r, top):
 				add_box("wall", (e[0] + e[1]) * 0.5 + Vector3(0, 0.03, 0), e[1] - e[0] + Vector3(0, 0.06, 0))

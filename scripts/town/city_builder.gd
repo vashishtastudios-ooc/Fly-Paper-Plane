@@ -24,16 +24,26 @@ const CAFE := Vector3(-48, 0.0, -70)
 ## Warm steam from a manhole where x = -96 meets z = -24 (Flight 2 climbs on it).
 const MANHOLE := Vector3(-96, 0.0, -24)
 ## Flight 3 (Window Express): Skyline Tower to dive off, four apartments in a row along
-## x = TUNNEL_X to fly straight through (open windows on both sides: two on the 1st floor, then
-## two on the 2nd, climbed to on the speed), and the low rooftop terrace it lands on.
+## x = TUNNEL_X to fly through (two on the 1st floor, then two on the 2nd, climbed to on the
+## speed), and the low rooftop terrace it lands on. Each apartment end wall has an open window
+## and a closed (glass) one; the first two are on the left, the next two on the right (switch
+## across the street while climbing), with hanging lamps just beside the line and a narrow
+## bookshelf doorway (see CityBlock tunnels).
 const TUNNEL_X := -34.5
-const TUNNEL_W := 3.6
+const TUNNEL_W := 7.0
+## Window offsets from the room centre: left and right.
+const WL := -1.6
+const WR := 1.6
 const FORCED := {
 	Rect2(-42, 98, 15, 16): {"storeys": 20, "roof": ["antenna"], "parapet": false, "brick": false, "wall": Color("#dfe6ea")},
-	Rect2(-42, -46, 15, 16): {"storeys": 4, "tunnel": 1},
-	Rect2(-42, -66, 15, 16): {"storeys": 4, "tunnel": 1},
-	Rect2(-42, -94, 15, 16): {"storeys": 5, "tunnel": 2},
-	Rect2(-42, -114, 15, 16): {"storeys": 5, "tunnel": 2},
+	# Left windows (the right ones are shut).
+	Rect2(-42, -46, 15, 16): {"storeys": 4, "tunnel": {"storey": 1, "in": WL, "closed_in": [WR], "out": WL, "closed_out": [WR]}},
+	# Left again, past a hanging lamp just beside the line.
+	Rect2(-42, -66, 15, 16): {"storeys": 4, "tunnel": {"storey": 1, "in": WL, "closed_in": [WR], "out": WL, "closed_out": [WR], "lamp": [WL + 1.25, 0.5]}},
+	# A storey up and over to the right: through the bookshelf doorway.
+	Rect2(-42, -94, 15, 16): {"storeys": 5, "tunnel": {"storey": 2, "in": WR, "closed_in": [WL], "out": WR, "closed_out": [WL], "divider": [0.6, WR]}},
+	# Right again, past another lamp.
+	Rect2(-42, -114, 15, 16): {"storeys": 5, "tunnel": {"storey": 2, "in": WR, "closed_in": [WL], "out": WR, "closed_out": [WL], "lamp": [WR - 1.25, 0.45]}},
 	Rect2(-42, -142, 15, 16): {"storeys": 2, "roof": ["garden"], "parapet": false},
 }
 ## The park: one whole block beside Main Avenue.
@@ -177,7 +187,8 @@ func _lot_for(wr: Rect2, block: Rect2) -> Dictionary:
 			lot[k] = f[k]
 		lot.roof = f.get("roof", [])
 		if f.has("tunnel"):
-			lot.tunnel = {"storey": int(f.tunnel), "w": TUNNEL_W}
+			lot.tunnel = (f.tunnel as Dictionary).duplicate(true)
+			lot.tunnel.w = TUNNEL_W
 			lot.shop = false
 		return lot
 	if wr == ALLEY_START_LOT:
