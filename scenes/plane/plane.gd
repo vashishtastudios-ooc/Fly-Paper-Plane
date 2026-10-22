@@ -858,6 +858,24 @@ func _build_effects() -> void:
 	add_child(_shock)
 
 
+## Loading screen warm-up: shows every effect once at `at` (no sound), so the phone prepares
+## them behind the loading screen instead of the first time they happen in a flight.
+## `on` false hides them again.
+func warm_effects(at: Vector3, on: bool) -> void:
+	for fx in [_sparkles, _scraps, _spray]:
+		fx.global_position = at
+		fx.emitting = on
+		if on:
+			fx.restart()
+	for m in [_bonk, _shock]:
+		m.global_position = at
+		m.scale = Vector3.ONE
+		m.visible = on
+	visible = on
+	if on:
+		global_position = at + Vector3(0.6, 0.2, 0)
+
+
 ## A quick flash exactly where the plane touched something.
 func _play_bonk(at: Vector3) -> void:
 	_bonk.global_position = at

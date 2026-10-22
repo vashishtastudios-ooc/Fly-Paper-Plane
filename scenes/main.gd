@@ -112,33 +112,54 @@ func switch_map(id: String) -> void:
 	await _finish_loading()
 
 
-## Flights whose effects are drawn once behind the loading screen, per map (so the first time a
-## ring, star, rising air, breeze or fireworks appears in a flight doesn't make the game hitch while
-## the phone prepares it).
-const PREWARM := {"linden": [0], "harbour": [11, 14], "city": [16, 17, 18]}
-
-
+## Behind the loading screen, every flight of the map is built and drawn for a few frames (a
+## full turn at the launch spot and a quick glide along the route), along with the crash and
+## landing effects, the ghost and the HUD (dusk flights are prepared behind their intro card). So the phone prepares every material, effect and
+## lighting (dusk flights too) here instead of the first time it appears in a flight.
 func _prewarm() -> void:
-	var ids: Array = PREWARM.get(town.map_id, [])
 	cam.set_process(false)
-	for li in ids:
-		if li >= Game.levels.size():
-			continue
+	var first := true
+	for li in Game.levels.size():
 		var data: LevelData = Game.levels[li]
+		# Dusk flights (lantern lights) take seconds to prepare: they do it behind their own
+		# intro card instead, so the first load stays quick.
+		if data.map != town.map_id or data.time_of_day == "dusk":
+			continue
 		level.build(data, town)
 		var pts := data.route_points()
-		cam.global_position = data.platform_position + Vector3(0, 2.5, 0)
-		var look: Vector3 = pts[mini(3, pts.size() - 1)]
-		if cam.global_position.distance_to(look) > 0.5:
-			cam.look_at(look, Vector3.UP)
-		# The trail too, right in front of the camera.
+		var origin := data.platform_position + Vector3(0, 2.5, 0)
+		cam.global_position = origin
 		_menu_trail.active = true
-		menu_plane.global_position = cam.global_position - cam.global_transform.basis.z * 3.0
-		for i in 4:
-			menu_plane.global_position += cam.global_transform.basis.x * 0.3
+		# A full turn at the launch spot, the trail right in front of the camera.
+		for k in 6:
+			var yaw := data.platform_yaw + TAU * k / 6.0
+			cam.global_transform = Transform3D(Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, -0.25), origin)
+			menu_plane.global_position = cam.global_position - cam.global_transform.basis.z * 3.0 + cam.global_transform.basis.x * 0.3 * k
+			if first and k == 0:
+				# Once: the crash and landing effects, the ghost and the HUD.
+				var fx_at := cam.global_position - cam.global_transform.basis.z * 4.0
+				plane.warm_effects(fx_at, true)
+				ghost.global_position = fx_at + Vector3(-0.8, 0.3, 0)
+				ghost.visible = true
+				hud.visible = true
+			await get_tree().process_frame
+			if first and k == 1:
+				plane.warm_effects(Vector3.ZERO, false)
+				ghost.visible = false
+				hud.visible = false
+				first = false
+		# A quick glide along the route, looking ahead.
+		for f in [0.2, 0.4, 0.6, 0.8, 0.95]:
+			var i := clampi(int(f * (pts.size() - 1)), 0, pts.size() - 2)
+			var a: Vector3 = pts[i]
+			var b: Vector3 = pts[mini(i + 2, pts.size() - 1)]
+			cam.global_position = a + Vector3(0, 0.6, 0)
+			if a.distance_to(b) > 0.5:
+				cam.look_at(b + Vector3(0, 0.6, 0), Vector3.UP)
 			await get_tree().process_frame
 	_menu_trail.active = false
 	_menu_trail.clear()
+	plane.warm_effects(Vector3.ZERO, false)
 	level.clear_content()
 	level.hide_guides()
 	town.set_time_of_day("golden")
