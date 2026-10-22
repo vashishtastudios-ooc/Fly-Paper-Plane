@@ -6,6 +6,8 @@ extends Prop
 ## Each lot: {"rect": Rect2 (local x, z, size x, size z), "storeys": int, "wall": Color,
 ## "brick": bool, "shop": bool, "awning": Color, "roof": Array of features ("tank", "hut", "ac",
 ## "garden", "skylight", "billboard", "antenna", "chimneys"), "parapet": bool, "seed": int}.
+## Optional "tunnel": {"storey": int, "x": local x of its centre, "w": width}: an apartment you can
+## fly straight through along z, in one open window and out the other (Flight 3).
 ## Windows are flat panes in the mesh (not instances), so tall buildings stay cheap.
 
 const GROUND_FLOOR := 3.6
@@ -39,7 +41,13 @@ func _lot(b: MeshBuilder, lot: Dictionary) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(lot.get("seed", 1))
 	# Walls (no bottom face), a stone band over the ground floor and a cornice at the top.
-	b.box_mm(wall_mat, Vector3(x0, 0, z0), Vector3(x1, top, z1), wall if not lot.brick else wall, 63 - 8 - 4)
+	var tun: Dictionary = lot.get("tunnel", {})
+	if tun.is_empty():
+		b.box_mm(wall_mat, Vector3(x0, 0, z0), Vector3(x1, top, z1), wall, 63 - 8 - 4)
+	else:
+		for part in tunnel_parts(lot):
+			b.box_mm(wall_mat, part.position, part.end, wall, 63 - 8 if part.position.y > 0.0 else 63 - 8 - 4)
+		_tunnel_room(b, lot)
 	b.box_mm(stone, Vector3(x0 - 0.08, GROUND_FLOOR - 0.12, z0 - 0.08), Vector3(x1 + 0.08, GROUND_FLOOR + 0.1, z1 + 0.08), trim, 63 - 8)
 	b.box_mm(stone, Vector3(x0 - 0.22, top - 0.32, z0 - 0.22), Vector3(x1 + 0.22, top, z1 + 0.22), trim, 63)
 	# Roof.
@@ -60,6 +68,9 @@ func _lot(b: MeshBuilder, lot: Dictionary) -> void:
 			for i in n:
 				var t := (i + 0.5) / n
 				var c: Color = lit_cols[rng.randi() % lit_cols.size()]
+				# No pane over the open window of a fly-through apartment.
+				if not tun.is_empty() and face < 2 and s == int(tun.storey) and absf(lerpf(x0, x1, t) - float(tun.x)) < float(tun.w) * 0.5 + 0.9:
+					continue
 				match face:
 					0: _pane(b, glass, frame, Vector3(lerpf(x0, x1, t), y, z0 - 0.03), Vector3(0, 0, -1), c)
 					1: _pane(b, glass, frame, Vector3(lerpf(x0, x1, t), y, z1 + 0.03), Vector3(0, 0, 1), c)
@@ -74,6 +85,58 @@ func _lot(b: MeshBuilder, lot: Dictionary) -> void:
 		_roof_feature(b, r, top, str(f), rng)
 	if int(lot.get("fire_face", -1)) >= 0:
 		_fire_escape(b, r, int(lot.fire_face), int(lot.storeys))
+
+
+## The solid pieces of a lot with a fly-through apartment: below it, above it, and either side.
+static func tunnel_parts(lot: Dictionary) -> Array[AABB]:
+	var r: Rect2 = lot.rect
+	var top := lot_top(lot)
+	var t: Dictionary = lot.tunnel
+	var y0 := GROUND_FLOOR + (int(t.storey) - 1) * STOREY
+	var y1 := y0 + STOREY
+	var tx0 := float(t.x) - float(t.w) * 0.5
+	var tx1 := float(t.x) + float(t.w) * 0.5
+	var out: Array[AABB] = []
+	out.append(AABB(Vector3(r.position.x, 0, r.position.y), Vector3(r.size.x, y0, r.size.y)))
+	out.append(AABB(Vector3(r.position.x, y1, r.position.y), Vector3(r.size.x, top - y1, r.size.y)))
+	out.append(AABB(Vector3(r.position.x, y0, r.position.y), Vector3(tx0 - r.position.x, STOREY, r.size.y)))
+	out.append(AABB(Vector3(tx1, y0, r.position.y), Vector3(r.end.x - tx1, STOREY, r.size.y)))
+	return out
+
+
+## Inside the fly-through apartment: a wooden floor, papered walls, a ceiling lamp, pictures and
+## a rug, and a white frame round both open windows.
+func _tunnel_room(b: MeshBuilder, lot: Dictionary) -> void:
+	var r: Rect2 = lot.rect
+	var t: Dictionary = lot.tunnel
+	var y0 := GROUND_FLOOR + (int(t.storey) - 1) * STOREY
+	var y1 := y0 + STOREY
+	var tx0 := float(t.x) - float(t.w) * 0.5
+	var tx1 := float(t.x) + float(t.w) * 0.5
+	var z0 := r.position.y
+	var z1 := r.end.y
+	var paper: Color = [Color("#f3e3c8"), Color("#dfe9e0"), Color("#f1d9d2"), Color("#e2e4ef")][int(lot.get("seed", 0)) % 4]
+	var plaster := Mats.get_mat("plaster")
+	b.box_mm(Mats.get_mat("wood"), Vector3(tx0, y0, z0 + 0.02), Vector3(tx1, y0 + 0.04, z1 - 0.02), Color("#b98a5e"), 4)
+	b.quad(plaster, Vector3(tx0, y1 - 0.01, z0), Vector3(tx1, y1 - 0.01, z0), Vector3(tx1, y1 - 0.01, z1), Vector3(tx0, y1 - 0.01, z1), Color("#f6f1e6"))
+	b.quad(plaster, Vector3(tx0 + 0.01, y0, z1), Vector3(tx0 + 0.01, y0, z0), Vector3(tx0 + 0.01, y1, z0), Vector3(tx0 + 0.01, y1, z1), paper)
+	b.quad(plaster, Vector3(tx1 - 0.01, y0, z0), Vector3(tx1 - 0.01, y0, z1), Vector3(tx1 - 0.01, y1, z1), Vector3(tx1 - 0.01, y1, z0), paper)
+	var zc := r.get_center().y
+	b.box_mm(Mats.get_mat("cloth"), Vector3(tx0 + 0.6, y0 + 0.04, zc - 2.0), Vector3(tx1 - 0.6, y0 + 0.06, zc + 2.0), Color(["#c8423b", "#2f6f8f", "#8a5aa8"][int(lot.get("seed", 0)) % 3]), 4)
+	b.cylinder(Mats.get_mat("metal"), Transform3D(Basis(), Vector3(float(t.x), y1 - 0.5, zc)), 0.02, 0.02, 0.5, 4, Color("#3b3f46"))
+	b.sphere(Mats.get_mat("glow"), Vector3(float(t.x), y1 - 0.6, zc), Vector3(0.22, 0.16, 0.22), 4, 8, Color("#ffd27a"))
+	for side in [-1.0, 1.0]:
+		var wx := tx0 + 0.03 if side < 0.0 else tx1 - 0.03
+		for k in 2:
+			var pz := lerpf(z0 + 3.0, z1 - 3.0, k)
+			b.box_mm(Mats.get_mat("solid"), Vector3(wx - 0.02, y0 + 1.3, pz - 0.45), Vector3(wx + 0.02, y0 + 2.1, pz + 0.45), Color(["#6ec6ff", "#f6a96b", "#8fe3b0", "#ff7eb6"][(k + int(side) + 1) % 4]))
+	# White frames round the two open windows.
+	var frame := Mats.get_mat("solid")
+	for zf in [z0 - 0.05, z1 + 0.05]:
+		b.box_mm(frame, Vector3(tx0 - 0.18, y0 - 0.05, zf - 0.06), Vector3(tx0, y1 + 0.05, zf + 0.06), Color("#f6f1e6"))
+		b.box_mm(frame, Vector3(tx1, y0 - 0.05, zf - 0.06), Vector3(tx1 + 0.18, y1 + 0.05, zf + 0.06), Color("#f6f1e6"))
+		b.box_mm(frame, Vector3(tx0 - 0.18, y1, zf - 0.06), Vector3(tx1 + 0.18, y1 + 0.18, zf + 0.06), Color("#f6f1e6"))
+		b.box_mm(frame, Vector3(tx0 - 0.25, y0 - 0.12, zf - 0.12), Vector3(tx1 + 0.25, y0, zf + 0.12), Color("#e4dccd"))
 
 
 ## Fire escape on the face +X (3) or -X (2): a platform at every upper storey with a zig-zag
@@ -257,7 +320,11 @@ func _build_colliders() -> void:
 		var r: Rect2 = lot.rect
 		var top := lot_top(lot)
 		var c := Vector3(r.get_center().x, 0, r.get_center().y)
-		add_box("wall", c + Vector3(0, top * 0.5, 0), Vector3(r.size.x, top, r.size.y))
+		if (lot.get("tunnel", {}) as Dictionary).is_empty():
+			add_box("wall", c + Vector3(0, top * 0.5, 0), Vector3(r.size.x, top, r.size.y))
+		else:
+			for part in tunnel_parts(lot):
+				add_box("wall", part.get_center(), part.size)
 		if lot.get("parapet", true):
 			for e in _parapets(r, top):
 				add_box("wall", (e[0] + e[1]) * 0.5 + Vector3(0, 0.03, 0), e[1] - e[0] + Vector3(0, 0.06, 0))

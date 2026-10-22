@@ -23,6 +23,19 @@ const ALLEY := Rect2(-75, -120, 6, 200)
 const CAFE := Vector3(-48, 0.0, -70)
 ## Warm steam from a manhole where x = -96 meets z = -24 (Flight 2 climbs on it).
 const MANHOLE := Vector3(-96, 0.0, -24)
+## Flight 3 (Window Express): Skyline Tower to dive off, four apartments in a row along
+## x = TUNNEL_X to fly straight through (open windows on both sides: two on the 1st floor, then
+## two on the 2nd, climbed to on the speed), and the low rooftop terrace it lands on.
+const TUNNEL_X := -34.5
+const TUNNEL_W := 3.6
+const FORCED := {
+	Rect2(-42, 98, 15, 16): {"storeys": 20, "roof": ["antenna"], "parapet": false, "brick": false, "wall": Color("#dfe6ea")},
+	Rect2(-42, -46, 15, 16): {"storeys": 4, "tunnel": 1},
+	Rect2(-42, -66, 15, 16): {"storeys": 4, "tunnel": 1},
+	Rect2(-42, -94, 15, 16): {"storeys": 5, "tunnel": 2},
+	Rect2(-42, -114, 15, 16): {"storeys": 5, "tunnel": 2},
+	Rect2(-42, -142, 15, 16): {"storeys": 2, "roof": ["garden"], "parapet": false},
+}
 ## The park: one whole block beside Main Avenue.
 const PARK_BLOCK := Rect2(8, -66, 34, 36)
 
@@ -122,6 +135,8 @@ func _c_block(r: Rect2) -> void:
 		if lot.is_empty():
 			continue
 		lot.rect = Rect2(wr.position - Vector2(centre.x, centre.z), wr.size)
+		if lot.has("tunnel"):
+			lot.tunnel.x = TUNNEL_X - centre.x
 		lots.append(lot)
 	if lots.is_empty():
 		return
@@ -155,6 +170,15 @@ func _lot_for(wr: Rect2, block: Rect2) -> Dictionary:
 		lot.storeys = START_STOREYS
 		lot.parapet = false
 		lot.roof = ["tank", "ac"]
+		return lot
+	if FORCED.has(wr):
+		var f: Dictionary = FORCED[wr]
+		for k in f:
+			lot[k] = f[k]
+		lot.roof = f.get("roof", [])
+		if f.has("tunnel"):
+			lot.tunnel = {"storey": int(f.tunnel), "w": TUNNEL_W}
+			lot.shop = false
 		return lot
 	if wr == ALLEY_START_LOT:
 		lot.storeys = ALLEY_START_STOREYS
