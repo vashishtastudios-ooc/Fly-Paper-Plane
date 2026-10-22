@@ -49,6 +49,8 @@ const ACHIEVEMENTS := [
 ]
 
 var data := {}
+## Best-run ghosts waiting to be written (with the next save).
+var _pending_ghosts := {}
 ## True when there was no profile yet (Game then carries over the old save.cfg).
 var is_new := true
 var _dirty := false
@@ -63,6 +65,15 @@ func _ready() -> void:
 	p.sessions = int(p.sessions) + 1
 	p.last_played = _now()
 	_dirty = true
+	# (Game is loaded after this autoload: hook into it once everything is ready.)
+	_watch_game.call_deferred()
+
+
+## Writes wait for a still moment: the result card, the menu or a flight's intro card.
+func _watch_game() -> void:
+	Game.state_changed.connect(func(st: int):
+		if st in [Game.State.RESULT, Game.State.MENU, Game.State.INTRO] and (_dirty or not _pending_ghosts.is_empty()):
+			save(true))
 
 
 func _process(delta: float) -> void:
@@ -79,8 +90,8 @@ func _process(delta: float) -> void:
 func _notification(what: int) -> void:
 	# Save when the app goes to the background or closes (phones may never come back).
 	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST, NOTIFICATION_APPLICATION_FOCUS_OUT]:
-		if _dirty:
-			save()
+		if _dirty or not _pending_ghosts.is_empty():
+			save(true)
 
 
 # --- Profile -------------------------------------------------------------------------------
@@ -267,6 +278,10 @@ func check_achievements() -> Array:
 
 ## A flight's best run: samples of [time, x, y, z, pitch, yaw, roll] packed one after another.
 func save_ghost(id: String, samples: PackedFloat32Array) -> void:
+	_pending_ghosts[id] = samples
+
+
+func _write_ghost(id: String, samples: PackedFloat32Array) -> void:
 	DirAccess.make_dir_recursive_absolute(GHOST_DIR)
 	var f := FileAccess.open(GHOST_DIR.path_join(id + ".ghost"), FileAccess.WRITE)
 	if f:
@@ -275,10 +290,12 @@ func save_ghost(id: String, samples: PackedFloat32Array) -> void:
 
 
 func has_ghost(id: String) -> bool:
-	return FileAccess.file_exists(GHOST_DIR.path_join(id + ".ghost"))
+	return _pending_ghosts.has(id) or FileAccess.file_exists(GHOST_DIR.path_join(id + ".ghost"))
 
 
 func load_ghost(id: String) -> PackedFloat32Array:
+	if _pending_ghosts.has(id):
+		return _pending_ghosts[id]
 	var p := GHOST_DIR.path_join(id + ".ghost")
 	if not FileAccess.file_exists(p):
 		return PackedFloat32Array()
@@ -309,7 +326,16 @@ static func _now() -> int:
 	return int(Time.get_unix_time_from_system())
 
 
-func save() -> void:
+## Writes the save. Phones write slowly, so while a flight is under way (in the air, or the
+## landing / crash moment) the write is put off until the result card or the menu, unless
+## `force` (the app is closing or going to the background).
+func save(force := false) -> void:
+	if not force and Game.state in [Game.State.THROWING, Game.State.FLYING, Game.State.LANDED, Game.State.CRASHED]:
+		_dirty = true
+		return
+	for gid in _pending_ghosts:
+		_write_ghost(gid, _pending_ghosts[gid])
+	_pending_ghosts.clear()
 	_dirty = false
 	# Line 1: a small header with the version and a checksum of the data text on line 2.
 	var body := JSON.stringify(data, "", true)
