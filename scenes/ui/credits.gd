@@ -3,6 +3,9 @@ extends CanvasLayer
 
 signal closed
 
+## The page's list: controllers scroll it with up and down (it has no buttons to move between).
+var _scroll: ScrollContainer
+
 const STUDIO := "Vashishta Studios"
 
 var _sheet: NotebookSheet
@@ -26,6 +29,8 @@ func _ready() -> void:
 	_sheet.add_child(v)
 	v.add_child(UIKit.label("Credits", UIKit.display_font(), 54, UIKit.INK))
 	var scroll := ScrollContainer.new()
+	_scroll = scroll
+	scroll.follow_focus = true
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	v.add_child(scroll)
@@ -67,6 +72,17 @@ func open() -> void:
 
 func close() -> void:
 	visible = false
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if visible and (event.is_action_pressed("ui_down") or event.is_action_pressed("ui_up")):
+		_scroll.scroll_vertical += 90 if event.is_action_pressed("ui_down") else -90
+		get_viewport().set_input_as_handled()
+		return
+	if visible and (event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel")):
+		close()
+		closed.emit()
+		get_viewport().set_input_as_handled()
 
 
 func _layout() -> void:

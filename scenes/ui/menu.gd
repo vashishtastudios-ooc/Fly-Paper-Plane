@@ -173,6 +173,19 @@ func _show(screen: String) -> void:
 		_cards[_selected].grab_focus()
 
 
+## Gives the focus back to the current screen (after Settings, the Hangar or the Pilot log close),
+## so a controller can carry on.
+func refocus() -> void:
+	if not visible:
+		return
+	if _screen == "home":
+		_play.grab_focus()
+	elif _screen == "maps":
+		_map_cards[_map].grab_focus()
+	else:
+		_cards[_selected].grab_focus()
+
+
 func _go_back() -> void:
 	_show("maps" if _screen == "flights" else "home")
 
@@ -919,7 +932,7 @@ class KeyHint extends Control:
 	var k := 1.0
 
 	func _items() -> Array:
-		return [["Drag", "steer"], ["Gust", "lift"]] if Settings.touch_ui else [["A", "D", "Turn"], ["W", "S", "Climb / Dive"], ["Q", "E", "Sharp turn"], ["SPACE", "Gust"]]
+		return [["Drag", "steer"], ["Gust", "lift"]] if Settings.touch_ui else [[Settings.key_label("turn_left"), Settings.key_label("turn_right"), "Turn"], [Settings.key_label("climb"), Settings.key_label("dive"), "Climb / Dive"], [Settings.key_label("roll_left"), Settings.key_label("roll_right"), "Sharp turn"], [Settings.key_label("gust").to_upper(), "Gust"]]
 
 	## Width needed for all the key caps and labels at height h.
 	func content_width(h: float) -> float:

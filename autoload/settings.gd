@@ -3,6 +3,7 @@ extends Node
 
 signal layout_changed(portrait: bool)
 signal quality_changed(quality: int)
+signal keys_changed
 
 const SETTINGS_PATH := "user://settings.cfg"
 ## Where settings are kept (a separate file when testing the phone version on PC).
@@ -47,6 +48,13 @@ var fullscreen := true
 var window_size := Vector2i(1280, 720)
 var vsync := true
 var fps_limit := 0
+## Keys players can change: the first key of each action (the arrow keys stay as a second choice).
+const REBINDABLE := [["turn_left", "Turn left"], ["turn_right", "Turn right"], ["climb", "Climb"], ["dive", "Dive"],
+	["gust", "Gust"], ["roll_left", "Roll / sharp turn left"], ["roll_right", "Roll / sharp turn right"]]
+const DEFAULT_KEYS := {"turn_left": KEY_A, "turn_right": KEY_D, "climb": KEY_W, "dive": KEY_S, "gust": KEY_SPACE,
+	"roll_left": KEY_Q, "roll_right": KEY_E}
+## Changed keys: action -> physical keycode.
+var key_binds := {}
 const WINDOW_SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const FPS_LIMITS := [60, 120, 144, 0]
 
@@ -78,6 +86,8 @@ func _ready() -> void:
 	mouse_as_finger = touch_ui and not DisplayServer.is_touchscreen_available()
 	_register_inputs()
 	_load()
+	for a in key_binds:
+		_set_primary_key(a, int(key_binds[a]))
 	# Art style for this run (the command line can override it, for comparing looks).
 	if args.has("--painterly"):
 		art_style = "painterly"
@@ -131,6 +141,62 @@ func _input(event: InputEvent) -> void:
 	if k.keycode == KEY_F11 or (k.keycode == KEY_ENTER and k.alt_pressed):
 		set_display("fullscreen", not fullscreen)
 		get_viewport().set_input_as_handled()
+
+
+## The physical keycode of an action's first key (0 = none).
+func key_of(action: String) -> int:
+	for ev in InputMap.action_get_events(action):
+		if ev is InputEventKey:
+			return (ev as InputEventKey).physical_keycode
+	return 0
+
+
+## The name of an action's first key on this keyboard layout (for buttons and tips).
+func key_label(action: String) -> String:
+	var pk := key_of(action)
+	if pk == 0:
+		return "-"
+	var kc := DisplayServer.keyboard_get_keycode_from_physical(pk)
+	return OS.get_keycode_string(kc if kc != KEY_NONE else pk)
+
+
+## Gives an action a new first key. A key already used by another changeable action is swapped
+## over to it, so no key ever does two things.
+func rebind_key(action: String, pk: int) -> void:
+	var old := key_of(action)
+	for pair in REBINDABLE:
+		var other: String = pair[0]
+		if other != action and key_of(other) == pk:
+			_set_primary_key(other, old)
+			key_binds[other] = old
+	_set_primary_key(action, pk)
+	key_binds[action] = pk
+	_save()
+	keys_changed.emit()
+
+
+func reset_keys() -> void:
+	for a in DEFAULT_KEYS:
+		_set_primary_key(a, DEFAULT_KEYS[a])
+	key_binds.clear()
+	_save()
+	keys_changed.emit()
+
+
+func _set_primary_key(action: String, pk: int) -> void:
+	if not InputMap.has_action(action) or pk == 0:
+		return
+	var keys := []
+	for ev in InputMap.action_get_events(action):
+		if ev is InputEventKey:
+			keys.append(ev)
+			InputMap.action_erase_event(action, ev)
+	var first := InputEventKey.new()
+	first.physical_keycode = pk
+	InputMap.action_add_event(action, first)
+	# The other keys stay, after it (minus the old first key).
+	for i in range(1, keys.size()):
+		InputMap.action_add_event(action, keys[i])
 
 
 func set_display(option: String, value: Variant) -> void:
@@ -247,6 +313,7 @@ func reset_to_defaults() -> void:
 	vibration = true
 	show_tips = true
 	camera_style = default_camera_style()
+	reset_keys()
 	show_fps = false
 	ink_outlines = true
 	show_ghost = true
@@ -338,6 +405,10 @@ func _load() -> void:
 		quality_chosen = bool(cfg.get_value("video", "quality_chosen", false))
 		show_fps = bool(cfg.get_value("video", "show_fps", false))
 		show_ghost = bool(cfg.get_value("controls", "show_ghost", true))
+		if cfg.has_section("keys"):
+			for a in cfg.get_section_keys("keys"):
+				if DEFAULT_KEYS.has(a):
+					key_binds[a] = int(cfg.get_value("keys", a))
 		fullscreen = bool(cfg.get_value("display", "fullscreen", true))
 		window_size = cfg.get_value("display", "window_size", Vector2i(1280, 720))
 		vsync = bool(cfg.get_value("display", "vsync", true))
@@ -359,6 +430,8 @@ func _save() -> void:
 	cfg.set_value("video", "quality_chosen", quality_chosen)
 	cfg.set_value("video", "show_fps", show_fps)
 	cfg.set_value("controls", "show_ghost", show_ghost)
+	for a in key_binds:
+		cfg.set_value("keys", a, key_binds[a])
 	cfg.set_value("display", "fullscreen", fullscreen)
 	cfg.set_value("display", "window_size", window_size)
 	cfg.set_value("display", "vsync", vsync)

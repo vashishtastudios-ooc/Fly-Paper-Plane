@@ -5,6 +5,9 @@ extends CanvasLayer
 
 signal closed
 
+## The page's list: controllers scroll it with up and down (it has no buttons to move between).
+var _scroll: ScrollContainer
+
 const CRASH_NAMES := {"tree": "Trees", "water": "Water", "wall": "Walls", "car": "Cars", "bridge": "Bridges",
 	"glass": "Windows", "greenhouse": "Greenhouse", "fan": "Fans", "lamp": "Lamps", "furniture": "Furniture",
 	"banister": "Banisters", "ceiling": "Ceilings", "line": "Strings", "ground": "Ground", "stopped": "Short landings",
@@ -57,7 +60,9 @@ func _ready() -> void:
 	name_row.add_child(_name_edit)
 	outer.add_child(name_row)
 	var scroll := ScrollContainer.new()
+	_scroll = scroll
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
 	TouchScroll.attach(scroll)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	outer.add_child(scroll)
@@ -98,7 +103,11 @@ func _save_name() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("pause"):
+	if visible and not _name_edit.has_focus() and (event.is_action_pressed("ui_down") or event.is_action_pressed("ui_up")):
+		_scroll.scroll_vertical += 90 if event.is_action_pressed("ui_down") else -90
+		get_viewport().set_input_as_handled()
+		return
+	if visible and (event.is_action_pressed("pause") or (event.is_action_pressed("ui_cancel") and not _name_edit.has_focus())):
 		close()
 		closed.emit()
 		get_viewport().set_input_as_handled()

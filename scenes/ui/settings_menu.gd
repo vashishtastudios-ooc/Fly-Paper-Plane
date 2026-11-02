@@ -11,6 +11,9 @@ var _camera_buttons := {}
 var _quality_buttons: Array[Button] = []
 ## PC display controls (absent on phones).
 var _display_buttons := {}
+## Keys section: action -> button showing its key, and the action waiting for a new key.
+var _key_buttons := {}
+var _rebinding := ""
 var _done: Button
 ## Controls by setting name, so they can be refreshed (e.g. after Reset to defaults).
 var _sliders := {}
@@ -39,6 +42,8 @@ func _ready() -> void:
 	outer.add_child(UIKit.label("Settings", UIKit.display_font(), 54, UIKit.INK))
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# A controller moving down the list keeps the focused setting in view.
+	scroll.follow_focus = true
 	TouchScroll.attach(scroll)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	outer.add_child(scroll)
@@ -126,6 +131,22 @@ func _ready() -> void:
 	v.add_child(_check_row("invert", "Invert climb and dive", Settings.invert_pitch, func(on: bool): Settings.set_option("invert_pitch", on)))
 	if Settings.is_mobile:
 		v.add_child(_check_row("vibration", "Vibration", Settings.vibration, func(on: bool): Settings.set_option("vibration", on)))
+	if not Settings.touch_ui:
+		v.add_child(_section("Keys"))
+		for pair in Settings.REBINDABLE:
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 12)
+			var l := UIKit.label(pair[1], UIKit.body_font(), 20, UIKit.INK_DARK)
+			l.custom_minimum_size.x = 260
+			row.add_child(l)
+			var b := UIKit.paper_button(Settings.key_label(pair[0]), false, 20)
+			b.custom_minimum_size.x = 140
+			var action: String = pair[0]
+			b.pressed.connect(func(): _start_rebind(action))
+			row.add_child(b)
+			_key_buttons[action] = b
+			v.add_child(row)
+		v.add_child(_note("Click a key, then press the new one (Esc to cancel). Arrow keys always work too."))
 	var lessons := UIKit.paper_button("Play the flying lessons again", false, 20)
 	lessons.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	lessons.pressed.connect(func():
@@ -309,6 +330,7 @@ func _sync() -> void:
 		if _display_buttons["Frame limit"].has(str(Settings.fps_limit)):
 			(_display_buttons["Frame limit"][str(Settings.fps_limit)] as Button).set_pressed_no_signal(true)
 		(_checks.vsync as CheckButton).set_pressed_no_signal(Settings.vsync)
+	_refresh_keys()
 	for i in _quality_buttons.size():
 		_quality_buttons[i].set_pressed_no_signal(i == Settings.quality)
 	for key in _sliders:
@@ -319,15 +341,40 @@ func open() -> void:
 	_sync()
 	visible = true
 	_layout()
-	_done.grab_focus()
+	# Start at the top of the list, so a controller can walk down it (Done is at the bottom).
+	(_sliders.music as Control).grab_focus()
 
 
 func close() -> void:
 	visible = false
 
 
+func _start_rebind(action: String) -> void:
+	_rebinding = action
+	_refresh_keys()
+	(_key_buttons[action] as Button).text = "Press a key..."
+
+
+func _refresh_keys() -> void:
+	for a in _key_buttons:
+		(_key_buttons[a] as Button).text = Settings.key_label(a)
+
+
+## While waiting for a new key, the next key press is the new key (Esc cancels).
+func _input(event: InputEvent) -> void:
+	if _rebinding == "" or not visible:
+		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		var k := event as InputEventKey
+		if k.keycode != KEY_ESCAPE:
+			Settings.rebind_key(_rebinding, k.physical_keycode if k.physical_keycode != KEY_NONE else k.keycode)
+		_rebinding = ""
+		_refresh_keys()
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("pause"):
+	if visible and (event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel")):
 		close()
 		closed.emit()
 		get_viewport().set_input_as_handled()

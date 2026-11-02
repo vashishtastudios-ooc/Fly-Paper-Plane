@@ -5,6 +5,8 @@ extends CanvasLayer
 
 signal closed
 
+var _done: Button
+
 const KINDS := [["shape", "Plane"], ["paper", "Paper"], ["trail", "Trail"], ["sticker", "Sticker"]]
 
 var _sheet: NotebookSheet
@@ -49,6 +51,7 @@ func _ready() -> void:
 	_build_preview()
 	_body.add_child(_preview_box)
 	var scroll := ScrollContainer.new()
+	scroll.follow_focus = true
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -84,6 +87,7 @@ func _ready() -> void:
 	hint.custom_minimum_size.x = 120
 	row.add_child(hint)
 	var done := UIKit.paper_button("Done", true, 28)
+	_done = done
 	done.pressed.connect(func():
 		close()
 		closed.emit())
@@ -180,11 +184,21 @@ func open() -> void:
 	_layout()
 	if not get_tree().process_frame.is_connected(_layout):
 		get_tree().process_frame.connect(_layout, CONNECT_ONE_SHOT)
+	# Controllers: start on the selected plane design.
+	var sel: Button = _buttons.get("shape", {}).get(Game.cosmetics.get("shape", "dart"))
+	(sel if sel else _done).grab_focus()
 
 
 func close() -> void:
 	visible = false
 	_trail.active = false
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if visible and (event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel")):
+		close()
+		closed.emit()
+		get_viewport().set_input_as_handled()
 
 
 func _refresh() -> void:

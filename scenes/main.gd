@@ -62,6 +62,7 @@ func _ready() -> void:
 	pilot_log = PilotLog.new()
 	pilot_log.name = "PilotLog"
 	add_child(pilot_log)
+	pilot_log.closed.connect(menu.refocus)
 	kid.visible = false
 	hud.visible = false
 	# Let the loading card render before the heavy town build.
@@ -217,7 +218,12 @@ func _wire() -> void:
 	menu.settings_pressed.connect(func(): settings_menu.open())
 	menu.pilot_pressed.connect(func(): pilot_log.open())
 	settings_menu.connect("credits_pressed", func(): credits.open())
-	hangar.closed.connect(func(): menu.refresh())
+	hangar.closed.connect(func():
+		menu.refresh()
+		menu.refocus())
+	settings_menu.closed.connect(menu.refocus)
+	credits.closed.connect(menu.refocus)
+	Settings.keys_changed.connect(func(): menu._layout())
 	pause_ui.settings_pressed.connect(func(): settings_menu.open())
 	level.star_collected.connect(func(p: Vector3):
 		Audio.play("star", -2.0)
@@ -749,13 +755,13 @@ func _flight_hints(delta: float) -> void:
 		return
 	var t := plane.flight_time
 	if t > 3.0 and absf(plane.in_x) > 0.7:
-		_tip("sharp", "Hold Roll while steering for a sharper turn" if touch.visible else "Turning? Hold E (right) or Q (left) too for a sharper turn")
+		_tip("sharp", "Hold Roll while steering for a sharper turn" if touch.visible else "Turning? Hold %s (right) or %s (left) too for a sharper turn" % [Settings.key_label("roll_right"), Settings.key_label("roll_left")])
 	if t > 0.8:
-		_tip("steer", "Drag left or right to steer, up to climb" if touch.visible else "A / D to steer, W / S to climb and dive")
+		_tip("steer", "Drag left or right to steer, up to climb" if touch.visible else "%s / %s to steer, %s / %s to climb and dive" % [Settings.key_label("turn_left"), Settings.key_label("turn_right"), Settings.key_label("climb"), Settings.key_label("dive")])
 	if t > 4.5:
 		_tip("climb", "Climbing costs speed. Ease off before you get slow")
 	if t > 6.0 and plane.state.vy < -1.2 and plane.gusts >= 1.0:
-		_tip("gust", "Tap Gust for a quick lift" if touch.visible else "Press Space for a quick lift")
+		_tip("gust", "Tap Gust for a quick lift" if touch.visible else "Press %s for a quick lift" % Settings.key_label("gust"))
 	if level.horizontal_distance_to_pad(plane.state.pos) < 30.0 and t > 2.0:
 		_tip("land", "Slow down and settle gently onto the green circle")
 	# Early warning before a stall, every flight.
