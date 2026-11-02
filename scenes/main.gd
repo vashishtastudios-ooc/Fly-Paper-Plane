@@ -277,7 +277,7 @@ func go_menu() -> void:
 	cam.set_mode(ChaseCamera.Mode.MENU, true)
 	menu.open()
 	Audio.set_wind(0.0, false)
-	Audio.play_music()
+	Audio.play_music("day")
 
 
 func start_level(index: int) -> void:
@@ -304,6 +304,7 @@ func start_level(index: int) -> void:
 	ghost.set_run(PackedFloat32Array())
 	level.build(data, town)
 	town.clear_trees_for_level(data)
+	Audio.play_music("night" if data.time_of_day == "dusk" else ("city" if data.map == "city" else "day"))
 	hud.reset()
 	plane.reset()
 	menu_plane.visible = false

@@ -15,7 +15,11 @@ var _birds: AudioStreamPlayer
 var _bird_timer := 2.0
 var _wind_target_db := -60.0
 var _wind_target_pitch := 1.0
-var _music_wanted := false
+## The music track wanted ("day", "night" or "city"; "" = none). Tracks are synthesized at
+## startup (day first, so the menu has music quickly) and crossfade when the track changes.
+var _music_wanted := ""
+var _music_playing := ""
+var _music_tween: Tween
 var birds_enabled := true
 var _tasks: Array[int] = []
 
@@ -107,15 +111,39 @@ func set_wind(speed: float, active: bool) -> void:
 	_wind_target_pitch = lerpf(0.7, 1.65, t)
 
 
-func play_music() -> void:
-	_music_wanted = true
-	if _streams.has("music") and not _music.playing:
-		_music.stream = _streams["music"]
-		_music.play()
+func play_music(track := "day") -> void:
+	_music_wanted = track
+	var key := "music_" + track
+	if not _streams.has(key):
+		# Not synthesized yet: keep what's playing; it starts when ready (_on_synth_done).
+		return
+	if _music_playing == track and _music.playing:
+		return
+	if _music_tween:
+		_music_tween.kill()
+	if not _music.playing:
+		_start_track(track)
+		return
+	# Crossfade: fade the old track out, then the new one in.
+	_music_tween = create_tween()
+	_music_tween.tween_property(_music, "volume_db", -40.0, 0.7)
+	_music_tween.tween_callback(_start_track.bind(track))
+
+
+func _start_track(track: String) -> void:
+	_music.stream = _streams["music_" + track]
+	_music.volume_db = -40.0
+	_music.play()
+	_music_playing = track
+	if _music_tween:
+		_music_tween.kill()
+	_music_tween = create_tween()
+	_music_tween.tween_property(_music, "volume_db", -6.0, 0.9)
 
 
 func stop_music() -> void:
-	_music_wanted = false
+	_music_wanted = ""
+	_music_playing = ""
 	_music.stop()
 
 
@@ -125,8 +153,8 @@ func _on_synth_done(result: Dictionary) -> void:
 	if result.has("wind") and not _wind.playing:
 		_wind.stream = result["wind"]
 		_wind.play()
-	if result.has("music") and _music_wanted:
-		play_music()
+	if _music_wanted != "" and result.has("music_" + _music_wanted):
+		play_music(_music_wanted)
 
 
 # --- Synthesis (runs on worker threads) -------------------------------------
@@ -164,9 +192,30 @@ func _synth_sfx() -> void:
 
 
 func _synth_music() -> void:
-	var data := _music_loop()
-	var w := _wav(data, true, MUSIC_RATE)
-	call_deferred("_on_synth_done", {"music": w})
+	for track in ["day", "city", "night"]:
+		var w := _wav(_music_loop(MUSIC_TRACKS[track]), true, MUSIC_RATE)
+		call_deferred("_on_synth_done", {"music_" + track: w})
+
+
+## The three tracks: tempo, two 4-chord sections (A then B, each played twice), the melody scale,
+## voices and feel. Chords: [3 pad notes, bass].
+const MUSIC_TRACKS := {
+	# Warm and easy (the menu, Linden Lane, Seaside Harbour): G, Em, C, D / C, G, Am, D.
+	"day": {"bpm": 84.0, "seed": 20261013, "swing": 0.0, "rest": 0.32, "pad": 0.075, "mel": 0.09, "bell": 0.0, "walk": false,
+		"a": [[196.0, 246.9, 293.7, 98.0], [164.8, 196.0, 246.9, 82.4], [196.0, 261.6, 329.6, 65.4], [220.0, 293.7, 370.0, 73.4]],
+		"b": [[196.0, 261.6, 329.6, 65.4], [196.0, 246.9, 293.7, 98.0], [220.0, 261.6, 329.6, 55.0], [220.0, 293.7, 370.0, 73.4]],
+		"scale": [392.0, 440.0, 493.9, 587.3, 659.3, 784.0]},
+	# Bouncy and a little jazzy (City Rooftops): Cmaj7, Am7, Dm7, G7 / Fmaj7, Em7, Dm7, G7, walking bass.
+	"city": {"bpm": 100.0, "seed": 777, "swing": 0.18, "rest": 0.38, "pad": 0.06, "mel": 0.085, "bell": 0.0, "walk": true,
+		"a": [[246.9, 329.6, 392.0, 65.4], [261.6, 329.6, 392.0, 55.0], [261.6, 349.2, 440.0, 73.4], [246.9, 349.2, 392.0, 98.0]],
+		"b": [[261.6, 329.6, 440.0, 87.3], [246.9, 293.7, 392.0, 82.4], [261.6, 349.2, 440.0, 73.4], [246.9, 349.2, 392.0, 98.0]],
+		"scale": [523.3, 587.3, 659.3, 784.0, 880.0, 1046.5]},
+	# Slow, soft and starry (Lantern Night, Night Lights): Am, F, C, G / Dm, Am, F, E, bell-like melody.
+	"night": {"bpm": 64.0, "seed": 4242, "swing": 0.0, "rest": 0.5, "pad": 0.07, "mel": 0.0, "bell": 0.075, "walk": false,
+		"a": [[220.0, 261.6, 329.6, 55.0], [174.6, 220.0, 261.6, 87.3], [196.0, 261.6, 329.6, 65.4], [196.0, 246.9, 293.7, 98.0]],
+		"b": [[220.0, 293.7, 349.2, 73.4], [220.0, 261.6, 329.6, 55.0], [174.6, 220.0, 261.6, 87.3], [207.7, 246.9, 329.6, 82.4]],
+		"scale": [440.0, 523.3, 587.3, 659.3, 784.0, 880.0]},
+}
 
 
 func _wav(samples: PackedFloat32Array, loop := false, rate := RATE) -> AudioStreamWAV:
@@ -367,55 +416,70 @@ func _wind_loop(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	return out
 
 
-func _music_loop() -> PackedFloat32Array:
-	var bpm := 84.0
+## A looping track: sections A, A, B, B of 4 chords (a bar each). Soft triangle-wave pads, a
+## plucked bass (or a walking bass), and a melody on a seeded walk over the scale: plucked
+## notes, or long ringing bells for the night track.
+func _music_loop(m: Dictionary) -> PackedFloat32Array:
+	var bpm: float = m.bpm
 	var beat := 60.0 / bpm
 	var chord_len := beat * 4.0
-	var chords := [
-		[196.0, 246.9, 293.7, 98.0],   # G
-		[164.8, 196.0, 246.9, 82.4],   # Em
-		[196.0, 261.6, 329.6, 65.4],   # C
-		[220.0, 293.7, 370.0, 73.4],   # D
-	]
-	var pent := [392.0, 440.0, 493.9, 587.3, 659.3, 784.0]
-	var total := chord_len * 8.0
+	var chords: Array = m.a + m.a + m.b + m.b
+	var scale: Array = m.scale
+	var total := chord_len * chords.size()
 	var n := int(total * MUSIC_RATE)
 	var out := PackedFloat32Array()
 	out.resize(n)
-	# Melody: eighth notes on a seeded walk over the G pentatonic scale.
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 20261013
+	rng.seed = int(m.seed)
+	var bells: bool = float(m.bell) > 0.0
+	var step := beat * (1.0 if bells else 0.5)
 	var mel_notes := []
-	var step := beat * 0.5
 	var idx := 2
 	var count := int(total / step)
 	for k in count:
-		if rng.randf() < 0.32 or k % 16 == 15:
+		if rng.randf() < float(m.rest) or k % 16 == 15:
 			mel_notes.append(0.0)
 		else:
-			idx = clampi(idx + rng.randi_range(-2, 2), 0, pent.size() - 1)
-			mel_notes.append(pent[idx])
+			idx = clampi(idx + rng.randi_range(-2, 2), 0, scale.size() - 1)
+			mel_notes.append(scale[idx])
+	var swing: float = m.swing
+	var walk: bool = m.walk
 	for i in n:
 		var t := float(i) / MUSIC_RATE
-		var ci := int(t / chord_len) % 4
+		var ci := int(t / chord_len) % chords.size()
 		var ct := fmod(t, chord_len)
 		var cenv := smoothstep(0.0, 0.35, ct) * (1.0 - smoothstep(chord_len - 0.45, chord_len, ct))
 		var c: Array = chords[ci]
 		var v := 0.0
 		for j in 3:
 			var ph := fposmod(c[j] * t, 1.0)
-			v += (4.0 * absf(ph - 0.5) - 1.0) * 0.075
+			v += (4.0 * absf(ph - 0.5) - 1.0) * float(m.pad)
 		v *= cenv
-		# Soft plucked bass on beats 1 and 3.
-		var bt := fmod(ct, beat * 2.0)
-		v += sin(TAU * c[3] * t) * exp(-2.2 * bt) * 0.16 * cenv
-		# Melody.
-		var mk := int(t / step)
+		if walk:
+			# Walking bass: a note on every beat, root, third, fifth, sixth.
+			var bk := int(ct / beat)
+			var bt2 := fmod(ct, beat)
+			var bf: float = c[3] * [1.0, 1.26, 1.5, 1.68][bk % 4]
+			v += sin(TAU * bf * t) * exp(-3.5 * bt2) * 0.15
+		else:
+			# Soft plucked bass on beats 1 and 3.
+			var bt := fmod(ct, beat * 2.0)
+			v += sin(TAU * c[3] * t) * exp(-2.2 * bt) * 0.16 * cenv
+		# Melody (swung eighths for the city track).
+		var ts := t
+		if swing > 0.0:
+			var pair := fmod(t, step * 2.0)
+			ts = t - (swing * step if pair > step * (1.0 + swing) else 0.0)
+		var mk := int(ts / step)
 		var mf: float = mel_notes[mk % mel_notes.size()]
 		if mf > 0.0:
-			var mt := fmod(t, step)
-			var mph := fposmod(mf * t, 1.0)
-			var mtri := 4.0 * absf(mph - 0.5) - 1.0
-			v += mtri * minf(1.0, mt * 80.0) * exp(-3.2 * mt) * 0.09
+			var mt := fmod(ts, step)
+			if bells:
+				var e := minf(1.0, mt * 60.0) * exp(-1.6 * mt)
+				v += (sin(TAU * mf * t) + 0.35 * sin(TAU * mf * 2.0 * t) + 0.15 * sin(TAU * mf * 3.01 * t)) * e * float(m.bell)
+			else:
+				var mph := fposmod(mf * t, 1.0)
+				var mtri := 4.0 * absf(mph - 0.5) - 1.0
+				v += mtri * minf(1.0, mt * 80.0) * exp(-3.2 * mt) * float(m.mel)
 		out[i] = v
 	return out
