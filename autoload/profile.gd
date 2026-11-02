@@ -25,7 +25,7 @@ const ACHIEVEMENTS := [
 	{"id": "flight_school", "title": "Flight school", "desc": "Finish the flying lessons", "stat": "lessons", "target": 1},
 	{"id": "landings_25", "title": "Frequent flyer", "desc": "Land 25 times", "stat": "landings", "target": 25},
 	{"id": "landings_100", "title": "Seasoned pilot", "desc": "Land 100 times", "stat": "landings", "target": 100},
-	{"id": "bullseye", "title": "Bullseye", "desc": "Land within half a metre of the centre", "stat": "bullseyes", "target": 1},
+	{"id": "bullseye", "title": "Bullseye", "desc": "Land right in the gold bullseye", "stat": "bullseyes", "target": 1},
 	{"id": "perfect_10", "title": "Perfect ten", "desc": "Earn 3 ribbons 10 times", "stat": "perfect", "target": 10},
 	{"id": "under_par_5", "title": "Speedy", "desc": "Land 5 different flights under par time", "stat": "under_par", "target": 5},
 	{"id": "dist_1k", "title": "Kilometre club", "desc": "Fly 1 km in total", "stat": "distance", "target": 1000, "unit": "m"},
@@ -179,7 +179,7 @@ func record_landing(id: String, stats: Dictionary, score: Dictionary, star_ids: 
 	count("landings")
 	if int(score.ribbons) >= 3:
 		count("perfect")
-	if float(stats.dist) <= 0.5:
+	if str(score.get("zone", "")) == "bullseye":
 		count("bullseyes")
 	var f := flight(id)
 	f.landings = int(f.landings) + 1

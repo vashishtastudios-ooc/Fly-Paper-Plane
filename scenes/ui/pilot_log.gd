@@ -139,8 +139,8 @@ func _rebuild() -> void:
 	for pair in [
 		["Flights flown", str(st.call("flights"))],
 		["Landings", str(st.call("landings"))],
-		["Perfect landings (3 ribbons)", str(st.call("perfect"))],
-		["Bullseyes (within 0.5 m)", str(st.call("bullseyes"))],
+		["3-ribbon landings", str(st.call("perfect"))],
+		["Bullseyes", str(st.call("bullseyes"))],
 		["Time in the air", _duration(Profile.stat("flight_time"))],
 		["Distance flown", _distance(Profile.stat("distance"))],
 		["Rings flown through", str(st.call("rings"))],

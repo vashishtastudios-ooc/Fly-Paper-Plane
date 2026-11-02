@@ -407,6 +407,8 @@ func _on_landed(info: Dictionary) -> void:
 		"rings": level.rings_passed,
 		"rolls": plane.rolls_done,
 		"bonus": level.bonus_points,
+		# Where on the target it landed (for the result card's little target drawing).
+		"offset": Vector2(info.position.x - data.pad_position.x, info.position.z - data.pad_position.z),
 	}
 	var score := Game.compute_landing_score(stats)
 	var ribbons_before := Game.total_ribbons()
@@ -429,7 +431,11 @@ func _on_landed(info: Dictionary) -> void:
 	Settings.vibrate(60)
 	cam.orbit_center = info.position
 	cam.set_mode(ChaseCamera.Mode.ORBIT)
-	hud.banner(score.headline, UIKit.GOLD, 1.6)
+	var zone_col: Color = {"bullseye": UIKit.GOLD, "inner": Color("#8fe3b0"), "outer": Color("#bfe3ff"), "edge": Color("#ffd9a1")}[score.zone]
+	hud.banner_now(score.headline, zone_col, 1.8)
+	hud.float_text(info.position, "+%d" % (score.accuracy + score.bullseye_bonus), zone_col)
+	if level.pad:
+		level.pad.mark(info.position)
 	level.hide_guides()
 	touch.close()
 	Audio.set_wind(0.0, false)
@@ -753,6 +759,8 @@ func _flight_hints(delta: float) -> void:
 		_tip("land", "Slow down and settle gently onto the green circle")
 	# Early warning before a stall, every flight.
 	_slow_cooldown -= delta
-	if plane.state.v < 6.0 and not plane.stalled and _slow_cooldown <= 0.0:
+	# (Not while touching down or sliding to a stop on the target: slowing down is the point there.)
+	var near_pad := level.horizontal_distance_to_pad(plane.state.pos) < level.pad_radius() + 5.0 and plane.state.pos.y < level.pad_top() + 3.0
+	if plane.state.v < 6.0 and not plane.stalled and _slow_cooldown <= 0.0 and plane.mode == PaperPlane.Mode.FLYING and not near_pad:
 		_slow_cooldown = 6.0
 		hud.banner("Running out of puff! Nose down", Color("#ffd9a1"), 1.0)

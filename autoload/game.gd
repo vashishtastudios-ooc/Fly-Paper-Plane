@@ -161,40 +161,57 @@ func reset_tips() -> void:
 
 # --- Scoring ---------------------------------------------------------------
 
+## The landing spot is a target: the bullseye (the gold centre), the inner ring (the painted ring
+## at 55% of the radius) and the outer ring out to the rim. Landing just past the rim (up to
+## 0.4 m) still counts, on the edge. Returns [bullseye radius, inner ring radius].
+static func landing_zones(radius: float) -> Vector2:
+	return Vector2(maxf(0.3, radius * 0.2), radius * 0.55)
+
+
 ## Returns the full landing score breakdown.
 ## stats: {dist, radius, vertical_impact, speed, stars, stars_total, time, par, rings, rolls, bonus}
+## Ribbons come from where the plane touched down (inner ring or bullseye 3, outer ring 2, edge 1;
+## a really hard slam costs one). Everything else adds points.
 func compute_landing_score(stats: Dictionary) -> Dictionary:
 	var r: float = stats.radius
-	var acc_frac := clampf(1.0 - stats.dist / (r + 0.4), 0.0, 1.0)
-	var accuracy := maxi(0, roundi(acc_frac * 500.0))
+	var d: float = stats.dist
+	var zr := landing_zones(r)
+	var zone := "edge"
+	var accuracy := 50
+	if d <= zr.x:
+		zone = "bullseye"
+		accuracy = 500
+	elif d <= zr.y:
+		zone = "inner"
+		accuracy = roundi(lerpf(450.0, 300.0, (d - zr.x) / maxf(zr.y - zr.x, 0.01)))
+	elif d <= r:
+		zone = "outer"
+		accuracy = roundi(lerpf(300.0, 100.0, (d - zr.y) / maxf(r - zr.y, 0.01)))
+	var bull_bonus := 250 if zone == "bullseye" else 0
 	var soft_frac := clampf(1.0 - (stats.vertical_impact - 0.6) / 3.2, 0.0, 1.0) \
 		* clampf(1.0 - (stats.speed - 11.0) / 8.0, 0.3, 1.0)
 	var soft := roundi(soft_frac * 300.0)
+	var hard := soft_frac < 0.2
 	var stars_pts: int = stats.stars * 100
 	var time_bonus := maxi(0, roundi((stats.par - stats.time) * 10.0))
 	var ring_pts: int = stats.rings * 25
 	var roll_pts: int = stats.rolls * 50
 	var bonus_pts: int = stats.bonus
-	var total := accuracy + soft + stars_pts + time_bonus + ring_pts + roll_pts + bonus_pts
+	var total := accuracy + bull_bonus + soft + stars_pts + time_bonus + ring_pts + roll_pts + bonus_pts
 
-	var headline := "Bumpy, but home!"
-	if soft_frac > 0.8 and acc_frac > 0.6:
-		headline = "Feather-soft!"
-	elif soft_frac > 0.5:
-		headline = "Smooth landing!"
-
-	var missed: int = stats.stars_total - stats.stars
-	var ribbons := 1
-	if acc_frac > 0.6 and soft_frac > 0.6 and missed <= 1:
-		ribbons = 3
-	elif acc_frac > 0.45 and soft_frac > 0.45:
-		ribbons = 2
+	var ribbons: int = {"bullseye": 3, "inner": 3, "outer": 2, "edge": 1}[zone]
+	if hard:
+		ribbons = maxi(1, ribbons - 1)
+	var headline: String = {"bullseye": "BULLSEYE!", "inner": "So close! Inner ring", "outer": "On target!", "edge": "Just made it!"}[zone]
 
 	return {
+		"zone": zone,
 		"headline": headline,
 		"ribbons": ribbons,
+		"hard": hard,
 		"accuracy": accuracy,
-		"accuracy_frac": acc_frac,
+		"accuracy_frac": clampf(1.0 - d / (r + 0.4), 0.0, 1.0),
+		"bullseye_bonus": bull_bonus,
 		"soft": soft,
 		"soft_frac": soft_frac,
 		"stars": stars_pts,

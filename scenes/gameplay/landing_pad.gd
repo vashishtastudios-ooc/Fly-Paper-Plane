@@ -1,6 +1,7 @@
 class_name LandingPad
 extends Node3D
-## The landing target: gold ground ring, center dot and a soft vertical light beam.
+## The landing target: green rim, the inner ring and a gold bullseye (the scoring zones, see
+## Game.landing_zones), and a soft vertical light beam.
 ## Its collider lives on the LandingPads physics layer (layer 2). Origin = pad top center.
 
 @export var radius := 2.5
@@ -66,10 +67,24 @@ func _ready() -> void:
 	inner.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(inner)
 
+	# The gold bullseye, exactly the size that scores as one, with a white edge.
+	var bull_r: float = Game.landing_zones(radius).x
+	var edge := MeshInstance3D.new()
+	var et := TorusMesh.new()
+	et.inner_radius = bull_r
+	et.outer_radius = bull_r + 0.06
+	et.rings = 32
+	et.ring_segments = 4
+	edge.mesh = et
+	edge.scale = Vector3(1, 0.2, 1)
+	edge.position.y = 0.045
+	edge.material_override = Mats.additive(Color(1.0, 1.0, 1.0, 0.8))
+	edge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(edge)
 	var dot := MeshInstance3D.new()
 	var cm := CylinderMesh.new()
-	cm.top_radius = 0.22
-	cm.bottom_radius = 0.22
+	cm.top_radius = bull_r
+	cm.bottom_radius = bull_r
 	cm.height = 0.02
 	cm.radial_segments = 20
 	dot.mesh = cm
@@ -109,6 +124,34 @@ func _ready() -> void:
 	cs.position.y = -0.05
 	body.add_child(cs)
 	add_child(body)
+
+
+## A little marker where the plane touched down (shown while the camera circles the landing).
+func mark(at: Vector3) -> void:
+	var m := MeshInstance3D.new()
+	m.name = "TouchdownMark"
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.09
+	cm.bottom_radius = 0.09
+	cm.height = 0.03
+	cm.radial_segments = 12
+	m.mesh = cm
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color("#c8423b")
+	m.material_override = mat
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(m)
+	m.global_position = Vector3(at.x, global_position.y + 0.06, at.z)
+	var halo := MeshInstance3D.new()
+	var ht := TorusMesh.new()
+	ht.inner_radius = 0.16
+	ht.outer_radius = 0.22
+	halo.mesh = ht
+	halo.scale = Vector3(1, 0.2, 1)
+	halo.material_override = mat
+	halo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	m.add_child(halo)
 
 
 func _process(delta: float) -> void:

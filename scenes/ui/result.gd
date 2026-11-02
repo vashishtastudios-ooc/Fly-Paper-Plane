@@ -10,6 +10,9 @@ var _dim: ColorRect
 var _sheet: NotebookSheet
 var _headline: Label
 var _sub: Label
+## Landings: how close (big), the joke (small) and the little target drawing.
+var _close: Label
+var _target: TargetDiagram
 var _ribbons: UIWidgets.RibbonStars
 var _rows: GridContainer
 var _best: Label
@@ -35,13 +38,27 @@ func _ready() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 4)
 	_sheet.add_child(v)
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 16)
+	v.add_child(top)
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 2)
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(left)
 	_headline = UIKit.label("", UIKit.display_font(), 56, UIKit.INK)
-	v.add_child(_headline)
-	_sub = UIKit.label("", UIKit.body_font(), 19, UIKit.PENCIL)
+	_headline.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	left.add_child(_headline)
+	_close = UIKit.label("", UIKit.display_font(), 30, UIKit.INK_DARK)
+	_close.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	left.add_child(_close)
+	_sub = UIKit.label("", UIKit.body_font(), 18, UIKit.PENCIL)
 	_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	v.add_child(_sub)
+	left.add_child(_sub)
 	_ribbons = UIWidgets.RibbonStars.new(0, 20.0)
-	v.add_child(_ribbons)
+	left.add_child(_ribbons)
+	_target = TargetDiagram.new()
+	_target.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	top.add_child(_target)
 	_rows = GridContainer.new()
 	_rows.columns = 2
 	_rows.add_theme_constant_override("h_separation", 28)
@@ -88,11 +105,18 @@ func _row(label: String, value: String, bold := false) -> void:
 func show_landing(score: Dictionary, stats: Dictionary, is_best: bool, has_next: bool, unlocks: Array = []) -> void:
 	_clear_rows()
 	_headline.text = score.headline
-	_sub.text = "%s  %.1f m from the centre at %d km/h." % [Quips.landing(score.ribbons), stats.dist, roundi(stats.speed * 3.6)]
+	_close.visible = true
+	_close.text = "%.1f m from the centre  ·  +%d" % [stats.dist, score.accuracy + score.bullseye_bonus]
+	_sub.text = Quips.landing_zone(score.zone) + ("  Ouch, a hard landing: one ribbon less." if score.hard else "")
 	_ribbons.visible = true
 	_ribbons.set_filled(score.ribbons)
-	_row("Accuracy", str(score.accuracy))
-	_row("Soft touchdown", str(score.soft))
+	_target.visible = true
+	_target.show_landing(stats.get("offset", Vector2.ZERO), stats.radius, score.zone)
+	var zone_names := {"bullseye": "bullseye", "inner": "inner ring", "outer": "outer ring", "edge": "on the edge"}
+	_row("Accuracy  (%s)" % zone_names[score.zone], str(score.accuracy))
+	if score.bullseye_bonus > 0:
+		_row("Bullseye bonus", str(score.bullseye_bonus))
+	_row("Soft touchdown  (%d km/h)" % roundi(stats.speed * 3.6), str(score.soft))
 	_row("Stars  (%d of %d)" % [stats.stars, stats.stars_total], str(score.stars))
 	_row("Time bonus  (%.1f s, par %d)" % [stats.time, int(stats.par)], str(score.time_bonus))
 	var tricks := "Tricks  (rings %d, rolls %d%s)" % [stats.rings, stats.rolls, ", bridge ring" if stats.bonus > 0 else ""]
@@ -121,6 +145,8 @@ func show_crash(message: String, stars: int, stars_total: int, time: float, kind
 	_clear_rows()
 	_headline.text = message
 	_sub.text = Quips.crash(kind)
+	_close.visible = false
+	_target.visible = false
 	_ribbons.visible = false
 	_row("Stars collected", "%d of %d" % [stars, stars_total])
 	_row("Time in the air", "%.1f s" % time)
@@ -151,11 +177,47 @@ func _layout() -> void:
 	var s := Settings.viewport_size()
 	var w := minf(s.x - 28.0, 640.0)
 	# Give wrapping labels their width up front so the sheet height is computed sensibly.
-	_sub.custom_minimum_size.x = w - 140.0
-	var h := 560.0 if _ribbons.visible else 430.0
+	_sub.custom_minimum_size.x = w - (300.0 if _target.visible else 140.0)
+	_close.custom_minimum_size.x = w - 300.0
+	var h := 600.0 if _ribbons.visible else 430.0
 	# A crash card is only as tall as its text needs.
 	_sheet.size.x = w
 	if not _ribbons.visible:
 		h = minf(h, maxf(_sheet.get_combined_minimum_size().y + 36.0, 280.0))
 	_sheet.size = Vector2(w, minf(h, s.y - 24.0))
 	_sheet.position = (s - _sheet.size) * 0.5
+
+
+## The landing spot seen from above: rim, inner ring, gold bullseye and a red dot where the plane
+## touched down (the plane flew in from the bottom of the drawing).
+class TargetDiagram extends Control:
+	var _offset := Vector2.ZERO
+	var _radius := 2.0
+	var _zone := "outer"
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(130, 130)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func show_landing(offset: Vector2, radius: float, zone: String) -> void:
+		_offset = offset
+		_radius = maxf(radius, 0.1)
+		_zone = zone
+		queue_redraw()
+
+	func _draw() -> void:
+		var c := size * 0.5
+		var px := minf(size.x, size.y) * 0.5 / (_radius + 0.45)
+		var zr: Vector2 = Game.landing_zones(_radius)
+		draw_circle(c, (_radius + 0.4) * px, Color(0.25, 0.8, 0.4, 0.12))
+		draw_circle(c, _radius * px, Color(0.25, 0.8, 0.4, 0.28))
+		draw_arc(c, _radius * px, 0, TAU, 48, Color("#3fc463"), 3.0, true)
+		draw_arc(c, zr.y * px, 0, TAU, 40, Color("#3fc463", 0.8), 2.0, true)
+		draw_circle(c, zr.x * px, UIKit.GOLD)
+		draw_arc(c, zr.x * px, 0, TAU, 24, Color.WHITE, 1.5, true)
+		var p := c + _offset * px
+		var lim := (_radius + 0.42) * px
+		if (p - c).length() > lim:
+			p = c + (p - c).normalized() * lim
+		draw_circle(p, 6.0, Color("#c8423b"))
+		draw_arc(p, 9.0, 0, TAU, 16, Color("#c8423b"), 2.0, true)

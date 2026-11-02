@@ -224,6 +224,14 @@ func banner(text: String, color := Color.WHITE, duration := 1.6) -> void:
 	_banner_tween.chain().tween_callback(_next_banner)
 
 
+## Shows a banner straight away, dropping whatever is showing or waiting (e.g. the landing result).
+func banner_now(text: String, color := Color.WHITE, duration := 1.6) -> void:
+	_banner_queue.clear()
+	if _banner_tween:
+		_banner_tween.kill()
+	banner(text, color, duration)
+
+
 func _next_banner() -> void:
 	if _banner_queue.is_empty():
 		return

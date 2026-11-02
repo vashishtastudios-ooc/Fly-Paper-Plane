@@ -48,6 +48,19 @@ static func crash(kind: String) -> String:
 	return pool[randi() % pool.size()]
 
 
+const ZONE := {
+	"bullseye": ["Dead centre! Show-off.", "Right on the dot!", "Pilot of the year!", "Did you see that?!"],
+	"inner": ["So close to perfect!", "A whisker off the bullseye.", "Smooth flying, captain."],
+	"outer": ["On target. Now aim for the gold!", "Landed! Closer next time?", "Not bad. The centre is waiting."],
+	"edge": ["Phew, just made it!", "Paper down! That counts.", "A bit wobbly, but home!"],
+}
+
+
+static func landing_zone(zone: String) -> String:
+	var pool: Array = ZONE.get(zone, ZONE.outer)
+	return pool[randi() % pool.size()]
+
+
 static func landing(ribbons: int) -> String:
 	var pool: Array = LAND.get(clampi(ribbons, 1, 3))
 	return pool[randi() % pool.size()]
