@@ -7,9 +7,9 @@ signal cosmetics_changed
 enum State { LOADING, MENU, INTRO, THROWING, FLYING, LANDED, CRASHED, RESULT }
 
 const SAVE_PATH := "user://save.cfg"
-## Testing switch: unlocks every flight and every Hangar item without earning ribbons.
-## Set to false before publishing.
-const UNLOCK_ALL_FOR_TESTING := true
+## Everything unlocked without earning ribbons: only when run from the Godot editor or with the
+## --unlock-all launch option (for testing). Players earn flights and Hangar items with ribbons.
+var unlock_all := false
 const LEVEL_PATHS := [
 	"res://levels/level_1.tres",
 	"res://levels/level_2.tres",
@@ -51,6 +51,7 @@ var tips_seen := {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	unlock_all = OS.has_feature("editor") or OS.get_cmdline_args().has("--unlock-all") or OS.get_cmdline_user_args().has("--unlock-all")
 	for p in LEVEL_PATHS:
 		levels.append(load(p) as LevelData)
 	lessons_level = load(LESSONS_PATH) as LevelData
@@ -81,7 +82,7 @@ func finish_lessons() -> void:
 
 ## A map's first flight opens with the map (ribbons); later ones after the flight before them.
 func is_unlocked(i: int) -> bool:
-	if i == LESSONS or UNLOCK_ALL_FOR_TESTING:
+	if i == LESSONS or unlock_all:
 		return true
 	for m in MAPS:
 		var lv: Array = m.levels
@@ -129,8 +130,8 @@ const MAPS := [
 	{"id": "linden", "name": "Linden Lane", "blurb": "Gardens, windows and the old bridge", "levels": [0, 1, 2, 3, 4, 5, 6, 7], "ribbons": 0, "thumb": 2},
 	{"id": "harbour", "name": "Seaside Harbour", "blurb": "Boats, the pier and sea breezes", "levels": [8, 9, 11, 10, 12, 13, 14, 15], "ribbons": 15, "thumb": 9},
 	{"id": "city", "name": "City Rooftops", "blurb": "Water towers and narrow alleys", "levels": [16, 17, 18], "ribbons": 30, "thumb": 17},
-	{"id": "farm", "name": "Maple Farm", "blurb": "Barns, fields and the windmill", "levels": [], "ribbons": 45, "soon": true},
-	{"id": "snow", "name": "Snowy Village", "blurb": "Chimney smoke and twinkling lights", "levels": [], "ribbons": 60, "soon": true},
+	{"id": "farm", "name": "Maple Farm", "blurb": "Barns, fields and the windmill", "levels": [], "ribbons": 40, "soon": true},
+	{"id": "snow", "name": "Snowy Village", "blurb": "Chimney smoke and twinkling lights", "levels": [], "ribbons": 50, "soon": true},
 ]
 
 

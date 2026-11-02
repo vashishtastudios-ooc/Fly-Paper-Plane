@@ -41,6 +41,14 @@ var quality_chosen := false
 var ink_outlines := true
 ## A see-through plane replays your best run on each flight.
 var show_ghost := true
+## PC display: fullscreen (borderless, the desktop resolution) or a window of window_size,
+## v-sync, and a frame limit (0 = none).
+var fullscreen := true
+var window_size := Vector2i(1280, 720)
+var vsync := true
+var fps_limit := 0
+const WINDOW_SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
+const FPS_LIMITS := [60, 120, 144, 0]
 
 const QUALITY_NAMES := ["Low", "Medium", "High"]
 ## Default values (quality: Medium on phones, High on desktop).
@@ -92,6 +100,47 @@ func _ready() -> void:
 		# can't be shown evenly there and motion looks uneven.
 		Engine.max_fps = 60
 	apply_quality()
+	apply_display()
+
+
+## PC display settings. Left alone on phones, inside the Godot editor, and when a window size or
+## mode is given on the command line (testing and recording tools).
+func apply_display() -> void:
+	if is_mobile or OS.has_feature("editor"):
+		return
+	var args := OS.get_cmdline_args()
+	if args.has("--resolution") or args.has("--windowed") or args.has("--fullscreen") or args.has("--position"):
+		return
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED)
+	Engine.max_fps = fps_limit
+	if fullscreen:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		var screen := DisplayServer.screen_get_usable_rect()
+		var sz := Vector2i(mini(window_size.x, screen.size.x), mini(window_size.y, screen.size.y))
+		DisplayServer.window_set_size(sz)
+		DisplayServer.window_set_position(screen.position + (screen.size - sz) / 2)
+
+
+## F11 or Alt+Enter toggles fullscreen on PC.
+func _input(event: InputEvent) -> void:
+	if is_mobile or not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	var k := event as InputEventKey
+	if k.keycode == KEY_F11 or (k.keycode == KEY_ENTER and k.alt_pressed):
+		set_display("fullscreen", not fullscreen)
+		get_viewport().set_input_as_handled()
+
+
+func set_display(option: String, value: Variant) -> void:
+	match option:
+		"fullscreen": fullscreen = value
+		"window_size": window_size = value
+		"vsync": vsync = value
+		"fps_limit": fps_limit = value
+	apply_display()
+	_save()
 
 
 func _on_size_changed() -> void:
@@ -289,6 +338,10 @@ func _load() -> void:
 		quality_chosen = bool(cfg.get_value("video", "quality_chosen", false))
 		show_fps = bool(cfg.get_value("video", "show_fps", false))
 		show_ghost = bool(cfg.get_value("controls", "show_ghost", true))
+		fullscreen = bool(cfg.get_value("display", "fullscreen", true))
+		window_size = cfg.get_value("display", "window_size", Vector2i(1280, 720))
+		vsync = bool(cfg.get_value("display", "vsync", true))
+		fps_limit = int(cfg.get_value("display", "fps_limit", 0))
 
 
 func _save() -> void:
@@ -306,6 +359,10 @@ func _save() -> void:
 	cfg.set_value("video", "quality_chosen", quality_chosen)
 	cfg.set_value("video", "show_fps", show_fps)
 	cfg.set_value("controls", "show_ghost", show_ghost)
+	cfg.set_value("display", "fullscreen", fullscreen)
+	cfg.set_value("display", "window_size", window_size)
+	cfg.set_value("display", "vsync", vsync)
+	cfg.set_value("display", "fps_limit", fps_limit)
 	cfg.set_value("audio", "sfx", sfx_volume)
 	cfg.set_value("audio", "ambience", ambience_volume)
 	cfg.save(settings_file)

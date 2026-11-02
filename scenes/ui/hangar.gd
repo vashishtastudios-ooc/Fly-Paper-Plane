@@ -189,7 +189,7 @@ func close() -> void:
 
 func _refresh() -> void:
 	var ribbons := Game.total_ribbons()
-	_ribbons_label.text = ("Test mode: all unlocked" if Game.UNLOCK_ALL_FOR_TESTING else "Ribbons earned: %d" % ribbons)
+	_ribbons_label.text = ("Test mode: all unlocked" if Game.unlock_all else "Ribbons earned: %d" % ribbons)
 	for kind in _buttons:
 		for id in _buttons[kind]:
 			var b: Button = _buttons[kind][id]

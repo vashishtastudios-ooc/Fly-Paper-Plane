@@ -9,6 +9,8 @@ signal credits_pressed
 var _sheet: NotebookSheet
 var _camera_buttons := {}
 var _quality_buttons: Array[Button] = []
+## PC display controls (absent on phones).
+var _display_buttons := {}
 var _done: Button
 ## Controls by setting name, so they can be refreshed (e.g. after Reset to defaults).
 var _sliders := {}
@@ -49,6 +51,24 @@ func _ready() -> void:
 	v.add_child(_slider_row("music", "Music", Settings.music_volume, func(x: float): Settings.set_volume("Music", x)))
 	v.add_child(_slider_row("sfx", "Effects", Settings.sfx_volume, func(x: float): Settings.set_volume("SFX", x)))
 	v.add_child(_slider_row("ambience", "Wind and birds", Settings.ambience_volume, func(x: float): Settings.set_volume("Ambience", x)))
+
+	if not Settings.is_mobile:
+		v.add_child(_section("Display"))
+		v.add_child(_choice_row("Screen", [["fullscreen", "Fullscreen"], ["window", "Window"]], func(id: String):
+			Settings.set_display("fullscreen", id == "fullscreen")))
+		var sizes := []
+		for sz in Settings.WINDOW_SIZES:
+			sizes.append(["%dx%d" % [sz.x, sz.y], "%d × %d" % [sz.x, sz.y]])
+		v.add_child(_choice_row("Window size", sizes, func(id: String):
+			var parts := id.split("x")
+			Settings.set_display("window_size", Vector2i(int(parts[0]), int(parts[1])))))
+		var limits := []
+		for f in Settings.FPS_LIMITS:
+			limits.append([str(f), "No limit" if f == 0 else str(f)])
+		v.add_child(_choice_row("Frame limit", limits, func(id: String):
+			Settings.set_display("fps_limit", int(id))))
+		v.add_child(_check_row("vsync", "V-sync (smoother, no tearing)", Settings.vsync, func(on: bool): Settings.set_display("vsync", on)))
+		v.add_child(_note("F11 or Alt+Enter switches between fullscreen and a window."))
 
 	v.add_child(_section("Graphics"))
 	var qrow := HBoxContainer.new()
@@ -140,6 +160,27 @@ func _ready() -> void:
 	buttons.add_child(reset)
 	get_viewport().size_changed.connect(_layout)
 	visible = false
+
+
+## A label and a row of toggle buttons; on_pick gets the chosen id. Remembered by label for _sync.
+func _choice_row(text: String, choices: Array, on_pick: Callable) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var l := UIKit.label(text, UIKit.body_font(), 20, UIKit.INK_DARK)
+	l.custom_minimum_size.x = 150
+	row.add_child(l)
+	var group := ButtonGroup.new()
+	var buttons := {}
+	for c in choices:
+		var b := UIKit.paper_button(c[1], false, 20)
+		b.toggle_mode = true
+		b.button_group = group
+		var id: String = c[0]
+		b.pressed.connect(func(): on_pick.call(id))
+		row.add_child(b)
+		buttons[id] = b
+	_display_buttons[text] = buttons
+	return row
 
 
 func _section(text: String) -> Label:
@@ -260,6 +301,14 @@ func _sync() -> void:
 		(_camera_buttons[cid] as Button).set_pressed_no_signal(Settings.camera_style == cid)
 	if _checks.has("vibration"):
 		(_checks.vibration as CheckButton).set_pressed_no_signal(Settings.vibration)
+	if _display_buttons.has("Screen"):
+		(_display_buttons["Screen"]["fullscreen" if Settings.fullscreen else "window"] as Button).set_pressed_no_signal(true)
+		var key := "%dx%d" % [Settings.window_size.x, Settings.window_size.y]
+		if _display_buttons["Window size"].has(key):
+			(_display_buttons["Window size"][key] as Button).set_pressed_no_signal(true)
+		if _display_buttons["Frame limit"].has(str(Settings.fps_limit)):
+			(_display_buttons["Frame limit"][str(Settings.fps_limit)] as Button).set_pressed_no_signal(true)
+		(_checks.vsync as CheckButton).set_pressed_no_signal(Settings.vsync)
 	for i in _quality_buttons.size():
 		_quality_buttons[i].set_pressed_no_signal(i == Settings.quality)
 	for key in _sliders:
