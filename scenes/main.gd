@@ -31,6 +31,12 @@ var _last_stall_banner := -100000
 var _lessons: FlyingLessons
 var _respawn_timer := -1.0
 var collision_debug: CollisionDebug
+## Rings flown through in a row (a missed ring starts it again), and the misses already counted.
+var _streak := 0
+var _misses_seen := 0
+## A paper-coloured cover faded in and out between screens.
+var _fade_rect: ColorRect
+var _fade_tween: Tween
 var pilot_log: PilotLog
 ## Replays the best run on the current flight, and records this one.
 var ghost: GhostPlane
@@ -56,6 +62,15 @@ func _ready() -> void:
 	add_child(_menu_trail)
 	_menu_trail.set_style("rainbow")
 	plane.level = level
+	var fade_layer := CanvasLayer.new()
+	fade_layer.layer = 40
+	add_child(fade_layer)
+	_fade_rect = ColorRect.new()
+	_fade_rect.color = UIKit.PAPER
+	_fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fade_rect.modulate.a = 0.0
+	fade_layer.add_child(_fade_rect)
 	ghost = GhostPlane.new()
 	ghost.name = "Ghost"
 	add_child(ghost)
@@ -229,9 +244,7 @@ func _wire() -> void:
 		Audio.play("star", -2.0)
 		plane.add_star_gust()
 		hud.float_text(p, "+100"))
-	level.ring_passed.connect(func(p: Vector3):
-		Audio.play("ring", -3.0)
-		hud.float_text(p, "+25", UIKit.ROUTE_GLOW))
+	level.ring_passed.connect(_on_ring)
 	level.bonus_ring_passed.connect(func(p: Vector3, _pts: int, msg: String):
 		Audio.play("bonus", 0.0)
 		hud.banner(msg, UIKit.BONUS, 1.8)
@@ -262,8 +275,34 @@ func _wire() -> void:
 
 # --- Flow --------------------------------------------------------------------------------
 
+## Fades the paper cover to `to` (1 = covered) over `time`; await it to wait for the cover.
+func _fade(to: float, time: float) -> void:
+	if _fade_tween:
+		_fade_tween.kill()
+	_fade_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	_fade_tween.tween_property(_fade_rect, "modulate:a", to, time)
+	await _fade_tween.finished
+
+
+## A ring flown through: a pop of light, a chime that climbs with the streak, a little kick of
+## the camera, and every few rings in a row a cheer.
+func _on_ring(p: Vector3) -> void:
+	_streak += 1
+	Audio.play("ring", -3.0, 1.0 + 0.05 * mini(_streak - 1, 10))
+	hud.pop(p, cam, UIKit.GOLD, _streak >= 5)
+	cam.shake(0.08)
+	hud.float_text(p, "+25", UIKit.GOLD)
+	if _streak >= 3:
+		hud.float_text(p + Vector3(0, -0.8, 0), "×%d" % _streak, Color.WHITE, 30)
+	if _streak in [5, 10, 15, 20]:
+		hud.banner("%d in a row!" % _streak, UIKit.GOLD, 1.0)
+
+
 func go_menu() -> void:
 	get_tree().paused = false
+	Engine.time_scale = 1.0
+	_fade_rect.modulate.a = 1.0
+	_fade(0.0, 0.35)
 	_end_lessons()
 	_end_timer = -1.0
 	Game.set_state(Game.State.MENU)
@@ -290,6 +329,10 @@ func start_level(index: int) -> void:
 	if not Game.is_unlocked(index):
 		return
 	get_tree().paused = false
+	Engine.time_scale = 1.0
+	await _fade(1.0, 0.15)
+	_streak = 0
+	_misses_seen = 0
 	_end_timer = -1.0
 	Game.current_level = index
 	var data := Game.level()
@@ -333,6 +376,7 @@ func start_level(index: int) -> void:
 		collision_debug.rebuild.call_deferred()
 	Audio.set_wind(0.0, false)
 	Game.set_state(Game.State.INTRO)
+	_fade(0.0, 0.35)
 
 
 func throw_plane() -> void:
@@ -443,6 +487,13 @@ func _on_landed(info: Dictionary) -> void:
 	hud.float_text(info.position, "+%d" % (score.accuracy + score.bullseye_bonus), zone_col)
 	if level.pad:
 		level.pad.mark(info.position)
+	hud.pop(info.position, cam, zone_col, score.zone == "bullseye")
+	if score.zone == "bullseye":
+		# Confetti, a fanfare and a short slow-motion moment.
+		hud.confetti()
+		Audio.play("bonus", 0.0)
+		Engine.time_scale = 0.35
+		get_tree().create_timer(0.8, true, false, true).timeout.connect(func(): Engine.time_scale = 1.0)
 	level.hide_guides()
 	touch.close()
 	Audio.set_wind(0.0, false)
@@ -524,6 +575,11 @@ func _process(delta: float) -> void:
 			x *= Settings.sensitivity
 			y *= Settings.sensitivity * (-1.0 if Settings.invert_pitch else 1.0)
 			plane.set_controls(clampf(x, -1.0, 1.0), clampf(y, -1.0, 1.0))
+			# A ring skipped (flown past) ends the streak.
+			var misses: int = level.next_gate - level.rings_passed
+			if misses > _misses_seen:
+				_misses_seen = misses
+				_streak = 0
 			# Sharp turn: E (or Q) held while already turning right (or left), or the touch Roll
 			# button held while steering.
 			var sharp := 0.0
