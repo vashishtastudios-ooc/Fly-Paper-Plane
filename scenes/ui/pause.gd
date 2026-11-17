@@ -5,9 +5,11 @@ signal resume_pressed
 signal restart_pressed
 signal flights_pressed
 signal settings_pressed
+signal photo_pressed
 
 var _sheet: NotebookSheet
 var _resume: Button
+var _photo: Button
 
 
 func _ready() -> void:
@@ -34,6 +36,9 @@ func _ready() -> void:
 	var restart := UIKit.paper_button("Restart flight", false, 26)
 	restart.pressed.connect(func(): restart_pressed.emit())
 	v.add_child(restart)
+	_photo = UIKit.paper_button("Photo", false, 26)
+	_photo.pressed.connect(func(): photo_pressed.emit())
+	v.add_child(_photo)
 	var settings := UIKit.paper_button("Settings", false, 26)
 	settings.pressed.connect(func(): settings_pressed.emit())
 	v.add_child(settings)
@@ -48,9 +53,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("pause"):
 		resume_pressed.emit()
 		get_viewport().set_input_as_handled()
+	elif visible and _photo.visible and event.is_action_pressed("photo"):
+		photo_pressed.emit()
+		get_viewport().set_input_as_handled()
 
 
 func open() -> void:
+	# Photo mode is for PC, mid-flight.
+	_photo.visible = not Settings.is_mobile and Game.state == Game.State.FLYING
 	visible = true
 	_layout()
 	if not get_tree().process_frame.is_connected(_layout):
@@ -64,5 +74,5 @@ func close() -> void:
 
 func _layout() -> void:
 	var s := Settings.viewport_size()
-	_sheet.size = Vector2(minf(s.x - 40.0, 380.0), minf(s.y - 40.0, 450.0))
+	_sheet.size = Vector2(minf(s.x - 40.0, 380.0), minf(s.y - 40.0, 495.0 if _photo.visible else 450.0))
 	_sheet.position = (s - _sheet.size) * 0.5

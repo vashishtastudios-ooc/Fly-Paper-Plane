@@ -27,6 +27,8 @@ var _floaters: Array = []
 var _float_root: Control
 var _edge: UIWidgets.EdgeArrow
 var _fx: FxLayer
+## Free flight: no rings, stars, timer or landing spot to point at.
+var free_mode := false
 
 
 func _ready() -> void:
@@ -164,19 +166,27 @@ func update_flight(plane: PaperPlane, level: LevelRuntime, cam: Camera3D, time: 
 	_stars.text = "★ %d/%d" % [level.stars_collected, level.stars_total()]
 	_timer.text = "%.1f s" % time
 	_vario.set_vs(plane.state.vy)
-	var tgt := level.current_target()
-	var tpos: Vector3 = tgt.position
-	var dist := Vector2(tpos.x - p.x, tpos.z - p.z).length()
-	var dy := tpos.y - p.y
-	var vert := "%d m %s" % [absi(roundi(dy)), "above" if dy >= 0.0 else "below"]
-	_target_label.text = "%s  ·  %d m  ·  %s" % [tgt.label, roundi(dist), vert]
-	var yaw := plane.state.yaw
-	var fwd := Vector2(-sin(yaw), -cos(yaw))
-	var right := Vector2(cos(yaw), -sin(yaw))
-	var to := Vector2(tpos.x - p.x, tpos.z - p.z).normalized()
-	_heading.set_angle(atan2(to.dot(right), to.dot(fwd)))
-	_layout_target_pill()
-	_update_edge_arrow(cam, tpos)
+	(_stars.get_parent() as Control).visible = not free_mode
+	(_timer.get_parent() as Control).visible = not free_mode
+	_heading.visible = not free_mode
+	if free_mode:
+		_target_label.text = "Free flight" if Settings.is_mobile else "Free flight  ·  %s for a photo" % OS.get_keycode_string(KEY_F2)
+		_layout_target_pill()
+		_edge.visible = false
+	else:
+		var tgt := level.current_target()
+		var tpos: Vector3 = tgt.position
+		var dist := Vector2(tpos.x - p.x, tpos.z - p.z).length()
+		var dy := tpos.y - p.y
+		var vert := "%d m %s" % [absi(roundi(dy)), "above" if dy >= 0.0 else "below"]
+		_target_label.text = "%s  ·  %d m  ·  %s" % [tgt.label, roundi(dist), vert]
+		var yaw := plane.state.yaw
+		var fwd := Vector2(-sin(yaw), -cos(yaw))
+		var right := Vector2(cos(yaw), -sin(yaw))
+		var to := Vector2(tpos.x - p.x, tpos.z - p.z).normalized()
+		_heading.set_angle(atan2(to.dot(right), to.dot(fwd)))
+		_layout_target_pill()
+		_update_edge_arrow(cam, tpos)
 	_update_floaters(cam, delta)
 	# Speed lines: from 50 km/h, strongest at the plane's top speed.
 	_fx.speed = clampf((plane.state.v - 14.0) / 7.0, 0.0, 1.0) if plane.mode == PaperPlane.Mode.FLYING else 0.0

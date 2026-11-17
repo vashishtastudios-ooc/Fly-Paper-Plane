@@ -10,6 +10,8 @@ signal level_chosen(index: int)
 signal hangar_pressed
 signal settings_pressed
 signal pilot_pressed
+## Free flight over the map with this id.
+signal free_flight_chosen(map_id: String)
 
 const TITLE := "Paper Plane Playground"
 const SUBTITLE := "Fun paper plane flying challenges"
@@ -35,6 +37,8 @@ var _quit_chip: PaperChip
 ## Maps page: the note standing in for maps still being built.
 var _soon_note: Label
 var _hangar_chip: PaperChip
+## Flights page: fly the map freely, with no rings or goal.
+var _free_chip: PaperChip
 var _back_chip: PaperChip
 var _hint: KeyHint
 var _selected := 0
@@ -100,6 +104,7 @@ func _ready() -> void:
 		get_tree().quit())
 	_hangar_chip = _chip("Hangar", "hanger", func(): hangar_pressed.emit())
 	_back_chip = _chip("Back", "back", _go_back)
+	_free_chip = _chip("Free flight", "free", func(): free_flight_chosen.emit(str(Game.MAPS[_map].id)))
 	_hint = KeyHint.new()
 	_root.add_child(_hint)
 	get_viewport().size_changed.connect(_layout)
@@ -152,6 +157,7 @@ func _show(screen: String) -> void:
 	_quit_chip.visible = home and not Settings.is_mobile
 	_play.visible = home or flights
 	_hangar_chip.visible = flights
+	_free_chip.visible = flights and (Game.lessons_done or Game.unlock_all)
 	_back_chip.visible = not home
 	var lv: Array = Game.MAPS[_map].levels
 	for c in _cards:
@@ -350,16 +356,21 @@ func _layout() -> void:
 		var chip_y := base_y + play_size.y * 0.42
 		_back_chip.size = chip_size
 		_hangar_chip.size = chip_size
+		_free_chip.size = Vector2(chip_size.x * 1.25, chip_size.y)
 		if _screen == "maps":
 			_back_chip.position = Vector2(page.get_center().x - chip_size.x * 0.5, base_y + play_size.y * 0.2)
 		elif portrait:
-			var total := chip_size.x * 2 + 24 * ck
-			_hangar_chip.position = Vector2((s.x - total) * 0.5, _play.position.y + play_size.y + 14 * ck)
-			_back_chip.position = _hangar_chip.position + Vector2(chip_size.x + 24 * ck, 0)
+			var gap := 18 * ck
+			var total := chip_size.x * 2 + _free_chip.size.x + gap * 2
+			_free_chip.position = Vector2((s.x - total) * 0.5, _play.position.y + play_size.y + 14 * ck)
+			_hangar_chip.position = _free_chip.position + Vector2(_free_chip.size.x + gap, 0)
+			_back_chip.position = _hangar_chip.position + Vector2(chip_size.x + gap, 0)
 		else:
+			# Hangar | Play | Free flight | Back
 			_hangar_chip.position = Vector2(_play.position.x - chip_size.x - 30 * ck, chip_y)
-			_back_chip.position = Vector2(_play.position.x + play_size.x + 30 * ck, chip_y)
-	for c in [_play, _settings_chip, _pilot_chip, _quit_chip, _hangar_chip, _back_chip]:
+			_free_chip.position = Vector2(_play.position.x + play_size.x + 30 * ck, chip_y)
+			_back_chip.position = _free_chip.position + Vector2(_free_chip.size.x + 20 * ck, 0)
+	for c in [_play, _settings_chip, _pilot_chip, _quit_chip, _hangar_chip, _back_chip, _free_chip]:
 		c.k = ck
 		c.pivot_offset = c.size * 0.5
 		c.queue_redraw()
@@ -940,6 +951,11 @@ class PaperChip extends Button:
 				draw_polyline(PackedVector2Array([c + Vector2(s * 0.2, -s * 0.9), c + Vector2(-s * 0.9, -s * 0.9), c + Vector2(-s * 0.9, s * 0.9), c + Vector2(s * 0.2, s * 0.9)]), col, w, true)
 				draw_line(c + Vector2(-s * 0.3, 0), c + Vector2(s * 1.1, 0), col, w * 1.2, true)
 				draw_polyline(PackedVector2Array([c + Vector2(s * 0.6, -s * 0.5), c + Vector2(s * 1.1, 0), c + Vector2(s * 0.6, s * 0.5)]), col, w * 1.2, true)
+			"free":
+				# A little plane looping the loop.
+				MenuUI.draw_dashes(self, MenuUI.bezier(c + Vector2(-s * 1.2, s * 0.8), c + Vector2(-s * 0.2, s * 1.1),
+					c + Vector2(-s * 1.3, -s * 0.9), c + Vector2(-s * 0.1, -s * 0.2), 10), col, w * 0.8, 4.0 * k)
+				MenuUI.draw_paper_plane(self, c + Vector2(s * 0.45, -s * 0.15), s * 0.75, col)
 			"book":
 				draw_polyline(PackedVector2Array([c + Vector2(0, -s * 0.6), c + Vector2(-s * 1.1, -s * 0.8), c + Vector2(-s * 1.1, s * 0.7), c + Vector2(0, s * 0.85),
 					c + Vector2(s * 1.1, s * 0.7), c + Vector2(s * 1.1, -s * 0.8), c + Vector2(0, -s * 0.6), c + Vector2(0, s * 0.85)]), col, w, true)

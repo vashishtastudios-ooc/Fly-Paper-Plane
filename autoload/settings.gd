@@ -453,6 +453,7 @@ func _register_inputs() -> void:
 	_action("roll_right", [KEY_E], [JOY_BUTTON_RIGHT_SHOULDER], [])
 	_action("throw", [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE], [JOY_BUTTON_A], [])
 	_action("pause", [KEY_ESCAPE, KEY_P], [JOY_BUTTON_START], [])
+	_action("photo", [KEY_F2], [JOY_BUTTON_BACK], [])
 
 
 func _action(name: String, keys: Array, buttons: Array, axes: Array) -> void:

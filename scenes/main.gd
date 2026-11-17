@@ -40,6 +40,18 @@ var _fade_tween: Tween
 var pilot_log: PilotLog
 ## Replays the best run on the current flight, and records this one.
 var ghost: GhostPlane
+## Free flight: the map with no rings or goal; a crash pops the plane back into the air.
+var free_flight := false
+var _free_map := ""
+var _free_start := Vector3.ZERO
+var _free_yaw := 0.0
+## Where the last free-flight crash happened and why (where to pop back up).
+var _free_crash := Vector3.ZERO
+var _free_crash_kind := ""
+var _gust_refill_default := 9.0
+## PC: the frozen, HUD-less camera for taking pictures.
+var photo: PhotoMode
+var _photo_hud := false
 
 
 func _ready() -> void:
@@ -62,6 +74,7 @@ func _ready() -> void:
 	add_child(_menu_trail)
 	_menu_trail.set_style("rainbow")
 	plane.level = level
+	_gust_refill_default = plane.gust_refill_time
 	var fade_layer := CanvasLayer.new()
 	fade_layer.layer = 40
 	add_child(fade_layer)
@@ -78,6 +91,12 @@ func _ready() -> void:
 	pilot_log.name = "PilotLog"
 	add_child(pilot_log)
 	pilot_log.closed.connect(menu.refocus)
+	photo = PhotoMode.new()
+	photo.name = "PhotoMode"
+	add_child(photo)
+	photo.closed.connect(func():
+		hud.visible = _photo_hud
+		pause_ui.open())
 	kid.visible = false
 	hud.visible = false
 	# Let the loading card render before the heavy town build.
@@ -247,6 +266,8 @@ func _wire() -> void:
 	menu.hangar_pressed.connect(func(): hangar.open())
 	menu.settings_pressed.connect(func(): settings_menu.open())
 	menu.pilot_pressed.connect(func(): pilot_log.open())
+	menu.free_flight_chosen.connect(start_free_flight)
+	pause_ui.photo_pressed.connect(open_photo)
 	settings_menu.connect("credits_pressed", func(): credits.open())
 	hangar.closed.connect(func():
 		menu.refresh()
@@ -282,7 +303,10 @@ func _wire() -> void:
 	pause_ui.resume_pressed.connect(resume_game)
 	pause_ui.restart_pressed.connect(func():
 		resume_game()
-		start_level(Game.current_level))
+		if free_flight:
+			start_free_flight(_free_map)
+		else:
+			start_level(Game.current_level))
 	pause_ui.flights_pressed.connect(func():
 		resume_game()
 		go_menu())
@@ -319,6 +343,7 @@ func go_menu() -> void:
 	_fade_rect.modulate.a = 1.0
 	_fade(0.0, 0.35)
 	_end_lessons()
+	_end_free_flight()
 	_end_timer = -1.0
 	Game.set_state(Game.State.MENU)
 	intro.close()
@@ -349,6 +374,7 @@ func start_level(index: int) -> void:
 	_streak = 0
 	_misses_seen = 0
 	_end_timer = -1.0
+	_end_free_flight()
 	Game.current_level = index
 	var data := Game.level()
 	await switch_map(data.map)
@@ -392,6 +418,169 @@ func start_level(index: int) -> void:
 	Audio.set_wind(0.0, false)
 	Game.set_state(Game.State.INTRO)
 	_fade(0.0, 0.35)
+
+
+## Free flight over map `map_id`: no rings, stars, timer or landing spot, all of the map's rising
+## air and breezes, gusts that refill quickly, and the plane starting high over the best viewpoint.
+func start_free_flight(map_id: String) -> void:
+	var lv: Array = []
+	for m in Game.MAPS:
+		if m.id == map_id:
+			lv = m.levels
+	if lv.is_empty():
+		return
+	get_tree().paused = false
+	Engine.time_scale = 1.0
+	await _fade(1.0, 0.15)
+	_end_lessons()
+	_end_timer = -1.0
+	_streak = 0
+	_misses_seen = 0
+	Game.current_level = lv[0]
+	await switch_map(map_id)
+	var data := _free_flight_data(lv)
+	free_flight = true
+	_free_map = map_id
+	ghost.set_run(PackedFloat32Array())
+	ghost.visible = false
+	level.build(data, town)
+	# Just the air: no rings, stars, dotted line or landing spot.
+	for g in level.gates:
+		g.queue_free()
+	level.gates.clear()
+	for st in level.stars:
+		st.queue_free()
+	level.stars.clear()
+	if level.pad:
+		level.pad.queue_free()
+		level.pad = null
+	if level._dots:
+		level._dots.visible = false
+	level.hide_guides()
+	# Every tree stands (none cleared for a route).
+	var trees := data.duplicate() as LevelData
+	trees.route = null
+	town.clear_trees_for_level(trees)
+	Audio.play_music("city" if map_id == "city" else "day")
+	hud.reset()
+	hud.free_mode = true
+	plane.reset()
+	plane.gust_refill_time = 2.0
+	menu_plane.visible = false
+	_hide_reel()
+	kid.visible = false
+	menu.close()
+	intro.close()
+	result.close()
+	pause_ui.close()
+	_launch_free(_free_start, _free_yaw)
+	if collision_debug and collision_debug.visible:
+		collision_debug.rebuild.call_deferred()
+	_fade(0.0, 0.35)
+	hud.banner("Free flight! Go anywhere", UIKit.GOLD, 1.8)
+
+
+## The map's flights merged for free flight: all their rising air, breezes and lines, the
+## start above the highest launch spot, and the landing spot moved far out of reach.
+func _free_flight_data(lv: Array) -> LevelData:
+	var base: LevelData = Game.levels[lv[0]]
+	for i in lv:
+		if Game.levels[i].time_of_day != "dusk":
+			base = Game.levels[i]
+			break
+	var d := base.duplicate() as LevelData
+	d.decor = ""
+	d.bonus_stars = PackedVector3Array()
+	d.has_bonus_ring = false
+	d.pad_position = Vector3(0, -1000, 0)
+	d.pad_radius = 0.1
+	var th := []
+	var wz := []
+	var hz := []
+	var high: LevelData = base
+	for i in lv:
+		var l: LevelData = Game.levels[i]
+		if l.platform_position.y > high.platform_position.y:
+			high = l
+		for t in l.thermals:
+			if not _near_any(th, t):
+				th.append(t)
+		for w in l.wind_zones:
+			if not _near_any(wz, w):
+				wz.append(w)
+		for h in l.hazard_lines:
+			var dup := false
+			for o in hz:
+				if (o.a as Vector3).distance_to(h.a) < 1.0 and (o.b as Vector3).distance_to(h.b) < 1.0:
+					dup = true
+			if not dup:
+				hz.append(h)
+	d.thermals = th
+	d.wind_zones = wz
+	d.hazard_lines = hz
+	_free_yaw = high.start_yaw()
+	var fwd := Vector3(-sin(_free_yaw), 0.0, -cos(_free_yaw))
+	_free_start = high.platform_position + fwd * 5.0 + Vector3(0, 7.0, 0)
+	return d
+
+
+static func _near_any(list: Array, item: Dictionary) -> bool:
+	for o in list:
+		if Vector2(float(o.x) - float(item.x), float(o.z) - float(item.z)).length() < 4.0:
+			return true
+	return false
+
+
+func _launch_free(pos: Vector3, yaw: float) -> void:
+	plane.launch(pos, yaw)
+	plane.state.v = 10.0
+	plane.state.pitch = -0.05
+	Game.set_state(Game.State.FLYING)
+	cam.set_mode(ChaseCamera.Mode.FOLLOW, true)
+	hud.visible = true
+	if Settings.touch_ui:
+		touch.open()
+
+
+## After a free-flight crash: back in the air well above the spot (over any roof just ahead), or
+## at the start after flying out of the map.
+func _respawn_free() -> void:
+	if _free_crash_kind == "out":
+		_launch_free(_free_start, _free_yaw)
+		return
+	var yaw := plane.state.yaw
+	var fwd := Vector3(-sin(yaw), 0.0, -cos(yaw))
+	var side := Vector3(fwd.z, 0.0, -fwd.x)
+	var space := plane.get_world_3d().direct_space_state
+	var top := -INF
+	for a in [0.0, 5.0, 10.0, 15.0]:
+		for b in [-3.0, 0.0, 3.0]:
+			var p: Vector3 = _free_crash + fwd * a + side * b
+			var q := PhysicsRayQueryParameters3D.create(Vector3(p.x, 400.0, p.z), Vector3(p.x, -50.0, p.z), 1 | 2)
+			var hit := space.intersect_ray(q)
+			top = maxf(top, Terrain.ground_height(p.x, p.z))
+			if not hit.is_empty():
+				top = maxf(top, hit.position.y)
+	_launch_free(Vector3(_free_crash.x, top + 16.0, _free_crash.z), yaw)
+
+
+func _end_free_flight() -> void:
+	if not free_flight:
+		return
+	free_flight = false
+	hud.free_mode = false
+	plane.gust_refill_time = _gust_refill_default
+
+
+## PC: freezes the flight and opens photo mode around the plane.
+func open_photo() -> void:
+	if Settings.is_mobile or Game.state != Game.State.FLYING or photo.visible:
+		return
+	get_tree().paused = true
+	pause_ui.close()
+	_photo_hud = hud.visible
+	hud.visible = false
+	photo.open(cam, plane.get_global_transform_interpolated().origin)
 
 
 func throw_plane() -> void:
@@ -517,6 +706,20 @@ func _on_landed(info: Dictionary) -> void:
 
 func _on_crashed(message: String, _kind: String) -> void:
 	Game.set_state(Game.State.CRASHED)
+	if free_flight:
+		# No score card: a moment to see it, then straight back up.
+		hud.banner(message, Color("#ffd9a1"), 1.0)
+		if _kind != "stopped" and _kind != "soaked":
+			cam.shake(0.5)
+			Settings.vibrate(80)
+		cam.orbit_center = plane.state.pos
+		cam.set_mode(ChaseCamera.Mode.ORBIT)
+		touch.close()
+		Audio.set_wind(0.0, false)
+		_free_crash = plane.state.pos
+		_free_crash_kind = _kind
+		_respawn_timer = 1.2
+		return
 	if _lessons:
 		# Lessons are forgiving: a moment to see what happened, then back in the air.
 		hud.banner(message + "  Let's try that again!", Color("#ffd9a1"), 1.2)
@@ -581,6 +784,8 @@ func _process(delta: float) -> void:
 		_respawn_timer -= delta
 		if _respawn_timer <= 0.0 and _lessons:
 			_respawn_in_lesson()
+		elif _respawn_timer <= 0.0 and free_flight:
+			_respawn_free()
 	match Game.state:
 		Game.State.MENU:
 			_update_menu_plane(delta)
@@ -607,12 +812,14 @@ func _process(delta: float) -> void:
 			elif x < -0.2 and (Input.is_action_pressed("roll_left") or touch.sharp_held):
 				sharp = -1.0
 			plane.sharp_dir = sharp
-			Profile.add_air("" if Game.in_lessons() else Game.level_id(Game.current_level), delta, plane.state.v * delta)
-			ghost.record(plane.flight_time, plane, (plane.get_node("Visual") as Node3D).rotation.z)
-			ghost.play(plane.flight_time)
-			_flight_hints(delta)
+			Profile.add_air("" if Game.in_lessons() or free_flight else Game.level_id(Game.current_level), delta, plane.state.v * delta)
+			if not free_flight:
+				ghost.record(plane.flight_time, plane, (plane.get_node("Visual") as Node3D).rotation.z)
+				ghost.play(plane.flight_time)
+				_flight_hints(delta)
 			hud.update_flight(plane, level, cam, plane.flight_time, delta)
-			level.update_guides(plane)
+			if not free_flight:
+				level.update_guides(plane)
 			Audio.set_wind(plane.state.v, true)
 		Game.State.LANDED, Game.State.CRASHED:
 			hud.update_flight(plane, level, cam, plane.flight_time, delta)
@@ -641,7 +848,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				throw_plane()
 				get_viewport().set_input_as_handled()
 		Game.State.FLYING:
-			if event.is_action_pressed("gust"):
+			if event.is_action_pressed("photo"):
+				open_photo()
+				get_viewport().set_input_as_handled()
+			elif event.is_action_pressed("gust"):
 				plane.use_gust()
 			# Q / E always roll; held while turning that way they also sharpen the turn.
 			elif event.is_action_pressed("roll_left"):
