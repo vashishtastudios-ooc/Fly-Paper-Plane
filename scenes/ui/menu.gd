@@ -32,6 +32,8 @@ var _settings_chip: PaperChip
 var _pilot_chip: PaperChip
 ## PC only: quit to the desktop (phones use their back button).
 var _quit_chip: PaperChip
+## Maps page: the note standing in for maps still being built.
+var _soon_note: Label
 var _hangar_chip: PaperChip
 var _back_chip: PaperChip
 var _hint: KeyHint
@@ -78,6 +80,9 @@ func _ready() -> void:
 		mc.pressed.connect(_on_map_pressed.bind(m))
 		_page.add_child(mc)
 		_map_cards.append(mc)
+	_soon_note = UIKit.label("More maps are coming in free updates!", UIKit.display_font(), 26, UIKit.MARGIN)
+	_soon_note.rotation = deg_to_rad(-1.5)
+	_page.add_child(_soon_note)
 	_play = PaperChip.new()
 	_play.text_label = "Play"
 	_play.kind = "play"
@@ -154,7 +159,9 @@ func _show(screen: String) -> void:
 		# Flights are numbered within their map.
 		c.number = lv.find(c.index) + 1
 	for mc in _map_cards:
-		mc.visible = maps
+		# Maps still being built stay hidden; a note promises them instead.
+		mc.visible = maps and not mc.info.get("soon", false)
+	_soon_note.visible = maps and _has_soon_maps()
 	if maps:
 		_title.text = MAPS_TITLE
 		_subtitle.text = MAPS_SUBTITLE
@@ -184,6 +191,13 @@ func refocus() -> void:
 		_map_cards[_map].grab_focus()
 	else:
 		_cards[_selected].grab_focus()
+
+
+func _has_soon_maps() -> bool:
+	for m in Game.MAPS:
+		if m.get("soon", false):
+			return true
+	return false
 
 
 func _go_back() -> void:
@@ -316,7 +330,9 @@ func _layout() -> void:
 		var area := Rect2(inner_x, top, page.size.x - inner_x - 26.0 * k, page.size.y - top - 30.0 * k)
 		var shown: Array = []
 		if _screen == "maps":
-			shown = _map_cards.duplicate()
+			for mc in _map_cards:
+				if not mc.info.get("soon", false):
+					shown.append(mc)
 			_grid(shown, area, 2 if portrait else 3, k, 0.9)
 		else:
 			# In the map's flight order (not the order the flights were added).
@@ -324,6 +340,9 @@ func _layout() -> void:
 				shown.append(_cards[i])
 			_grid(shown, area, 2 if portrait else 4, k, 1.05)
 		_page.queue_redraw()
+		_soon_note.add_theme_font_size_override("font_size", int(26 * k))
+		_soon_note.position = Vector2(inner_x + 20.0 * k, page.size.y - 70.0 * k)
+		_soon_note.size = Vector2(page.size.x - inner_x - 60.0 * k, 40.0 * k)
 		# Buttons under the page: Hangar, Play, Back on Flights; Back on Maps.
 		var base_y := page.end.y - play_size.y * 0.25
 		_play.size = play_size

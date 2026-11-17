@@ -48,6 +48,44 @@ static func crash(kind: String) -> String:
 	return pool[randi() % pool.size()]
 
 
+## A tip for after a crash, by what went wrong. `near` = it came down close to the landing spot.
+static func crash_tip(kind: String, near: bool) -> String:
+	match kind:
+		"ground", "stopped":
+			if near:
+				return "So close! Keep the nose up a touch at the end, or tap %s for a little lift." % Settings.key_label("gust")
+			return "Ran out of height. Ride the rising air to climb, and don't dive too early."
+		"tree":
+			return "Trees are sticky! Stay over the dotted line and climb in rising air to clear them."
+		"water", "soaked":
+			return "Water pulls the plane down. Keep your speed up when you fly low over it."
+		"wall", "bridge", "car":
+			return "Start turning earlier. Hold %s or %s while turning for a sharper turn." % [Settings.key_label("roll_left"), Settings.key_label("roll_right")]
+		"glass", "greenhouse":
+			return "That window was shut. Look for the open one right next to it."
+		"lamp", "furniture", "banister", "ceiling", "fan":
+			return "Indoors, line up early and keep the plane steady through the room."
+		"line":
+			return "Lines and washing: fly under or over them, never through!"
+		"out":
+			return "Follow the dotted line and the arrow at the top to stay on course."
+	return "Follow the dotted line through the rings: it always leads to the landing spot."
+
+
+## Tips shown on the loading screen, one at a time.
+const LOADING_TIPS := [
+	"Tip: land in the gold bullseye for three ribbons and a bonus.",
+	"Tip: rising air lifts you. Fly through it, or circle inside a wide one.",
+	"Tip: diving builds speed, and speed can be traded back for height.",
+	"Tip: hold a roll key while turning for a sharper turn.",
+	"Tip: rings in a row make a streak. How long can you keep it?",
+	"Tip: your best run comes back as a ghost to race.",
+	"Tip: earn ribbons to unlock new planes, papers and trails in the Hangar.",
+	"Tip: every star collected is worth 100 points.",
+	"Tip: slow down and come in gently for a soft touchdown.",
+]
+
+
 const ZONE := {
 	"bullseye": ["Dead centre! Show-off.", "Right on the dot!", "Pilot of the year!", "Did you see that?!"],
 	"inner": ["So close to perfect!", "A whisker off the bullseye.", "Smooth flying, captain."],

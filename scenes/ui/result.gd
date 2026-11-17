@@ -18,6 +18,10 @@ var _rows: GridContainer
 var _best: Label
 var _next: Button
 var _retry: Button
+## Crashes: the big "Fly again", how far along the route the plane got, and a tip.
+var _retry_big: Button
+var _route: RouteStrip
+var _tip: Label
 var _flights: Button
 
 
@@ -65,6 +69,11 @@ func _ready() -> void:
 	_rows.add_theme_constant_override("v_separation", 1)
 	_rows.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(_rows)
+	_route = RouteStrip.new()
+	v.add_child(_route)
+	_tip = UIKit.label("", UIKit.body_font(), 19, UIKit.INK_DARK)
+	_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(_tip)
 	_best = UIKit.label("", UIKit.display_font(), 24, UIKit.MARGIN)
 	_best.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_best.custom_minimum_size.x = 300
@@ -73,6 +82,9 @@ func _ready() -> void:
 	row.add_theme_constant_override("h_separation", 12)
 	row.add_theme_constant_override("v_separation", 8)
 	v.add_child(row)
+	_retry_big = UIKit.paper_button("Fly again", true, 28)
+	_retry_big.pressed.connect(func(): retry_pressed.emit())
+	row.add_child(_retry_big)
 	_next = UIKit.paper_button("Next flight", true, 28)
 	_next.pressed.connect(func(): next_pressed.emit())
 	row.add_child(_next)
@@ -110,6 +122,10 @@ func show_landing(score: Dictionary, stats: Dictionary, is_best: bool, has_next:
 	_sub.text = Quips.landing_zone(score.zone) + ("  Ouch, a hard landing: one ribbon less." if score.hard else "")
 	_ribbons.visible = true
 	_ribbons.set_filled(score.ribbons)
+	_route.visible = false
+	_tip.visible = false
+	_retry_big.visible = false
+	_retry.visible = true
 	_target.visible = true
 	_target.show_landing(stats.get("offset", Vector2.ZERO), stats.radius, score.zone)
 	var zone_names := {"bullseye": "bullseye", "inner": "inner ring", "outer": "outer ring", "edge": "on the edge"}
@@ -141,19 +157,30 @@ func show_achievements(list: Array) -> void:
 	_layout()
 
 
-func show_crash(message: String, stars: int, stars_total: int, time: float, kind := "") -> void:
+func show_crash(message: String, stars: int, stars_total: int, time: float, kind := "", info := {}) -> void:
 	_clear_rows()
 	_headline.text = message
 	_sub.text = Quips.crash(kind)
 	_close.visible = false
 	_target.visible = false
 	_ribbons.visible = false
+	var progress: float = info.get("progress", 0.0)
+	_route.visible = true
+	_route.progress = progress
+	_route.queue_redraw()
+	_tip.visible = true
+	var far := "You made it %d%% of the way" % roundi(progress * 100.0)
+	if info.has("to_pad"):
+		far += "  ·  %d m from the landing spot" % roundi(float(info.to_pad))
+	_tip.text = far + "\n" + Quips.crash_tip(kind, bool(info.get("near", false)))
+	_retry_big.visible = true
+	_retry.visible = false
 	_row("Stars collected", "%d of %d" % [stars, stars_total])
 	_row("Time in the air", "%.1f s" % time)
 	_best.text = ""
 	_next.visible = false
 	_open()
-	_retry.grab_focus()
+	_retry_big.grab_focus()
 
 
 func _open() -> void:
@@ -179,6 +206,7 @@ func _layout() -> void:
 	# Give wrapping labels their width up front so the sheet height is computed sensibly.
 	_sub.custom_minimum_size.x = w - (300.0 if _target.visible else 140.0)
 	_close.custom_minimum_size.x = w - 300.0
+	_tip.custom_minimum_size.x = w - 140.0
 	var h := 600.0 if _ribbons.visible else 430.0
 	# A crash card is only as tall as its text needs.
 	_sheet.size.x = w
@@ -221,3 +249,28 @@ class TargetDiagram extends Control:
 			p = c + (p - c).normalized() * lim
 		draw_circle(p, 6.0, Color("#c8423b"))
 		draw_arc(p, 9.0, 0, TAU, 16, Color("#c8423b"), 2.0, true)
+
+
+## The route as a dotted line from the throw to the landing spot, with the plane drawn where the
+## flight ended (crash card).
+class RouteStrip extends Control:
+	var progress := 0.0
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(300, 44)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var y := size.y * 0.55
+		var x0 := 14.0
+		var x1 := size.x - 30.0
+		var x := x0
+		while x < x1:
+			draw_line(Vector2(x, y), Vector2(minf(x + 8.0, x1), y), Color(UIKit.PENCIL, 0.55), 2.0, true)
+			x += 14.0
+		var xp := lerpf(x0, x1, clampf(progress, 0.0, 1.0))
+		draw_line(Vector2(x0, y), Vector2(xp, y), Color("#ff9a33"), 4.0, true)
+		draw_circle(Vector2(x0, y), 5.0, UIKit.INK_DARK)
+		draw_circle(Vector2(x1 + 12.0, y), 11.0, Color("#3fc463"))
+		draw_circle(Vector2(x1 + 12.0, y), 4.0, UIKit.GOLD)
+		MenuUI.draw_paper_plane(self, Vector2(xp, y - 12.0), 13.0, UIKit.INK)

@@ -6,6 +6,7 @@ extends CanvasLayer
 signal closed
 
 var _done: Button
+var _clouds: Array = []
 
 const KINDS := [["shape", "Plane"], ["paper", "Paper"], ["trail", "Trail"], ["sticker", "Sticker"]]
 
@@ -144,9 +145,25 @@ func _build_preview() -> void:
 	_viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	_preview_box.add_child(_viewport)
 	var env := Environment.new()
-	# A soft sky behind the plane so every trail (even the glowing ones) shows clearly.
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color("#6fa9d6")
+	# A golden-hour sky over distant hills (soft and hazy, so every trail still shows clearly).
+	var sky_mat := ProceduralSkyMaterial.new()
+	sky_mat.sky_top_color = Color("#5f97d4")
+	sky_mat.sky_horizon_color = Color("#f6d2ac")
+	sky_mat.ground_horizon_color = Color("#f6d2ac")
+	sky_mat.ground_bottom_color = Color("#9cc07a")
+	sky_mat.sun_angle_max = 20.0
+	var sky := Sky.new()
+	sky.sky_material = sky_mat
+	sky.radiance_size = Sky.RADIANCE_SIZE_64
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	env.fog_enabled = true
+	env.fog_mode = Environment.FOG_MODE_DEPTH
+	env.fog_light_color = Color("#f6d8b8")
+	env.fog_depth_begin = 45.0
+	env.fog_depth_end = 220.0
+	# Haze on the hills only: the sky keeps its blue.
+	env.fog_sky_affect = 0.0
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("#f5d9bd")
 	env.ambient_light_energy = 0.7
@@ -161,9 +178,11 @@ func _build_preview() -> void:
 	_viewport.add_child(sun)
 	var cam := Camera3D.new()
 	cam.fov = 34.0
-	var cam_pos := Vector3(0, 1.7, 5.3)
-	cam.transform = Transform3D(Basis.looking_at(Vector3(0, -0.05, 0) - cam_pos, Vector3.UP), cam_pos)
+	# Nearly level, so the sky fills the top of the view and the hills sit behind the plane.
+	var cam_pos := Vector3(0, 0.9, 5.6)
+	cam.transform = Transform3D(Basis.looking_at(Vector3(0, 0.25, 0) - cam_pos, Vector3.UP), cam_pos)
 	_viewport.add_child(cam)
+	_build_scenery()
 	# The plane flies figure-eights; the trail follows it exactly as in a flight.
 	_flyer = Node3D.new()
 	_flyer.name = "Flyer"
@@ -241,6 +260,67 @@ func _process(delta: float) -> void:
 	var bank := clampf(-dir.cross(turn).y * 260.0, -0.75, 0.75)
 	_flyer.position = p
 	_flyer.basis = Basis.looking_at(dir, Vector3.UP) * Basis(Vector3(0, 0, 1), bank)
+	for c in _clouds:
+		c.position.x += delta * 2.0
+		if c.position.x > 70.0:
+			c.position.x = -70.0
+
+
+## The view behind the preview plane: rolling hills with a few trees and cottages, and soft
+## clouds drifting across the sky.
+func _build_scenery() -> void:
+	var b := MeshBuilder.new()
+	var grass := Mats.get_mat("solid")
+	var greens := [Color("#8fbf6a"), Color("#7aae5c"), Color("#a3c97a"), Color("#6f9e4c")]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 41
+	# Three rows of low hills well behind the plane, lighter (hazier) the further they are, with
+	# trees and little cottages on the nearest ones.
+	for row in 3:
+		var z := -55.0 - row * 30.0
+		var base := -12.0 + row * 2.0
+		var x := -90.0 - row * 20.0
+		while x < 90.0 + row * 20.0:
+			var w := rng.randf_range(26.0, 40.0) * (1.0 + row * 0.3)
+			var h := rng.randf_range(6.0, 9.0) + row * 2.5
+			b.sphere(grass, Vector3(x, base, z), Vector3(w * 0.6, h, 14.0), 5, 12, Color(greens[rng.randi() % greens.size()]).lerp(Color("#d9e6cf"), row * 0.28))
+			if row == 0:
+				var top := base + h
+				for k in 3:
+					var tx := x + rng.randf_range(-w * 0.22, w * 0.22)
+					var ty := top - 0.8 - absf(tx - x) * absf(tx - x) * h / (w * w * 0.36) * 0.9
+					var tz := z + 6.0
+					if rng.randf() < 0.3:
+						var hc := Color(["#f2d58f", "#e9b7a1", "#cfe3e8"][rng.randi() % 3])
+						b.box(grass, Transform3D(Basis(), Vector3(tx, ty + 1.0, tz)), Vector3(3.0, 2.0, 2.4), hc)
+						b.cylinder(grass, Transform3D(Basis(), Vector3(tx, ty + 2.0, tz)), 2.3, 0.05, 1.5, 4, Color("#c8423b"))
+					else:
+						b.cylinder(grass, Transform3D(Basis(), Vector3(tx, ty, tz)), 0.2, 0.2, 1.6, 5, Color("#7a5a40"))
+						b.sphere(grass, Vector3(tx, ty + 2.3, tz), Vector3(1.4, 1.7, 1.4), 4, 8, Color(["#e0a43a", "#6f9e4c", "#c8603a"][rng.randi() % 3]))
+			x += w * 0.8
+	var hills := b.build_instance("Hills", false)
+	_viewport.add_child(hills)
+	# Clouds: soft billboards drifting slowly.
+	var tex := TexGen.get_tex("cloud")
+	_clouds = []
+	for i in 5:
+		var q := QuadMesh.new()
+		var w := rng.randf_range(30.0, 55.0)
+		q.size = Vector2(w, w * 0.42)
+		var m := StandardMaterial3D.new()
+		m.albedo_texture = tex
+		m.albedo_color = Color(1, 0.97, 0.93, 0.85)
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		m.disable_fog = true
+		q.material = m
+		var c := MeshInstance3D.new()
+		c.mesh = q
+		c.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		c.position = Vector3(rng.randf_range(-60.0, 60.0), rng.randf_range(14.0, 26.0), -120.0 - i * 10.0)
+		_viewport.add_child(c)
+		_clouds.append(c)
 
 
 func _eight(a: float) -> Vector3:

@@ -201,6 +201,21 @@ func _show_loading() -> void:
 	_building = null
 	_loader.progress_source = func() -> float: return _building.build_progress if is_instance_valid(_building) else 0.0
 	_loading.add_child(_loader)
+	# A tip along the bottom, changing every few seconds.
+	var tip := UIKit.label(Quips.LOADING_TIPS.pick_random(), UIKit.body_font(), 19, UIKit.PENCIL)
+	tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tip.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	tip.offset_top = -46
+	tip.offset_bottom = -12
+	tip.offset_left = 40
+	tip.offset_right = -40
+	_loading.add_child(tip)
+	var t := Timer.new()
+	t.wait_time = 3.5
+	t.autostart = true
+	t.timeout.connect(func(): tip.text = Quips.LOADING_TIPS.pick_random())
+	tip.add_child(t)
 	add_child(_loading)
 
 
@@ -515,8 +530,12 @@ func _on_crashed(message: String, _kind: String) -> void:
 	Profile.record_crash(Game.level_id(Game.current_level), _kind)
 	_pending_achievements = Profile.check_achievements()
 	Profile.save()
+	var to_pad := level.horizontal_distance_to_pad(plane.state.pos)
 	_pending = {"kind": "crash", "message": message, "crash_kind": _kind, "stars": level.stars_collected,
-		"stars_total": level.stars_total(), "time": plane.flight_time}
+		"stars_total": level.stars_total(), "time": plane.flight_time,
+		# How far along the route it got, and how far from the landing spot it came down.
+		"progress": clampf(level.curve.get_closest_offset(plane.state.pos) / maxf(level.route_length, 1.0), 0.0, 1.0),
+		"to_pad": to_pad, "near": to_pad < level.pad_radius() + 8.0}
 	if _kind != "stopped" and _kind != "soaked":
 		cam.shake(0.9)
 		Settings.vibrate(120)
@@ -539,7 +558,7 @@ func _show_result() -> void:
 	if _pending.kind == "land":
 		result.show_landing(_pending.score, _pending.stats, _pending.best, Game.has_next_level(), _pending.unlocks)
 	else:
-		result.show_crash(_pending.message, _pending.stars, _pending.stars_total, _pending.time, _pending.crash_kind)
+		result.show_crash(_pending.message, _pending.stars, _pending.stars_total, _pending.time, _pending.crash_kind, _pending)
 	result.show_achievements(_pending_achievements)
 	_pending_achievements = []
 
