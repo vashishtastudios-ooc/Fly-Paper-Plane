@@ -1243,7 +1243,7 @@ func _ponds() -> void:
 ## comes with the lantern festival decor.)
 const LEVEL_PETS := {
 	0: ["cat", "ginger", Vector3(-31.9, 0.0, -130.8)],
-	1: ["dog", "collie", Vector3(26.05, -0.62, -305.75)],
+	1: ["dog", "collie", Vector3(4.3, 0.03, -521.6)],
 	2: ["cat", "grey", Vector3(2.1, 14.05, -599.15)],
 	3: ["dog", "beagle", Vector3(14.45, 0.0, -79.4)],
 	5: ["cat", "tuxedo", Vector3(33.0, 0.4, -420.1)],

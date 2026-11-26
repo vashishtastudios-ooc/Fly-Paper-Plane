@@ -461,6 +461,9 @@ func _message_for(kind: String, at: Vector3) -> String:
 		"furniture": return "Bonk! Into the furniture"
 		"banister": return "Clipped the banister!"
 		"ceiling": return "Bonk! Into the ceiling"
+		"stall": return "Bonk! Into a market stall"
+		"tent": return "Flump! Into the market tent"
+		"banner": return "Tangled in the banner!"
 	if level and level.horizontal_distance_to_pad(at) < short_landing_distance + level.pad_radius() and at.y < level.pad_top() + 2.0:
 		return "Just short!"
 	return "Crash landing!"
@@ -587,6 +590,12 @@ func _slide(dt: float) -> void:
 		_query.transform = Transform3D(Basis(), state.pos + Vector3(0, 0.24, 0) + step * res[1])
 		_query.motion = Vector3.ZERO
 		var info := space.get_rest_info(_query)
+		# Slid into the low edge of the landing target itself (a stage, raft or jetty): hop up
+		# onto it, as when clipping its edge in the air.
+		var ahead := state.pos + step * res[1] + fwd * 0.4
+		if level and level.horizontal_distance_to_pad(ahead) < level.pad_radius() + 0.4 				and level.pad_top() > state.pos.y and level.pad_top() - state.pos.y < 0.5:
+			_land(level.pad_contact_point(ahead))
+			return
 		var kind := "wall"
 		var col: Object = instance_from_id(info.collider_id) if info.has("collider_id") else null
 		if col and col.has_meta("kind"):
