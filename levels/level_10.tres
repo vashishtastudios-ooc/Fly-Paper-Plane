@@ -1,0 +1,116 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/level_data.gd" id="1_data"]
+
+[sub_resource type="Curve3D" id="Curve3D_route"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 33, 11.4, 99, 0, 0, 0, 0, 0, 0, 33, 10.9, 96, 0, 0, 0, 0, 0, 0, 33, 10.3, 92, 0, 0, 0, 0, 0, 0, 32.8, 9.5, 89, 0, 0, 0, 0, 0, 0, 32.7, 8.6, 86, 0, 0, 0, 0, 0, 0, 33.2, 8.4, 83, 0, 0, 0, 0, 0, 0, 33.3, 8.1, 80, 0, 0, 0, 0, 0, 0, 33, 7.2, 77, 0, 0, 0, 0, 0, 0, 33, 6.1, 74, 0, 0, 0, 0, 0, 0, 33, 5.3, 72, 0, 0, 0, 0, 0, 0, 33.6, 5.2, 70.5, 0, 0, 0, 0, 0, 0, 33.8, 5.1, 69, 0, 0, 0, 0, 0, 0, 33, 5.1, 67, 0, 0, 0, 0, 0, 0, 32.3, 5.1, 65, 0, 0, 0, 0, 0, 0, 32.6, 5.1, 63.5, 0, 0, 0, 0, 0, 0, 33, 5.1, 62, 0, 0, 0, 0, 0, 0, 32.9, 4.3, 59, 0, 0, 0, 0, 0, 0, 32.6, 3.4, 56, 0, 0, 0, 0, 0, 0, 32.5, 3.2, 55, 0, 0, 0, 0, 0, 0, 33.1, 3, 52, 0, 0, 0, 0, 0, 0, 33.7, 2.9, 49, 0, 0, 0, 0, 0, 0, 33.3, 2.8, 46, 0, 0, 0, 0, 0, 0, 32.7, 2.8, 43, 0, 0, 0, 0, 0, 0, 33.2, 2.8, 40, 0, 0, 0, 0, 0, 0, 33.4, 2.8, 36, 0, 0, 0, 0, 0, 0, 33.4, 2.7, 31, 0, 0, 0, 0, 0, 0, 33.3, 2.5, 27, 0, 0, 0, 0, 0, 0, 33.1, 2.1, 25, 0, 0, 0, 0, 0, 0, 33, 1.75, 21, 0, 0, 0, 0, 0, 0, 33, 1.7, 17, 0, 0, 0, 0, 0, 0, 33, 1.8, 15, 0, 0, 0, 0, 0, 0, 33, 2.4, 11, 0, 0, 0, 0, 0, 0, 33, 3.4, 6, 0, 0, 0, 0, 0, 0, 33, 4.4, 1, 0, 0, 0, 0, 0, 0, 33, 5.1, -4, 0, 0, 0, 0, 0, 0, 33, 5.3, -8, 0, 0, 0, 0, 0, 0, 33.3, 5.5, -11, 0, 0, 0, 0, 0, 0, 33.5, 5.35, -14, 0, 0, 0, 0, 0, 0, 32.9, 5.25, -18, 0, 0, 0, 0, 0, 0, 32.5, 5.15, -22, 0, 0, 0, 0, 0, 0, 33, 5.05, -26, 0, 0, 0, 0, 0, 0, 33, 4.9, -30, 0, 0, 0, 0, 0, 0, 33, 4.2, -36, 0, 0, 0, 0, 0, 0, 33, 3.7, -42, 0, 0, 0, 0, 0, 0, 33, 2.9, -48, 0, 0, 0, 0, 0, 0, 33, 2.5, -54, 0, 0, 0, 0, 0, 0, 33, 1.9, -60, 0, 0, 0, 0, 0, 0, 33, 1.5, -66, 0, 0, 0, 0, 0, 0, 33, 1.1, -71, 0, 0, 0, 0, 0, 0, 33, 0.8, -76),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 50
+
+[resource]
+script = ExtResource("1_data")
+level_name = "Laundry Day"
+short_goal = "Down Thimble Mews on washing day: lines, sheets, a sewing room, a windy squeeze and a laundry basket to land in."
+goal_text = "It's washing day on Thimble Mews! Over and under the washing lines, through the tailor's sewing room, thread the gaps in the sheets, fight the draught in the squeeze, duck the clock-arch lamp, zip through the glass walkway and land in the laundry basket."
+platform_kind = "roof"
+platform_position = Vector3(33, 10.11, 99.6)
+platform_yaw = 0.0
+aim_point = Vector3(33, 0, 60)
+route = SubResource("Curve3D_route")
+gate_radius = 0.95
+decor = "laundry_day"
+pad_position = Vector3(33, 0.75, -76)
+pad_radius = 1.3
+pad_name = "The laundry basket"
+par_time = 22.0
+thermals = [{
+"x": 33,
+"z": 3,
+"radius": 8,
+"strength": 6.5,
+"top": 7.5,
+"style": "golden"
+}, {
+"x": 33,
+"z": -19,
+"radius": 3.5,
+"strength": 3,
+"top": 4.8,
+"base": 3.8,
+"ceiling": 5.9,
+"style": "golden"
+}]
+wind_zones = [{
+"x": 33.5,
+"z": 35.5,
+"radius": 7.0,
+"dx": 1.0,
+"dz": 0.0,
+"strength": 1.2,
+"top": 6.0
+}]
+bonus_stars = PackedVector3Array(33, 1.8, 67, 33, 7.0, -19, 36.5, 2.4, 4)
+has_bonus_ring = false
+hazard_lines = [{
+"a": Vector3(30, 9.2, 92),
+"b": Vector3(36, 9.2, 92),
+"sag": 0.35,
+"kind": "washing",
+"posts": false
+}, {
+"a": Vector3(30, 10.3, 86),
+"b": Vector3(36, 10.3, 86),
+"sag": 0.35,
+"kind": "washing",
+"posts": false
+}, {
+"a": Vector3(30, 7, 80),
+"b": Vector3(36, 7, 80),
+"sag": 0.3,
+"kind": "washing",
+"posts": false
+}, {
+"a": Vector3(30, 7.9, 74),
+"b": Vector3(36, 7.9, 74),
+"sag": 0.35,
+"kind": "washing",
+"posts": false
+}, {
+"a": Vector3(32.2, 4.6, 33),
+"b": Vector3(34.8, 4.6, 33),
+"sag": 0.08,
+"kind": "line",
+"posts": false
+}, {
+"a": Vector3(30, 5.6, -36),
+"b": Vector3(36, 5.6, -36),
+"sag": 0.3,
+"kind": "lanterns",
+"posts": false
+}, {
+"a": Vector3(30, 2.9, -42),
+"b": Vector3(36, 2.9, -42),
+"sag": 0.2,
+"kind": "lanterns",
+"posts": false
+}, {
+"a": Vector3(30, 4.3, -48),
+"b": Vector3(36, 4.3, -48),
+"sag": 0.3,
+"kind": "lanterns",
+"posts": false
+}, {
+"a": Vector3(30, 1.9, -54),
+"b": Vector3(36, 1.9, -54),
+"sag": 0.15,
+"kind": "lanterns",
+"posts": false
+}, {
+"a": Vector3(30, 3.4, -58),
+"b": Vector3(36, 3.4, -62),
+"sag": 0.3,
+"kind": "lanterns",
+"posts": false
+}]

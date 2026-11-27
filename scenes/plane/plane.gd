@@ -464,6 +464,8 @@ func _message_for(kind: String, at: Vector3) -> String:
 		"stall": return "Bonk! Into a market stall"
 		"tent": return "Flump! Into the market tent"
 		"banner": return "Tangled in the banner!"
+		"sheet": return "Tangled in the laundry!"
+		"washing": return "Tangled in the washing!"
 	if level and level.horizontal_distance_to_pad(at) < short_landing_distance + level.pad_radius() and at.y < level.pad_top() + 2.0:
 		return "Just short!"
 	return "Crash landing!"

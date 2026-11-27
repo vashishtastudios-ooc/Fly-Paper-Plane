@@ -97,7 +97,10 @@ const JUNIPER_HOUSES := [
 const JUNIPER_RECTS := [Rect2(-41.0, -85.5, 15.0, 95.0), Rect2(-41.0, -260.5, 15.0, 66.0)]
 ## Flights added after the town was laid out: their routes keep trees clear without changing the
 ## shared random sequence, so every other flight's town stays exactly as it was.
-const LATE_LEVELS := ["level_9"]
+const LATE_LEVELS := ["level_9", "level_10"]
+## Flight 10 (Laundry Day): Thimble Mews, behind the east side of the top of Linden Lane.
+const MEWS_SCENE := preload("res://props/thimble_mews.tscn")
+const MEWS_RECT := Rect2(22.0, -87.0, 22.5, 196.0)
 const TREEHOUSE := Vector3(35.3, 4.45, -98.0)
 
 var rng := RandomNumberGenerator.new()
@@ -185,6 +188,10 @@ func build() -> void:
 	await _step_yield()
 	_grand_tour()
 	_juniper_row()
+	var mews: Node3D = MEWS_SCENE.instantiate()
+	mews.batcher = batcher
+	mews.name = "ThimbleMews"
+	add_child(mews)
 	await _step_yield()
 	# Pets are switched off (too heavy to draw for what they add); see SHOW_PETS.
 	if SHOW_PETS:
@@ -620,7 +627,7 @@ func _add_tree(p: Vector3, scale: float, autumn := false, conifer := false, coll
 			return
 	if WILLOW_RECT.grow(1.0).has_point(Vector2(p.x, p.z)) or APARTMENT_RECT.grow(1.0).has_point(Vector2(p.x, p.z)):
 		return
-	if _in_juniper(p, 1.5) or _blocks_late(p, trunk_h + r * 1.75, r):
+	if _in_juniper(p, 1.5) or _blocks_late(p, trunk_h + r * 1.75, r) or MEWS_RECT.grow(1.5).has_point(Vector2(p.x, p.z)):
 		return
 	var handles := []
 	handles.append(batcher.add("trunk", Transform3D(Basis().scaled(Vector3(scale, trunk_h + r * 0.6, scale)), p), Color.WHITE))
@@ -1593,7 +1600,7 @@ func _background() -> void:
 				var xf := Transform3D(Basis(Vector3.UP, yaw), Vector3(x, gy, z))
 				var wc := Color(Mats.PALETTE_HOUSES[rng.randi() % Mats.PALETTE_HOUSES.size()])
 				var rc := Mats.ROOF_SLATE if rng.randf() < 0.5 else Mats.ROOF_TERRACOTTA
-				if not WILLOW_RECT.grow(6.0).has_point(Vector2(x, z)) and not _in_juniper(Vector3(x, 0, z), 6.0):
+				if not WILLOW_RECT.grow(6.0).has_point(Vector2(x, z)) and not _in_juniper(Vector3(x, 0, z), 6.0) and not MEWS_RECT.grow(6.0).has_point(Vector2(x, z)):
 					b.box(paint, xf * Transform3D(Basis(), Vector3(0, hgt * 0.5, 0)), Vector3(d, hgt, w), wc, 63 - 8)
 					b.gable_roof(shingle, xf * Transform3D(Basis(), Vector3(0, hgt, 0)), d, w, d * 0.36, 0.3, 0.15, rc)
 					b.gable_wall(paint, xf * Transform3D(Basis(), Vector3(0, hgt, 0)), d, d * 0.36, w * 0.5, 1.0, wc)
@@ -1831,7 +1838,7 @@ func _grass() -> void:
 			continue
 		var s := rng.randf_range(0.7, 1.35)
 		var tint := Color("#8fbf5a").lerp(Color("#c3d870"), rng.randf()).lerp(Color("#d9b25a"), rng.randf() * 0.12)
-		if _in_juniper_house(p):
+		if _in_juniper_house(p) or MEWS_RECT.has_point(Vector2(p.x, p.z)):
 			continue
 		batcher.add("grass", Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.8, 1.2), s)), p), tint)
 		placed += 1

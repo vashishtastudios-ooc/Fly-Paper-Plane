@@ -31,6 +31,8 @@ const BY_KIND := {
 	"stall": ["One plane, extra crispy!", "Into the apples! Five a day, done.", "Nobody wanted those tomatoes anyway."],
 	"tent": ["Flump! Into the canvas.", "The tent is not a trampoline."],
 	"banner": ["Wrapped up like a present!", "You were meant to read it, not hug it."],
+	"sheet": ["Folded and put away!", "Fresh, clean and stuck.", "Now it smells of lavender."],
+	"washing": ["Pegged out to dry!", "One sock, one shirt, one plane."],
 	"out": ["Off on an adventure without you.", "Bye bye, plane! See you next town."],
 	"stopped": ["So close! A little further next time.", "Nearly there! Keep the nose up."],
 	"ground": ["So close! A little further next time.", "The ground came up fast!"],
@@ -74,6 +76,10 @@ static func crash_tip(kind: String, near: bool) -> String:
 			return "Line up early for the gaps, and keep the plane steady between the stalls."
 		"banner":
 			return "Duck under the banners and signs: stay low and level as you go through."
+		"sheet":
+			return "Each wall of sheets has one gap, and it moves from side to side. Line up early!"
+		"washing":
+			return "Watch the washing lines: over one, under the next. The rings show the way."
 		"out":
 			return "Follow the dotted line and the arrow at the top to stay on course."
 	return "Follow the dotted line through the rings: it always leads to the landing spot."
