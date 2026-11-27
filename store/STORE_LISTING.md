@@ -16,7 +16,7 @@
 >
 > • Dive to pick up speed, then pull up to trade it for height
 > • Find shimmering green rising air and ride it to climb
-> • Follow the dotted line and fly through the blue rings
+> • Follow the dotted line and fly through the pink rings
 > • Settle down softly on the target for a Feather landing
 >
 > EIGHT HANDCRAFTED FLIGHTS

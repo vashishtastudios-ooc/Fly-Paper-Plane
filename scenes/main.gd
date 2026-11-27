@@ -257,7 +257,7 @@ func _wire() -> void:
 	level.ring_passed.connect(func(_p: Vector3): Profile.count("rings"))
 	level.bonus_ring_passed.connect(func(_p: Vector3, _pts: int, _m: String): Profile.count("bonus_rings"))
 	Profile.achievement_unlocked.connect(func(d: Dictionary): hud.banner("Achievement: " + str(d.title), UIKit.GOLD, 1.8))
-	plane.rising_air.connect(func(): hud.banner("Rising air! Wheee", UIKit.ROUTE, 1.2))
+	plane.rising_air.connect(func(): hud.banner("Rising air! Wheee", UIKit.AIR, 1.2))
 	plane.wind_entered.connect(func():
 		hud.banner("Whoosh, a draught! Lean into it" if Game.level().map == "linden" else "Sea breeze! Lean into it", Color.WHITE, 1.4))
 	plane.barrel_roll_done.connect(func(): hud.float_text(plane.state.pos, "+50"))

@@ -176,9 +176,9 @@ There is no failing. A crash puts the plane straight back in the air at the star
 - Out the attic's gable window, in through the bedroom's open window, through the doorway into the study and out the back.
 - Over the washing line, along the stairwell house's landing, over the banister and down the stairwell, out through the french doors.
 - Through the greenhouse, in at the cottage's back door, through the kitchen archway onto the round rug.
-- Open windows and inner doorways are bare frames (no swung leaves). Bonus rings in every level are pink, so they never look like the main gold route rings.
+- Open windows and inner doorways are bare frames (no swung leaves). Bonus rings in every level are violet, so they never look like the main pink route rings.
 - Closed windows, greenhouse glass, hanging lamps, furniture and the banister crash the plane. Warm air rises off the bedroom radiator, the patio and the greenhouse.
-- The secret line: line up left from the attic, go through the bedroom's left window and the small hatch beside the door (the pink bonus ring, +300), then out the study's left window and in at the stairwell house's left window.
+- The secret line: line up left from the attic, go through the bedroom's left window and the small hatch beside the door (the purple bonus ring, +300), then out the study's left window and in at the stairwell house's left window.
 - Houses are `props/open_house.tscn` with `layout` set to `attic`, `bedroom`, `stairwell`, `greenhouse` or `cottage`.
 
 Each level is a `LevelData` resource in `levels/level_N.tres`. You can edit them in the inspector. Each one holds:
@@ -290,7 +290,7 @@ The catalog and unlock thresholds are in `scripts/cosmetics/cosmetics.gd`. Paper
   Turning tips back on in Settings shows them again. A "Too slow!" warning appears before every stall.
 - **Credits:** includes the Godot Engine license notice that publishing requires.
 
-At runtime the game places seven stars along the route, blue rings about every 14 m, and the dotted flight line. It also removes trees near the first route segments and the pad.
+At runtime the game places seven stars along the route, pink rings about every 14 m, and the dotted flight line. It also removes trees near the first route segments and the pad.
 
 ## Project layout
 

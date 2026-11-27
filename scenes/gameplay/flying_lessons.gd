@@ -14,8 +14,8 @@ signal retry_needed
 const LESSONS := [
 	["glide", "Let it glide", "Your paper plane glides all by itself. Just watch it fly for a moment.",
 		"Your paper plane glides all by itself. Just watch it fly for a moment.", [Vector3(14.3, 5.9, -31.2), PI * 0.5]],
-	["left", "Turn left", "Hold A to turn left, toward the blue ring.",
-		"Drag left on the left side of the screen to turn left, toward the blue ring.", [Vector3(9.0, 5.6, -32.5), PI * 0.5]],
+	["left", "Turn left", "Hold A to turn left, toward the pink ring.",
+		"Drag left on the left side of the screen to turn left, toward the pink ring.", [Vector3(9.0, 5.6, -32.5), PI * 0.5]],
 	["dive", "Dive, then climb", "Hold S to dive and pick up speed, then W to climb. Climbing costs speed, so don't climb for long.",
 		"Drag down to dive and pick up speed, then up to climb. Climbing costs speed, so don't climb for long.", [Vector3(0.0, 4.8, -48.0), 0.0]],
 	["lift", "Rising air", "See the green shimmer ahead? That's rising air. Fly into it and it lifts you up.",

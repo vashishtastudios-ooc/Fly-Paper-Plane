@@ -165,9 +165,9 @@ func build(level_data: LevelData, town_builder: TownBuilder) -> void:
 	reset_progress()
 
 
-## Color of the dotted line and guide arrow: blue, or lantern orange with lantern hoops.
+## Color of the dotted line and guide arrow.
 func _route_color() -> Color:
-	return Color("#ffb066") if data and data.gate_style == "lantern" else UIKit.ROUTE
+	return UIKit.PATH
 
 
 func _in_small_box(p: Vector3) -> bool:
@@ -223,7 +223,7 @@ func _build_arrow() -> void:
 	_arrow.name = "GuideArrow"
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = UIKit.ROUTE
+	mat.albedo_color = UIKit.PATH
 	_arrow_mat = mat
 	mat.no_depth_test = false
 	var cone := MeshInstance3D.new()

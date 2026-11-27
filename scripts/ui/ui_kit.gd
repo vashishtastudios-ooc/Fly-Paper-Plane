@@ -11,10 +11,12 @@ const RULE := Color("#a9c8e8")
 const MARGIN := Color("#e27a72")
 const GOLD := Color("#f2c14e")
 const GOLD_DEEP := Color("#d99a2b")
-## Gameplay colors: the route (rings, dotted line, guide arrow) is sky blue, rising air is mint,
-## stars stay gold and bonus rings pink.
-const ROUTE := Color("#6ec6ff")
-const ROUTE_GLOW := Color("#a8dcff")
+## Gameplay colors ("Berry pop"): the flight path (rings, dotted line, guide arrow) is berry
+## pink, which stands out from the warm town, the sky, the sea and the grass. Rising air is a
+## warm peach (hot air), stars stay gold and bonus rings are violet.
+const PATH := Color("#ff3d8b")
+const AIR := Color("#ffc68f")
+const AIR_GLOW := Color("#ffe2c4")
 const LIFT := Color("#8fe3b0")
 const BONUS := Color("#ff7eb6")
 const PILL := Color(0.09, 0.08, 0.07, 0.5)
