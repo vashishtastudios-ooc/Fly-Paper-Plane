@@ -30,6 +30,7 @@ Settings="*res://autoload/settings.gd"
 Profile="*res://autoload/profile.gd"
 Game="*res://autoload/game.gd"
 Audio="*res://autoload/audio.gd"
+SteamService="*res://autoload/steam_service.gd"
 
 [display]
 

@@ -4,3 +4,12 @@
 *.import
 export/
 .style_preview/
+
+# GodotSteam: Steam ships on Windows (and Linux / Steam Deck) only; the other platform binaries
+# stay local. The editor's locked "~" copies of the DLLs are never committed.
+addons/godotsteam/androidarm64/
+addons/godotsteam/linux32/
+addons/godotsteam/linuxarm64/
+addons/godotsteam/osx/
+addons/godotsteam/win32/
+addons/godotsteam/**/~*
