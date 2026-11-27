@@ -1,60 +1,14 @@
 extends Prop
-## Laundry Day (flight 10) on Thimble Mews: three curtains of bedsheets strung across the mews,
-## each with one gap (left, right, left) that sway in the breeze, a tin-can telephone between two
-## windows in the squeeze, and the giant laundry basket in the end yard (the landing spot).
+## Laundry Day (flight 10) on Thimble Mews: a tin-can telephone between two windows in the
+## squeeze, and the giant laundry basket in the end yard (the landing spot).
 ## World coordinates.
 
-## Curtains: [z, gap x0, gap x1]. Sheets hang from the line at LINE_Y down to SHEET_BOTTOM.
-const CURTAINS := [[55.0, 31.6, 33.4], [49.0, 32.8, 34.6], [43.0, 31.8, 33.6]]
-const LINE_Y := 4.0
-const SHEET_BOTTOM := 0.6
-const MEWS_X0 := 30.0
-const MEWS_X1 := 36.0
 const BASKET := Vector3(33.0, 0.0, -76.0)
 const BASKET_R := 1.5
 const BASKET_TOP := 0.7
 const PHONE := [Vector3(32.2, 4.6, 33.0), Vector3(34.8, 4.6, 33.0)]
 
 const SHEET_COLS := ["#fbf8f0", "#a9c9db", "#f2d58f", "#e6c3da", "#b9d6a8", "#f4c9a0", "#ffffff"]
-
-var _curtains: Array[Node3D] = []
-var _t := 0.0
-
-
-func _ready() -> void:
-	super._ready()
-	for i in CURTAINS.size():
-		var c: Array = CURTAINS[i]
-		var pivot := Node3D.new()
-		pivot.name = "Curtain_%d" % i
-		pivot.position = Vector3(0, LINE_Y, c[0])
-		add_child(pivot)
-		var b := MeshBuilder.new()
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 300 + i
-		var spans := [[MEWS_X0, c[1]], [c[2], MEWS_X1]]
-		var k := 0
-		for s: Array in spans:
-			var x0: float = s[0]
-			var x1: float = s[1]
-			var n := maxi(1, ceili((x1 - x0) / 1.6))
-			for j in n:
-				var xa := x0 + (x1 - x0) * j / n + 0.03
-				var xb := x0 + (x1 - x0) * (j + 1) / n - 0.03
-				var col := Color(SHEET_COLS[(i * 3 + k) % SHEET_COLS.size()])
-				var bottom := SHEET_BOTTOM - LINE_Y + rng.randf_range(-0.05, 0.25)
-				b.box_mm(Mats.get_mat("cloth"), Vector3(xa, bottom, -0.02), Vector3(xb, -0.04, 0.02), col)
-				# A stripe or two on some sheets.
-				if k % 2 == 1:
-					b.box_mm(Mats.get_mat("cloth"), Vector3(xa, bottom + 0.3, -0.025), Vector3(xb, bottom + 0.45, 0.025), col.darkened(0.18))
-				for px in [xa + 0.1, xb - 0.1]:
-					b.box(Mats.get_mat("wood"), Transform3D(Basis(), Vector3(px, -0.02, 0)), Vector3(0.03, 0.1, 0.05), Color("#c9a27e"))
-				k += 1
-		b.tube(Mats.get_mat("rope"), PackedVector3Array([Vector3(MEWS_X0, 0, 0), Vector3((MEWS_X0 + MEWS_X1) * 0.5, -0.04, 0), Vector3(MEWS_X1, 0, 0)]), 0.012, 3, Color("#f3ecd6"))
-		pivot.add_child(b.build_instance("Sheets", false))
-		_curtains.append(pivot)
-	set_process(true)
-
 
 func _build(b: MeshBuilder) -> void:
 	var solid := Mats.get_mat("solid")
@@ -85,14 +39,5 @@ func _build(b: MeshBuilder) -> void:
 
 
 func _build_colliders() -> void:
-	for c in CURTAINS:
-		var spans := [[MEWS_X0, c[1]], [c[2], MEWS_X1]]
-		for s: Array in spans:
-			add_box("sheet", Vector3((s[0] + s[1]) * 0.5, (LINE_Y + SHEET_BOTTOM) * 0.5, c[0]), Vector3(s[1] - s[0], LINE_Y - SHEET_BOTTOM, 0.35))
-	add_cylinder("furniture", BASKET, BASKET_R + 0.1, BASKET_TOP - 0.05)
-
-
-func _process(delta: float) -> void:
-	_t += delta
-	for i in _curtains.size():
-		_curtains[i].rotation.x = sin(_t * 1.3 + i * 1.7) * 0.06
+	# Slightly inside the rim so a plane that grazes the rim hops in and lands rather than bonking.
+	add_cylinder("furniture", BASKET, BASKET_R - 0.3, BASKET_TOP - 0.05)

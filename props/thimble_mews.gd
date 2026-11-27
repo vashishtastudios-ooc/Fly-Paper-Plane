@@ -25,8 +25,6 @@ const UC := 6.6
 const BRIDGE_EAVE := 6.9
 const ARCH_HW := 2.8
 const ARCH_TOP := 3.2
-## The bridge room's hanging fabric drapes: [z, x0, x1].
-const DRAPES := [[69.0, 31.0, 32.9], [65.0, 33.1, 35.0]]
 ## The squeeze.
 const SQ_Z0 := 41.0
 const SQ_Z1 := 25.0
@@ -363,21 +361,6 @@ func _bridge_house(b: MeshBuilder) -> void:
 	b.box_mm(_m("solid"), Vector3(BACK_W - 0.05, BRIDGE_EAVE - 0.22, z1 - 0.05), Vector3(BACK_E + 0.05, BRIDGE_EAVE, z0 + 0.05), Mats.TRIM)
 	_roof_x(b, AX, zc, BRIDGE_EAVE, BACK_E - BACK_W, z0 - z1, 3.0, Mats.ROOF_TERRACOTTA, col)
 	# A hanging shop sign over the arch: "Thimble & Thread".
-	# Fabric drapes hanging from the ceiling across the flight line: weave right, then left.
-	var fabrics := [[Color("#e8546a"), Color("#fbf8f0")], [Color("#2f6f8f"), Color("#f2c14e")]]
-	for di in DRAPES.size():
-		var d: Array = DRAPES[di]
-		var dz: float = d[0]
-		var dx0: float = d[1]
-		var dx1: float = d[2]
-		var n := 6
-		for k in n:
-			var xa := dx0 + (dx1 - dx0) * k / n
-			var xb := dx0 + (dx1 - dx0) * (k + 1) / n
-			var c: Color = fabrics[di][k % 2]
-			b.box_mm(_m("cloth"), Vector3(xa, 4.25 + 0.08 * (k % 2), dz - 0.025), Vector3(xb, UC - 0.05, dz + 0.025), c)
-		b.cylinder(_m("wood"), Transform3D(Basis(Vector3.BACK, PI * 0.5), Vector3((dx0 + dx1) * 0.5, UC - 0.08, dz)), 0.04, 0.04, dx1 - dx0 + 0.3, 6, Color("#7a5236"))
-		add_box("sheet", Vector3((dx0 + dx1) * 0.5, (4.25 + UC) * 0.5, dz), Vector3(dx1 - dx0, UC - 4.25, 0.12))
 	# Cutting table with rolls of cloth (west), sewing machines and dress forms (east).
 	var wood := _m("wood")
 	var solid := _m("solid")
