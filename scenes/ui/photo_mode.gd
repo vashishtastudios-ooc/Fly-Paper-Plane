@@ -162,6 +162,9 @@ func _take() -> void:
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
 	var path := _save(img)
+	if path != "":
+		Profile.feat("photos")
+		Profile.check_achievements()
 	_hint.visible = true
 	_busy = false
 	Audio.play("click", 0.0, 0.8)

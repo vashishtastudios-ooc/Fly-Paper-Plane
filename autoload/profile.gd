@@ -46,7 +46,25 @@ const ACHIEVEMENTS := [
 	{"id": "trees_10", "title": "Tree hugger", "desc": "Crash into trees 10 times", "stat": "crash:tree", "target": 10},
 	{"id": "splash_10", "title": "Paper boat", "desc": "Splash into water 10 times", "stat": "crash:water", "target": 10},
 	{"id": "crashes_100", "title": "Never give up", "desc": "Crash 100 times (and keep flying!)", "stat": "crashes", "target": 100},
+	# The fun ones. "feat:" counters are bumped by MainScene at the moment they happen.
+	{"id": "laundry_thief", "title": "Laundry thief", "desc": "Get tangled in the washing 5 times", "stat": "crash:washing|sheet", "target": 5},
+	{"id": "hole_in_one", "title": "Hole in one", "desc": "Land a bullseye on your very first try at a flight", "stat": "feat:hole_in_one", "target": 1},
+	{"id": "paper_cut", "title": "Paper cut", "desc": "Crash within a second of throwing", "stat": "feat:paper_cut", "target": 1},
+	{"id": "running_on_fumes", "title": "Running on fumes", "desc": "Land with every gust used up", "stat": "feat:fumes", "target": 1},
+	{"id": "show_off_supreme", "title": "Show-off supreme", "desc": "Do 3 barrel rolls in a single flight", "stat": "feat:rolls_3", "target": 1},
+	{"id": "thread_the_needle", "title": "Thread the needle", "desc": "Fly through 20 rings in a row without missing one", "stat": "feat:streak_20", "target": 1},
+	{"id": "ghostbuster", "title": "Ghostbuster", "desc": "Land a flight faster than your own ghost", "stat": "feat:ghostbuster", "target": 1},
+	{"id": "say_cheese", "title": "Say cheese!", "desc": "Take a photo in photo mode", "stat": "feat:photos", "target": 1},
+	{"id": "sunday_flyer", "title": "Sunday flyer", "desc": "Spend 5 minutes in free flight", "stat": "feat:free_time", "target": 300, "unit": "s"},
+	{"id": "encore", "title": "Encore!", "desc": "Land on the band's stage on Market Day", "stat": "landed:level_2", "target": 1},
+	{"id": "basket_case", "title": "Basket case", "desc": "Land a bullseye in the laundry basket", "stat": "feat:basket", "target": 1},
+	{"id": "comeback_kid", "title": "Comeback kid", "desc": "Land a flight you have crashed on 10 times", "stat": "comeback", "target": 1},
+	{"id": "window_shopper", "title": "Window shopper", "desc": "Crash into a market stall or tent", "stat": "crash:stall|tent", "target": 1},
+	{"id": "butter_landing", "title": "Butter landing", "desc": "Touch down so softly you barely notice", "stat": "softest", "target": 1},
 ]
+
+## A landing this soft (vertical speed, m/s) earns Butter landing (full soft-landing points).
+const BUTTER_IMPACT := 0.6
 
 var data := {}
 ## Best-run ghosts waiting to be written (with the next save).
@@ -142,6 +160,12 @@ func crash_kinds() -> Dictionary:
 
 func count(key: String, n := 1.0) -> void:
 	data.stats[key] = stat(key) + n
+	_dirty = true
+
+
+## A fun achievement's counter ("feat:<key>" in ACHIEVEMENTS).
+func feat(key: String, n := 1.0) -> void:
+	data.feats[key] = float(data.feats.get(key, 0.0)) + n
 	_dirty = true
 
 
@@ -244,7 +268,23 @@ func progress_of(def: Dictionary) -> Vector2:
 					if has_flight(id) and int(flight(id).landings) > 0 and (not gold or int(flight(id).ribbons) >= 3):
 						cur += 1.0
 	elif src.begins_with("crash:"):
-		cur = float(crash_kinds().get(src.get_slice(":", 1), 0))
+		for kind in src.get_slice(":", 1).split("|"):
+			cur += float(crash_kinds().get(kind, 0))
+	elif src.begins_with("feat:"):
+		cur = float(data.feats.get(src.get_slice(":", 1), 0))
+	elif src.begins_with("landed:"):
+		var fid := src.get_slice(":", 1)
+		cur = 1.0 if has_flight(fid) and int(flight(fid).landings) > 0 else 0.0
+	elif src == "comeback":
+		for id in data.flights:
+			var f: Dictionary = data.flights[id]
+			if int(f.get("landings", 0)) > 0 and int(f.get("crashes", 0)) >= 10:
+				cur = 1.0
+	elif src == "softest":
+		for id in data.flights:
+			var soft := float(data.flights[id].get("softest", -1.0))
+			if soft >= 0.0 and soft <= BUTTER_IMPACT:
+				cur = 1.0
 	else:
 		cur = stat(src)
 	return Vector2(minf(cur, target), target)
@@ -319,6 +359,7 @@ func _blank() -> Dictionary:
 		"flights": {},
 		"stats": stats,
 		"achievements": {},
+		"feats": {},
 	}
 
 

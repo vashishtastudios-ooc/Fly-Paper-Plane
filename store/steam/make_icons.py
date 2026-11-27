@@ -400,7 +400,186 @@ def d_crashes(pen):
     numberplate(pen, "100", CATEGORY["oops"])
 
 
-# id -> (category, drawing, title, description, hidden)
+# --- The fun ones -------------------------------------------------------------------------
+
+def shirt(pen, cx, top, col):
+    pen.poly([(cx - 22, top), (cx - 8, top), (cx, top + 6), (cx + 8, top), (cx + 22, top), (cx + 34, top + 14),
+              (cx + 24, top + 24), (cx + 18, top + 18), (cx + 18, top + 58), (cx - 18, top + 58), (cx - 18, top + 18),
+              (cx - 24, top + 24), (cx - 34, top + 14)], fill=col, width=5)
+
+
+def d_laundry_thief(pen):
+    pen.line([(36, 74), (128, 84), (220, 74)], INK, 4)
+    shirt(pen, 82, 80, (120, 190, 240))
+    pen.poly([(132, 84), (196, 78), (192, 160), (164, 150), (136, 164)], fill=(255, 236, 160), width=5)
+    for x in (88, 140, 190):
+        pen.rect(x - 3, 70, x + 3, 90, fill=(200, 160, 110), width=3, radius=1)
+    plane(pen, 150, 136, 0.5, 25)
+    pen.poly([(132, 120), (178, 116), (176, 150), (134, 156)], fill=(255, 236, 160), width=5)
+    numberplate(pen, "5", None)
+
+
+def d_hole_in_one(pen):
+    for k, c in enumerate([WHITE, RED, WHITE, GOLD]):
+        rx, ry = 70 * (1 - k * 0.24), 24 * (1 - k * 0.24)
+        pen.d.ellipse((p(128 - rx, 160 - ry), p(128 + rx, 160 + ry)), fill=c, outline=INK if k == 0 else None, width=lw(6) if k == 0 else 0)
+    pen.d.ellipse((p(116, 154), p(140, 166)), fill=INK)
+    pen.line([(128, 160), (128, 64)], INK, 6)
+    pen.poly([(130, 64), (176, 78), (130, 94)], fill=RED, width=5)
+    plane(pen, 78, 104, 0.42, 20)
+    numberplate(pen, "1st try", None)
+
+
+def d_paper_cut(pen):
+    plane(pen, 128, 112, 0.95, -15)
+    pen.line([(96, 72), (108, 92), (98, 104), (112, 122), (102, 138), (116, 156)], RED, 7)
+    for a in (210, 260, 310):
+        r = math.radians(a)
+        pen.line([(190 + math.cos(r) * 18, 84 + math.sin(r) * 18), (190 + math.cos(r) * 32, 84 + math.sin(r) * 32)], WHITE, 6)
+    numberplate(pen, "1 s", None)
+
+
+def d_running_on_fumes(pen):
+    pen.d.pieslice((p(52, 64), p(204, 216)), 180, 360, fill=WHITE, outline=INK, width=lw(7))
+    for k in range(7):
+        a = math.radians(180 + k * 30)
+        pen.line([(128 + math.cos(a) * 58, 140 + math.sin(a) * 58), (128 + math.cos(a) * 70, 140 + math.sin(a) * 70)], INK, 5)
+    pen.text(98, 112, "E", 34, RED)
+    pen.text(158, 112, "F", 34, INK)
+    pen.line([(128, 140), (76, 132)], RED, 8)
+    pen.circle(128, 140, 9, fill=INK, width=0)
+    plane(pen, 128, 182, 0.42, -8)
+
+
+def d_show_off_supreme(pen):
+    for cx, cy in [(78, 92), (128, 70), (178, 92)]:
+        pen.arc(cx, cy, 20, 30, 330, WHITE, 6)
+        a = math.radians(330)
+        tip = (cx + math.cos(a) * 20, cy + math.sin(a) * 20)
+        pen.poly([(tip[0] - 2, tip[1] - 10), (tip[0] + 10, tip[1] + 2), (tip[0] - 6, tip[1] + 6)], fill=WHITE, outline=WHITE, width=2)
+    plane(pen, 128, 144, 0.75, -6)
+    # Sunglasses on the plane's nose.
+    pen.rect(150, 128, 166, 140, fill=INK, width=0, radius=4)
+    pen.rect(168, 130, 182, 141, fill=INK, width=0, radius=4)
+    pen.line([(166, 133), (168, 133)], INK, 3)
+    numberplate(pen, "x3", None)
+
+
+def d_thread_the_needle(pen):
+    pen.line([(78, 182), (178, 62)], (200, 210, 225), 14)
+    pen.line([(78, 182), (178, 62)], INK, 4)
+    pen.d.ellipse((p(160, 66), p(178, 90)), fill=CATEGORY["fun"], outline=INK, width=lw(4))
+    pts = [(40, 150), (80, 120), (120, 120), (150, 100), (169, 78), (190, 70), (214, 92)]
+    pen.line(pts, RED, 5)
+    plane(pen, 70, 132, 0.4, -30)
+    numberplate(pen, "20", None)
+
+
+def d_ghostbuster(pen):
+    pts = [(56, 160), (56, 100)]
+    for i in range(19):
+        a = math.radians(180 + i * 10)
+        pts.append((96 + math.cos(a) * 40, 100 + math.sin(a) * 40))
+    pts += [(136, 160), (126, 150), (116, 160), (106, 150), (96, 160), (86, 150), (76, 160), (66, 150)]
+    pen.poly(pts, fill=(235, 240, 255), width=6)
+    pen.circle(82, 100, 7, fill=INK, width=0)
+    pen.circle(108, 100, 7, fill=INK, width=0)
+    pen.d.ellipse((p(88, 114), p(102, 130)), fill=INK)
+    for k, y in enumerate((96, 116, 136)):
+        pen.line([(146, y), (164 - k * 4, y)], WHITE, 6)
+    plane(pen, 186, 112, 0.5, -6)
+
+
+def d_say_cheese(pen):
+    pen.rect(56, 88, 200, 176, fill=(70, 80, 100), radius=14)
+    pen.rect(96, 72, 146, 92, fill=(70, 80, 100), radius=6)
+    pen.circle(128, 132, 34, fill=WHITE, width=6)
+    pen.circle(128, 132, 22, fill=(90, 160, 220), width=5)
+    pen.circle(120, 124, 6, fill=WHITE, width=0)
+    pen.rect(168, 98, 188, 110, fill=GOLD, width=4, radius=3)
+    for a in (-60, -30, 0):
+        r = math.radians(a)
+        pen.line([(194 + math.cos(r) * 12, 84 + math.sin(r) * 12), (194 + math.cos(r) * 26, 84 + math.sin(r) * 26)], (255, 245, 180), 6)
+    plane(pen, 66, 70, 0.32, -10)
+
+
+def d_sunday_flyer(pen):
+    pen.circle(96, 100, 30, fill=GOLD, width=6)
+    for k in range(10):
+        a = math.radians(k * 36)
+        pen.line([(96 + math.cos(a) * 40, 100 + math.sin(a) * 40), (96 + math.cos(a) * 52, 100 + math.sin(a) * 52)], (255, 236, 160), 6)
+    pen.arc(96, 104, 14, 20, 160, INK, 5)
+    pen.circle(86, 94, 4, fill=INK, width=0)
+    pen.circle(106, 94, 4, fill=INK, width=0)
+    plane(pen, 160, 150, 0.6, -14)
+    numberplate(pen, "5 min", None)
+
+
+def d_encore(pen):
+    pen.rect(60, 56, 196, 152, fill=(58, 66, 110), width=0, radius=0)
+    for x in (104, 152):
+        pen.circle(x, 66, 6, fill=GOLD, width=3)
+    pen.rect(44, 150, 212, 176, fill=(160, 110, 70), radius=3)
+    pen.poly([(44, 60), (84, 60), (70, 150), (44, 150)], fill=RED, width=5)
+    pen.poly([(212, 60), (172, 60), (186, 150), (212, 150)], fill=RED, width=5)
+    pen.rect(40, 52, 216, 68, fill=(200, 60, 70), radius=3)
+    plane(pen, 128, 132, 0.55, 6)
+    for x, y in [(100, 84), (148, 80)]:
+        pen.circle(x, y + 18, 7, fill=WHITE, width=0)
+        pen.line([(x + 6, y + 18), (x + 6, y - 6)], WHITE, 4)
+        pen.line([(x + 6, y - 6), (x + 16, y)], WHITE, 4)
+
+
+def d_basket_case(pen):
+    pen.poly([(62, 120), (194, 120), (180, 180), (76, 180)], fill=(201, 154, 90), width=6)
+    for y in (136, 152, 168):
+        pen.line([(62 + (y - 120) * 0.23, y), (194 - (y - 120) * 0.23, y)], (160, 115, 60), 4)
+    pen.d.ellipse((p(60, 110), p(196, 130)), fill=(244, 240, 230), outline=INK, width=lw(5))
+    for x, c in [(96, (169, 201, 219)), (124, (242, 213, 143)), (154, (230, 195, 218))]:
+        pen.rect(x - 14, 108, x + 14, 122, fill=c, width=3, radius=3)
+    plane(pen, 136, 90, 0.5, 22)
+
+
+def d_comeback_kid(pen):
+    pts = []
+    for i in range(12):
+        a = math.radians(i * 30)
+        r = 22 if i % 2 == 0 else 16
+        pts.append((76 + math.cos(a) * r, 160 + math.sin(a) * r))
+    pen.poly(pts, fill=(240, 240, 245), width=5)
+    pen.arc(110, 150, 50, 200, 300, WHITE, 7)
+    pen.poly([(136, 98), (148, 116), (128, 118)], fill=WHITE, outline=WHITE, width=2)
+    plane(pen, 168, 86, 0.55, -24)
+    numberplate(pen, "10", None)
+
+
+def d_window_shopper(pen):
+    pen.rect(58, 112, 198, 176, fill=(250, 214, 165), radius=3)
+    for k in range(6):
+        c = RED if k % 2 == 0 else WHITE
+        x0 = 50 + k * 26
+        pen.poly([(x0, 80), (x0 + 26, 80), (x0 + 26, 112), (x0 + 13, 120), (x0, 112)], fill=c, width=0)
+    pen.poly([(50, 80), (206, 80), (206, 112), (50, 112)], fill=None, width=5)
+    for x, c in [(84, (255, 160, 60)), (110, RED), (136, GREEN), (162, (255, 220, 80))]:
+        pen.circle(x, 150, 10, fill=c, width=4)
+    plane(pen, 150, 70, 0.42, 40, fill=(255, 238, 238))
+    for a in (200, 250, 300):
+        r = math.radians(a)
+        pen.line([(168 + math.cos(r) * 18, 58 + math.sin(r) * 18), (168 + math.cos(r) * 28, 58 + math.sin(r) * 28)], WHITE, 5)
+
+
+def d_butter_landing(pen):
+    pen.d.ellipse((p(46, 140), p(210, 184)), fill=WHITE, outline=INK, width=lw(6))
+    pen.d.ellipse((p(66, 148), p(190, 176)), fill=(235, 238, 245))
+    pen.poly([(88, 142), (168, 142), (176, 160), (96, 160)], fill=(255, 226, 120), width=5)
+    pen.poly([(88, 142), (96, 160), (96, 168), (88, 150)], fill=(240, 200, 90), width=4)
+    pen.poly([(96, 160), (176, 160), (176, 168), (96, 168)], fill=(240, 200, 90), width=4)
+    plane(pen, 132, 118, 0.6, 4)
+    for x in (62, 76):
+        pen.line([(x, 104), (x + 20, 108)], WHITE, 5)
+
+
+# (id, category, drawing): ids match Profile.ACHIEVEMENTS
 ICONS = [
     ("first_landing", "land", d_first_landing),
     ("flight_school", "land", d_flight_school),
@@ -427,6 +606,20 @@ ICONS = [
     ("trees_10", "oops", d_trees),
     ("splash_10", "oops", d_splash),
     ("crashes_100", "oops", d_crashes),
+    ("laundry_thief", "oops", d_laundry_thief),
+    ("hole_in_one", "fun", d_hole_in_one),
+    ("paper_cut", "oops", d_paper_cut),
+    ("running_on_fumes", "fun", d_running_on_fumes),
+    ("show_off_supreme", "fun", d_show_off_supreme),
+    ("thread_the_needle", "fun", d_thread_the_needle),
+    ("ghostbuster", "fun", d_ghostbuster),
+    ("say_cheese", "fun", d_say_cheese),
+    ("sunday_flyer", "air", d_sunday_flyer),
+    ("encore", "linden", d_encore),
+    ("basket_case", "linden", d_basket_case),
+    ("comeback_kid", "fun", d_comeback_kid),
+    ("window_shopper", "oops", d_window_shopper),
+    ("butter_landing", "skill", d_butter_landing),
 ]
 
 

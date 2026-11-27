@@ -1,6 +1,6 @@
 # Steam achievements
 
-Paper Plane Playground has 25 achievements. Enter each one in **Steamworks → Edit Steamworks Settings → Stats & Achievements → Achievements**, then press **Publish** on the Publish tab.
+Paper Plane Playground has 39 achievements. Enter each one in **Steamworks → Edit Steamworks Settings → Stats & Achievements → Achievements**, then press **Publish** on the Publish tab.
 
 For every row:
 
@@ -41,3 +41,17 @@ Icons are drawn by `make_icons.py` (run `python store/steam/make_icons.py` from 
 | 23 | `trees_10` | Tree hugger | Crash into trees 10 times |  |
 | 24 | `splash_10` | Paper boat | Splash into water 10 times |  |
 | 25 | `crashes_100` | Never give up | Crash 100 times (and keep flying!) |  |
+| 26 | `laundry_thief` | Laundry thief | Get tangled in the washing 5 times |  |
+| 27 | `hole_in_one` | Hole in one | Land a bullseye on your very first try at a flight |  |
+| 28 | `paper_cut` | Paper cut | Crash within a second of throwing |  |
+| 29 | `running_on_fumes` | Running on fumes | Land with every gust used up |  |
+| 30 | `show_off_supreme` | Show-off supreme | Do 3 barrel rolls in a single flight |  |
+| 31 | `thread_the_needle` | Thread the needle | Fly through 20 rings in a row without missing one |  |
+| 32 | `ghostbuster` | Ghostbuster | Land a flight faster than your own ghost |  |
+| 33 | `say_cheese` | Say cheese! | Take a photo in photo mode |  |
+| 34 | `sunday_flyer` | Sunday flyer | Spend 5 minutes in free flight |  |
+| 35 | `encore` | Encore! | Land on the band's stage on Market Day |  |
+| 36 | `basket_case` | Basket case | Land a bullseye in the laundry basket |  |
+| 37 | `comeback_kid` | Comeback kid | Land a flight you have crashed on 10 times |  |
+| 38 | `window_shopper` | Window shopper | Crash into a market stall or tent |  |
+| 39 | `butter_landing` | Butter landing | Touch down so softly you barely notice |  |

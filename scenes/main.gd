@@ -246,7 +246,10 @@ func _wire() -> void:
 			_last_stall_banner = now
 			hud.banner("Whoa, stalling! Nose down", Color("#ffb3a1"), 1.2))
 	# Lifetime stats for the Pilot log and achievements.
-	plane.barrel_roll_done.connect(func(): Profile.count("rolls"))
+	plane.barrel_roll_done.connect(func():
+		Profile.count("rolls")
+		if plane.rolls_done == 3 and not _lessons:
+			Profile.feat("rolls_3"))
 	plane.gust_used.connect(func(): Profile.count("gusts"))
 	plane.entered_thermal.connect(func(): Profile.count("thermals"))
 	plane.skipped.connect(func(): Profile.count("skips"))
@@ -328,6 +331,8 @@ func _fade(to: float, time: float) -> void:
 ## the camera, and every few rings in a row a cheer.
 func _on_ring(p: Vector3) -> void:
 	_streak += 1
+	if _streak == 20 and not _lessons:
+		Profile.feat("streak_20")
 	Audio.play("ring", -3.0, 1.0 + 0.05 * mini(_streak - 1, 10))
 	hud.pop(p, cam, UIKit.GOLD, _streak >= 5)
 	cam.shake(0.08)
@@ -568,6 +573,7 @@ func _respawn_free() -> void:
 func _end_free_flight() -> void:
 	if not free_flight:
 		return
+	Profile.check_achievements()
 	free_flight = false
 	hud.free_mode = false
 	plane.gust_refill_time = _gust_refill_default
@@ -673,6 +679,7 @@ func _on_landed(info: Dictionary) -> void:
 	for k in level.stars.size():
 		if level.stars[k].collected:
 			star_ids.append(k)
+	_landing_feats(id, score)
 	Profile.record_landing(id, stats, score, star_ids)
 	var is_best := Game.record_landing(Game.current_level, score.total, score.ribbons)
 	# The ghost is the best run; flights without one yet (e.g. records from older versions) keep
@@ -705,6 +712,22 @@ func _on_landed(info: Dictionary) -> void:
 	_end_timer = 2.2
 
 
+## The fun achievements decided at the moment of landing (before the landing is recorded, so the
+## flight's attempts and old ghost are still this flight's history).
+func _landing_feats(id: String, score: Dictionary) -> void:
+	var bull: bool = score.zone == "bullseye"
+	if bull and int(Profile.flight(id).attempts) == 1:
+		Profile.feat("hole_in_one")
+	if bull and id == "level_10":
+		Profile.feat("basket")
+	if plane.gusts < 1.0:
+		Profile.feat("fumes")
+	if Profile.has_ghost(id):
+		var old := Profile.load_ghost(id)
+		if old.size() >= 7 and plane.flight_time < old[old.size() - 7] - 0.05:
+			Profile.feat("ghostbuster")
+
+
 func _on_crashed(message: String, _kind: String) -> void:
 	Game.set_state(Game.State.CRASHED)
 	if free_flight:
@@ -719,6 +742,7 @@ func _on_crashed(message: String, _kind: String) -> void:
 		Audio.set_wind(0.0, false)
 		_free_crash = plane.state.pos
 		_free_crash_kind = _kind
+		Profile.check_achievements()
 		_respawn_timer = 1.2
 		return
 	if _lessons:
@@ -731,6 +755,8 @@ func _on_crashed(message: String, _kind: String) -> void:
 		_respawn_timer = 1.3
 		return
 	ghost.visible = false
+	if plane.flight_time < 1.0:
+		Profile.feat("paper_cut")
 	Profile.record_crash(Game.level_id(Game.current_level), _kind)
 	_pending_achievements = Profile.check_achievements()
 	Profile.save()
@@ -814,6 +840,11 @@ func _process(delta: float) -> void:
 				sharp = -1.0
 			plane.sharp_dir = sharp
 			Profile.add_air("" if Game.in_lessons() or free_flight else Game.level_id(Game.current_level), delta, plane.state.v * delta)
+			if free_flight:
+				var before := float(Profile.data.feats.get("free_time", 0.0))
+				Profile.feat("free_time", delta)
+				if before < 300.0 and before + delta >= 300.0:
+					Profile.check_achievements()
 			if not free_flight:
 				ghost.record(plane.flight_time, plane, (plane.get_node("Visual") as Node3D).rotation.z)
 				ghost.play(plane.flight_time)
