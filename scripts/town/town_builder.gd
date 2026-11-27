@@ -79,6 +79,25 @@ const WILLOW_HOUSES := [
 ]
 ## The whole close inside its fences, and the treehouse deck (launch spot of flight 7).
 const WILLOW_RECT := Rect2(26.5, -174.5, 14.0, 83.0)
+
+## Flight 9 (House Hopping): Juniper Row, nine open houses behind the west side of Linden Lane in two
+## stretches either side of the park. [layout, x, z, width, depth, wall, roof, door].
+const JUNIPER_HOUSES := [
+	["attic", -33.0, 3.5, 11.0, 9.0, "#cbbbe8", "slate", "#c8423b"],
+	["bedroom", -34.5, -18.0, 11.0, 10.0, "#f2d58f", "terracotta", "#2f6f8f"],
+	["library", -33.0, -38.0, 11.0, 10.0, "#b9d6a8", "slate", "#7c4f9e"],
+	["garage", -32.0, -56.5, 9.0, 9.0, "#e9b7a1", "terracotta", "#3f7d4f"],
+	["stair_up", -33.0, -77.0, 11.0, 14.0, "#a9c9db", "slate", "#e0a13a"],
+	["playroom", -34.0, -201.0, 11.0, 10.0, "#f5e3c0", "terracotta", "#2f6f8f"],
+	["stairwell", -32.5, -223.0, 11.0, 14.0, "#e6c3da", "slate", "#3f7d4f"],
+	["music_room", -33.5, -238.0, 11.0, 10.0, "#c9d8c0", "terracotta", "#c8423b"],
+	["cottage", -33.0, -252.5, 11.0, 13.0, "#f2d58f", "slate", "#e0a13a"],
+]
+## The two fenced stretches of Juniper Row.
+const JUNIPER_RECTS := [Rect2(-41.0, -85.5, 15.0, 95.0), Rect2(-41.0, -260.5, 15.0, 66.0)]
+## Flights added after the town was laid out: their routes keep trees clear without changing the
+## shared random sequence, so every other flight's town stays exactly as it was.
+const LATE_LEVELS := ["level_9"]
 const TREEHOUSE := Vector3(35.3, 4.45, -98.0)
 
 var rng := RandomNumberGenerator.new()
@@ -89,6 +108,8 @@ var sun: DirectionalLight3D
 var world_env: WorldEnvironment
 var _route_keepouts: Array = []  # [Vector3 a, Vector3 b] segments from every level route
 var _pad_keepouts: Array = []
+## Route segments of LATE_LEVELS (checked after the random draws, see _add_tree).
+var _late_keepouts: Array = []
 var _clouds: Array[MeshInstance3D] = []
 var _sky_mat: ProceduralSkyMaterial
 var _probe: ReflectionProbe
@@ -163,6 +184,7 @@ func build() -> void:
 	_willow_close()
 	await _step_yield()
 	_grand_tour()
+	_juniper_row()
 	await _step_yield()
 	# Pets are switched off (too heavy to draw for what they add); see SHOW_PETS.
 	if SHOW_PETS:
@@ -213,6 +235,10 @@ func _collect_keepouts() -> void:
 		if lvl.map != map_id:
 			continue
 		var pts := lvl.route_points()
+		if lvl.resource_path.get_file().get_basename() in LATE_LEVELS:
+			for i in pts.size() - 1:
+				_late_keepouts.append([pts[i], pts[i + 1]])
+			continue
 		for i in pts.size() - 1:
 			_route_keepouts.append([pts[i], pts[i + 1]])
 		_pad_keepouts.append(lvl.pad_position)
@@ -593,6 +619,8 @@ func _add_tree(p: Vector3, scale: float, autumn := false, conifer := false, coll
 		if (pond[0] as Rect2).grow(1.5).has_point(Vector2(p.x, p.z)):
 			return
 	if WILLOW_RECT.grow(1.0).has_point(Vector2(p.x, p.z)) or APARTMENT_RECT.grow(1.0).has_point(Vector2(p.x, p.z)):
+		return
+	if _in_juniper(p, 1.5) or _blocks_late(p, trunk_h + r * 1.75, r):
 		return
 	var handles := []
 	handles.append(batcher.add("trunk", Transform3D(Basis().scaled(Vector3(scale, trunk_h + r * 0.6, scale)), p), Color.WHITE))
@@ -1287,6 +1315,86 @@ func _grand_tour() -> void:
 
 # --- Willow Close -----------------------------------------------------------------------------
 
+func _in_juniper(p: Vector3, grow: float) -> bool:
+	for r: Rect2 in JUNIPER_RECTS:
+		if r.grow(grow).has_point(Vector2(p.x, p.z)):
+			return true
+	return false
+
+
+func _in_juniper_house(p: Vector3) -> bool:
+	for h in JUNIPER_HOUSES:
+		var r := Rect2(h[1] - h[3] * 0.5 - 0.5, h[2] - h[4] * 0.5 - 0.5, h[3] + 1.0, h[4] + 1.0)
+		if r.has_point(Vector2(p.x, p.z)):
+			return true
+	return false
+
+
+## True when a tree at p (top height `top`, radius r) would be in the way of a LATE_LEVELS route.
+func _blocks_late(p: Vector3, top: float, r: float) -> bool:
+	for seg in _late_keepouts:
+		var a: Vector3 = seg[0]
+		var b: Vector3 = seg[1]
+		if _seg_dist_2d(p, a, b) < r + 3.0 and minf(a.y, b.y) < top + 2.0:
+			return true
+	return false
+
+
+## Flight 9: Juniper Row, nine open houses in two fenced stretches with gardens between them.
+func _juniper_row() -> void:
+	for i in JUNIPER_HOUSES.size():
+		var d: Array = JUNIPER_HOUSES[i]
+		var h: Node3D = OPEN_HOUSE_SCENE.instantiate()
+		h.batcher = batcher
+		h.name = "JuniperRow_%d" % (i + 1)
+		h.layout = d[0]
+		h.position = Vector3(d[1], 0, d[2])
+		h.width = d[3]
+		h.depth = d[4]
+		h.wall_color = Color(d[5])
+		h.roof_color = Mats.ROOF_SLATE if d[6] == "slate" else Mats.ROOF_TERRACOTTA
+		h.door_color = Color(d[7])
+		h.shutter_color = Color(Mats.SHUTTER_COLORS[(i * 3 + 2) % Mats.SHUTTER_COLORS.size()])
+		h.seed_value = 90 + i
+		add_child(h)
+	var b := MeshBuilder.new()
+	var solid := Mats.get_mat("solid")
+	var paving := Mats.get_mat("paving")
+	var r := RandomNumberGenerator.new()
+	r.seed = 9090
+	for rect: Rect2 in JUNIPER_RECTS:
+		var z0 := rect.end.y
+		var z1 := rect.position.y
+		# Picket fences down both sides.
+		for fx in [rect.position.x + 0.2, rect.end.x - 0.2]:
+			var z := z0
+			while z > z1:
+				batcher.add("picket", Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(fx, 0, z)))
+				z -= 0.17
+			for ry in [0.3, 0.7]:
+				b.box_mm(solid, Vector3(fx - 0.03, ry, z1), Vector3(fx + 0.03, ry + 0.08, z0), Mats.TRIM)
+			_static_box("fence", Vector3(fx, 0.5, (z0 + z1) * 0.5), Vector3(0.2, 1.0, z0 - z1))
+		# Gardens between the houses: stepping stones down the middle, flower borders, bushes.
+		var z := z0 - 0.5
+		while z > z1 + 0.5:
+			var inside := false
+			for h in JUNIPER_HOUSES:
+				if absf(z - h[2]) < h[4] * 0.5 + 0.6:
+					inside = true
+			if not inside:
+				var sx := -33.0 + r.randf_range(-0.3, 0.3)
+				b.box_mm(paving, Vector3(sx - 0.35, 0.0, z - 0.3), Vector3(sx + 0.35, 0.05, z + 0.3), Color("#d9cfbd"))
+				for fx in [rect.position.x + 0.9, rect.end.x - 0.9]:
+					if r.randf() < 0.8:
+						batcher.add("flower", Transform3D(Basis(Vector3.UP, r.randf() * TAU).scaled(Vector3.ONE * r.randf_range(1.1, 1.6)), Vector3(fx + r.randf_range(-0.3, 0.3), 0, z)), Mats.pick(r, Mats.FLOWER_COLORS))
+					if r.randf() < 0.18:
+						var s := r.randf_range(0.7, 1.1)
+						batcher.add("bush", Transform3D(Basis(Vector3.UP, r.randf() * TAU).scaled(Vector3(s, s, s)), Vector3(fx + signf(-33.0 - fx) * 0.4, 0, z)), Color("#5f9a45").lerp(Color("#7fae55"), r.randf()))
+			z -= 1.2
+	var mi := b.build_instance("JuniperRowGardens", false)
+	add_child(mi)
+
+
 func _in_willow_house(p: Vector3) -> bool:
 	for h in WILLOW_HOUSES:
 		var r := Rect2(WILLOW_X - h[2] * 0.5 - 0.5, h[1] - h[3] * 0.5 - 0.5, h[2] + 1.0, h[3] + 1.0)
@@ -1485,7 +1593,7 @@ func _background() -> void:
 				var xf := Transform3D(Basis(Vector3.UP, yaw), Vector3(x, gy, z))
 				var wc := Color(Mats.PALETTE_HOUSES[rng.randi() % Mats.PALETTE_HOUSES.size()])
 				var rc := Mats.ROOF_SLATE if rng.randf() < 0.5 else Mats.ROOF_TERRACOTTA
-				if not WILLOW_RECT.grow(6.0).has_point(Vector2(x, z)):
+				if not WILLOW_RECT.grow(6.0).has_point(Vector2(x, z)) and not _in_juniper(Vector3(x, 0, z), 6.0):
 					b.box(paint, xf * Transform3D(Basis(), Vector3(0, hgt * 0.5, 0)), Vector3(d, hgt, w), wc, 63 - 8)
 					b.gable_roof(shingle, xf * Transform3D(Basis(), Vector3(0, hgt, 0)), d, w, d * 0.36, 0.3, 0.15, rc)
 					b.gable_wall(paint, xf * Transform3D(Basis(), Vector3(0, hgt, 0)), d, d * 0.36, w * 0.5, 1.0, wc)
@@ -1723,6 +1831,8 @@ func _grass() -> void:
 			continue
 		var s := rng.randf_range(0.7, 1.35)
 		var tint := Color("#8fbf5a").lerp(Color("#c3d870"), rng.randf()).lerp(Color("#d9b25a"), rng.randf() * 0.12)
+		if _in_juniper_house(p):
+			continue
 		batcher.add("grass", Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.8, 1.2), s)), p), tint)
 		placed += 1
 

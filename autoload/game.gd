@@ -30,6 +30,7 @@ const LEVEL_PATHS := [
 	"res://levels/city_1.tres",
 	"res://levels/city_2.tres",
 	"res://levels/city_3.tres",
+	"res://levels/level_9.tres",
 ]
 
 var state: int = State.LOADING
@@ -127,7 +128,7 @@ func has_next_level() -> bool:
 ## Maps. Each lists its flights (indices into `levels`) and the ribbons (from any flight) that
 ## open it; "soon" maps show as Coming soon cards on the map page.
 const MAPS := [
-	{"id": "linden", "name": "Linden Lane", "blurb": "Gardens, windows and the old bridge", "levels": [0, 1, 2, 3, 4, 5, 6, 7], "ribbons": 0, "thumb": 2},
+	{"id": "linden", "name": "Linden Lane", "blurb": "Gardens, windows and the old bridge", "levels": [0, 1, 2, 3, 4, 5, 6, 7, 19], "ribbons": 0, "thumb": 2},
 	{"id": "harbour", "name": "Seaside Harbour", "blurb": "Boats, the pier and sea breezes", "levels": [8, 9, 11, 10, 12, 13, 14, 15], "ribbons": 15, "thumb": 9},
 	{"id": "city", "name": "City Rooftops", "blurb": "Water towers and narrow alleys", "levels": [16, 17, 18], "ribbons": 30, "thumb": 17},
 	{"id": "farm", "name": "Maple Farm", "blurb": "Barns, fields and the windmill", "levels": [], "ribbons": 40, "soon": true},

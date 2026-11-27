@@ -13,6 +13,9 @@ extends Prop
 ## - "garage": one storey, in through the roller door, over a little car, out the back window
 ## - "stair_up": in under the landing, up the stairwell on warm air, out an upstairs window
 ## - "den": one storey, in through the garden doors to the dog's bed (the landing spot)
+## Juniper Row (flight 9):
+## - "playroom": upstairs playroom with toys hanging from the ceiling to weave between
+## - "music_room": one storey, past the piano and drums, between the harp and the double bass
 
 const T := 0.25
 const GF := 0.4
@@ -27,6 +30,8 @@ const GARAGE_EAVE := 3.4
 const GARAGE_CEIL := 3.2
 ## Center of the dog's bed in the den (local), the landing spot of flight 7.
 const DOG_BED := Vector3(0.4, 0.0, -2.2)
+## The playroom's hanging toys (local): balloon, dragon and rocket, alternating sides.
+const PLAY_TOYS := [Vector3(0.75, 5.05, 2.0), Vector3(-0.75, 5.0, -0.4), Vector3(0.7, 5.0, -2.7)]
 
 @export var layout := "bedroom"
 @export var width := 11.0
@@ -80,6 +85,8 @@ func _layout(b: MeshBuilder) -> void:
 		"garage": _garage(b)
 		"stair_up": _stair_up(b)
 		"den": _den(b)
+		"playroom": _playroom(b)
+		"music_room": _music_room(b)
 		_: _bedroom(b)
 
 
@@ -722,6 +729,225 @@ static func _ring(c: Vector3, r: float, n: int) -> PackedVector3Array:
 
 
 # --- Shell helpers ------------------------------------------------------------------------------
+
+## Upstairs playroom (Juniper Row, flight 9): a toy train round the rug, a play tent, a rocking
+## horse and three toys hanging from the ceiling (a balloon, a dragon and a rocket) to weave
+## between. In through the north window, out through the south one; the ground floor is closed.
+func _playroom(b: MeshBuilder) -> void:
+	var in_col := Color("#fdf0d8")
+	var solid := _m("solid")
+	var wood := _m("wood")
+	_body_shell(b, UF)
+	_trims(b, AF)
+	for x in [-2.8, 2.8]:
+		_win(Vector3.BACK, x, 2.0)
+		_win(Vector3.FORWARD, x, 2.0)
+	_front_door(b, Vector3.BACK, 0.0)
+	for s in [-1.0, 1.0]:
+		for z in [-2.6, 2.6]:
+			_win(Vector3(s, 0, 0), z, 2.0)
+			_win(Vector3(s, 0, 0), z, 5.1)
+	_floor(b, UF, -hd + T, hd - T, Color("#d9b48a"))
+	var north := [_hole(-1.2, 1.2, 4.1, 6.3), _hole(-3.9, -2.1, 4.4, 6.1, "glass"), _hole(2.1, 3.9, 4.4, 6.1, "glass")]
+	_cross_wall(b, hd, 1.0, -hw, hw, UF, AF, north, wall_color, in_col)
+	var south := [_hole(-1.4, 1.0, 4.0, 6.2), _hole(-4.2, -2.4, 4.4, 6.1, "glass"), _hole(2.2, 4.0, 4.4, 6.1, "glass")]
+	_cross_wall(b, -hd, -1.0, -hw, hw, UF, AF, south, wall_color, in_col)
+	_side_walls(b, UF, AF)
+	_side_plaster(b, UF, UC, -hd + T, hd - T, in_col)
+	_ceiling(b, UC, AF, -hd + T, hd - T)
+	_roof(b, AF, 4.0)
+
+	# A big round rug with the toy train running round it.
+	b.cylinder(solid, Transform3D(Basis(), Vector3(0, UF, 0)), 2.5, 2.5, 0.018, 28, Color("#6fb4e8"))
+	b.cylinder(solid, Transform3D(Basis(), Vector3(0, UF, 0)), 2.25, 2.25, 0.022, 28, Color("#fbf8f0"))
+	b.cylinder(solid, Transform3D(Basis(), Vector3(0, UF, 0)), 1.4, 1.4, 0.026, 24, Color("#f2c14e"))
+	var rx := 3.4
+	var rz := 3.6
+	var rail_a := PackedVector3Array()
+	var rail_b := PackedVector3Array()
+	for k in 49:
+		var a := TAU * k / 48.0
+		var p := Vector3(sin(a) * rx, UF + 0.03, cos(a) * rz)
+		var out := Vector3(sin(a) / rx, 0, cos(a) / rz).normalized()
+		if k < 48:
+			b.box(wood, Transform3D(Basis(Vector3.UP, atan2(out.x, out.z)), p), Vector3(0.05, 0.03, 0.34), Color("#7a5236"))
+		rail_a.append(p + out * 0.11 + Vector3(0, 0.03, 0))
+		rail_b.append(p - out * 0.11 + Vector3(0, 0.03, 0))
+	b.tube(_m("metal"), rail_a, 0.012, 3, Color("#9aa3a8"))
+	b.tube(_m("metal"), rail_b, 0.012, 3, Color("#9aa3a8"))
+	# The train: an engine and two carriages on the far side of the loop.
+	var cars := [[2.2, Color("#c8423b")], [2.55, Color("#2f6f8f")], [2.9, Color("#3f7d4f")]]
+	for ci in cars.size():
+		var a: float = cars[ci][0]
+		var p := Vector3(sin(a) * rx, UF + 0.06, cos(a) * rz)
+		var tan := Vector3(cos(a) * rx, 0, -sin(a) * rz).normalized()
+		var basis := Basis(Vector3.UP, atan2(tan.x, tan.z))
+		b.box(solid, Transform3D(basis, p + Vector3(0, 0.14, 0)), Vector3(0.26, 0.22, 0.42), cars[ci][1])
+		if ci == 0:
+			b.cylinder(solid, Transform3D(basis, p + Vector3(0, 0.25, 0) + tan * 0.12), 0.05, 0.06, 0.18, 8, Color("#33303a"))
+			b.box(solid, Transform3D(basis, p + Vector3(0, 0.33, 0) - tan * 0.1), Vector3(0.26, 0.18, 0.16), Color("#f2c14e"))
+		for wz in [-0.13, 0.13]:
+			for wx in [-0.14, 0.14]:
+				b.cylinder(solid, Transform3D(basis * Basis(Vector3.BACK, PI * 0.5), p + basis * Vector3(wx, 0.04, wz)), 0.05, 0.05, 0.03, 8, Color("#33303a"))
+	# Play tent in the north-west corner, rocking horse to the east, toy shelves and a toy box.
+	var tc := Vector3(-4.0, UF, 3.3)
+	b.cylinder(_m("cloth"), Transform3D(Basis(), tc), 1.0, 0.04, 1.9, 6, Color("#e8546a"))
+	b.cylinder(_m("cloth"), Transform3D(Basis(), tc + Vector3(0, 0.6, 0)), 0.69, 0.68, 0.18, 6, Color("#fbf8f0"))
+	add_cylinder("furniture", tc, 0.95, 1.9)
+	var hc := Vector3(3.8, UF, 2.6)
+	for s in [-1.0, 1.0]:
+		var arc := PackedVector3Array()
+		for k in 9:
+			var t := -0.6 + 1.2 * k / 8.0
+			arc.append(hc + Vector3(s * 0.25, 0.18 - cos(t * 1.4) * 0.12, sin(t) * 0.75))
+		b.tube(wood, arc, 0.035, 4, Color("#c8423b"))
+		for lz in [-0.35, 0.35]:
+			b.tube(wood, PackedVector3Array([hc + Vector3(s * 0.25, 0.08, lz), hc + Vector3(s * 0.12, 0.62, lz * 0.6)]), 0.03, 4, Color("#f4f0e6"))
+	b.box_mm(solid, hc + Vector3(-0.17, 0.6, -0.45), hc + Vector3(0.17, 0.88, 0.4), Color("#f4f0e6"))
+	b.box(solid, Transform3D(Basis(Vector3.RIGHT, -0.5), hc + Vector3(0, 1.05, 0.5)), Vector3(0.2, 0.45, 0.22), Color("#f4f0e6"))
+	b.box_mm(solid, hc + Vector3(-0.04, 0.88, 0.1), hc + Vector3(0.04, 1.2, 0.55), Color("#7a5236"))
+	b.box_mm(solid, hc + Vector3(-0.18, 0.88, -0.2), hc + Vector3(0.18, 0.92, 0.1), Color("#c8423b"))
+	add_box("furniture", hc + Vector3(0, 0.6, 0), Vector3(0.6, 1.2, 1.5))
+	_bookshelf(b, Vector3(hw - T - 0.4, UF, -4.4), Vector3(hw - T, UF + 1.6, -1.4), Vector3.LEFT)
+	_furn(b, "wood", Vector3(-4.9, UF, -4.3), Vector3(-3.5, UF + 0.6, -3.3), Color("#2f6f8f"))
+	b.box_mm(solid, Vector3(-4.95, UF + 0.6, -4.35), Vector3(-3.45, UF + 0.66, -3.25), Color("#f2c14e"))
+	# Beanbags and building blocks scattered about.
+	b.sphere(_m("cloth"), Vector3(-3.6, UF + 0.3, 0.6), Vector3(0.55, 0.32, 0.55), 4, 10, Color("#7c4f9e"))
+	b.sphere(_m("cloth"), Vector3(-2.9, UF + 0.3, -1.6), Vector3(0.55, 0.32, 0.55), 4, 10, Color("#e0a13a"))
+	var block_cols := [Color("#e8546a"), Color("#f2c14e"), Color("#6fb4e8"), Color("#7fd08c")]
+	for k in 14:
+		var p := Vector3(_rng.randf_range(-1.6, 1.6), UF + 0.09, _rng.randf_range(-1.6, 1.6))
+		var stack := 1 if k % 4 != 0 else 3
+		for st in stack:
+			b.box(solid, Transform3D(Basis(Vector3.UP, _rng.randf() * TAU), p + Vector3(0, st * 0.17, 0)), Vector3(0.16, 0.16, 0.16), block_cols[(k + st) % 4])
+	# The hanging toys: weave left, right, left between them.
+	_toy_balloon(b, PLAY_TOYS[0])
+	_toy_dragon(b, PLAY_TOYS[1])
+	_toy_rocket(b, PLAY_TOYS[2])
+	for p: Vector3 in PLAY_TOYS:
+		b.tube(_m("rope"), PackedVector3Array([p + Vector3(0, 0.3, 0), Vector3(p.x, UC, p.z)]), 0.006, 3, Color("#e8e2d2"))
+		add_sphere("furniture", p, 0.36)
+	_picture(b, Vector3(-hw + T + 0.01, 5.2, -1.0), Vector3.RIGHT, Vector2(1.0, 0.7), Color("#b9d6a8"))
+	_picture(b, Vector3(hw - T - 0.01, 5.3, 2.6), Vector3.LEFT, Vector2(0.7, 0.9), Color("#f2d58f"))
+	_pendant(b, Vector3(-3.2, 6.0, -2.6), UC, Color("#7fd08c"))
+	_pendant(b, Vector3(3.2, 6.0, -0.6), UC, Color("#e8546a"))
+	_lights.append([Vector3(0, 6.1, 2.2), Color("#ffe2b8"), 0.9, 6.5])
+	_lights.append([Vector3(0, 6.1, -2.2), Color("#ffe2b8"), 0.9, 6.5])
+
+
+func _toy_balloon(b: MeshBuilder, c: Vector3) -> void:
+	var solid := _m("solid")
+	var stripes := [Color("#e8546a"), Color("#f2c14e"), Color("#6fb4e8")]
+	for k in 3:
+		b.sphere(solid, c + Vector3(0, 0.1 - k * 0.12, 0), Vector3(0.34 - k * 0.07, 0.12, 0.34 - k * 0.07), 3, 10, stripes[k])
+	b.sphere(solid, c + Vector3(0, 0.2, 0), Vector3(0.3, 0.16, 0.3), 3, 10, Color("#e8546a"))
+	b.box_mm(_m("wood"), c + Vector3(-0.09, -0.38, -0.09), c + Vector3(0.09, -0.26, 0.09), Color("#a87a4f"))
+
+
+func _toy_dragon(b: MeshBuilder, c: Vector3) -> void:
+	var solid := _m("solid")
+	for k in 5:
+		var p := c + Vector3(0, sin(k * 1.3) * 0.06, 0.32 - k * 0.16)
+		b.sphere(solid, p, Vector3(0.12 - k * 0.015, 0.11 - k * 0.012, 0.12), 3, 8, Color("#3f7d4f") if k % 2 == 1 else Color("#7fd08c"))
+	b.sphere(solid, c + Vector3(0, 0.05, 0.45), Vector3(0.14, 0.12, 0.16), 3, 8, Color("#3f7d4f"))
+	for s in [-1.0, 1.0]:
+		var wing := PackedVector3Array([c + Vector3(0, 0.08, 0.2), c + Vector3(s * 0.42, 0.22, 0.05), c + Vector3(0, 0.08, -0.05)])
+		b.poly(solid, wing, Color("#f2c14e"))
+		var back := wing.duplicate()
+		back.reverse()
+		b.poly(solid, back, Color("#f2c14e"))
+
+
+func _toy_rocket(b: MeshBuilder, c: Vector3) -> void:
+	var solid := _m("solid")
+	b.cylinder(solid, Transform3D(Basis(), c + Vector3(0, -0.25, 0)), 0.11, 0.11, 0.38, 10, Color("#fbf8f0"))
+	b.cylinder(solid, Transform3D(Basis(), c + Vector3(0, 0.13, 0)), 0.11, 0.0, 0.2, 10, Color("#c8423b"))
+	b.sphere(_m("window_lit"), c + Vector3(0, -0.02, 0.1), Vector3(0.04, 0.04, 0.02), 2, 6, Color("#6fb4e8"))
+	for k in 3:
+		var a := TAU * k / 3.0
+		b.box(solid, Transform3D(Basis(Vector3.UP, a), c + Vector3(sin(a) * 0.13, -0.28, cos(a) * 0.13)), Vector3(0.03, 0.16, 0.12), Color("#c8423b"))
+
+
+## One-storey music room (flight 9): in through the open garden doors, past the drum kit and the
+## grand piano, between the harp and the double bass and out through the open window at the end.
+func _music_room(b: MeshBuilder) -> void:
+	var in_col := Color("#f3e6f0")
+	var solid := _m("solid")
+	var wood := _m("wood")
+	_plinth(b)
+	_trims(b, COTTAGE_EAVE)
+	_floor(b, GF, -hd + T, hd - T, Color("#8a5f3a"))
+	for s in [-1.0, 1.0]:
+		for z in [-2.8, 2.8]:
+			_win(Vector3(s, 0, 0), z, 2.1)
+	var north := [_hole(-1.4, 1.4, GF, 2.8, "french"), _hole(-4.4, -2.6, 1.4, 3.0, "glass"), _hole(2.6, 4.4, 1.4, 3.0, "glass")]
+	_cross_wall(b, hd, 1.0, -hw, hw, 0.0, COTTAGE_EAVE, north, wall_color, in_col)
+	var south := [_hole(-0.8, 1.4, 1.2, 2.9), _hole(-4.4, -2.8, 1.4, 3.0, "glass"), _hole(3.0, 4.4, 1.4, 3.0, "glass")]
+	_cross_wall(b, -hd, -1.0, -hw, hw, 0.0, COTTAGE_EAVE, south, wall_color, in_col)
+	_side_walls(b, 0.0, COTTAGE_EAVE)
+	_side_plaster(b, GF, COTTAGE_CEIL, -hd + T, hd - T, in_col)
+	_ceiling(b, COTTAGE_CEIL, COTTAGE_EAVE, -hd + T, hd - T)
+	_roof(b, COTTAGE_EAVE, 4.0)
+
+	_rug(b, Vector2(-2.2, -3.6), Vector2(2.2, 3.4), GF, Color("#7c4f9e"), Color("#f2c14e"))
+	# Grand piano (lid propped open) with its bench.
+	var pc := Vector3(3.2, GF, 1.6)
+	b.box_mm(solid, pc + Vector3(-1.2, 0.68, -0.8), pc + Vector3(1.2, 1.0, 0.9), Color("#26232b"))
+	b.box_mm(solid, pc + Vector3(-1.2, 0.86, 0.9), pc + Vector3(1.2, 0.9, 1.15), Color("#fbf8f0"))
+	for kx in 13:
+		b.box_mm(solid, pc + Vector3(-1.12 + kx * 0.18, 0.9, 1.0), pc + Vector3(-1.04 + kx * 0.18, 0.93, 1.13), Color("#26232b"))
+	for lp in [Vector3(-1.05, 0, -0.65), Vector3(1.05, 0, -0.65), Vector3(0, 0, 0.75)]:
+		b.box_mm(solid, pc + lp + Vector3(-0.06, 0, -0.06), pc + lp + Vector3(0.06, 0.68, 0.06), Color("#26232b"))
+	b.box(solid, Transform3D(Basis(Vector3.BACK, 0.75), pc + Vector3(-0.55, 1.42, 0.0)), Vector3(1.6, 0.04, 1.6), Color("#2f2b35"))
+	add_box("furniture", pc + Vector3(0, 0.5, 0.15), Vector3(2.4, 1.0, 2.0))
+	add_box_xf("furniture", Transform3D(Basis(Vector3.BACK, 0.75), pc + Vector3(-0.55, 1.42, 0.0)), Vector3(1.6, 0.1, 1.6))
+	_furn(b, "solid", pc + Vector3(-0.5, 0, 1.4), pc + Vector3(0.5, 0.5, 1.8), Color("#26232b"))
+	# Drum kit in the north-west corner.
+	var dc := Vector3(-3.5, GF, 2.6)
+	b.cylinder(solid, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), dc + Vector3(0, 0.33, -0.18)), 0.33, 0.33, 0.36, 14, Color("#c8423b"))
+	b.cylinder(solid, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), dc + Vector3(0, 0.33, 0.01)), 0.3, 0.3, 0.02, 14, Color("#fbf8f0"))
+	for tp in [Vector3(-0.45, 0.62, 0.15), Vector3(0.45, 0.62, 0.15), Vector3(0.6, 0.45, -0.45)]:
+		b.cylinder(solid, Transform3D(Basis(), dc + tp), 0.18, 0.18, 0.2, 12, Color("#c8423b"))
+		b.cylinder(solid, Transform3D(Basis(), dc + tp + Vector3(0, 0.2, 0)), 0.18, 0.18, 0.01, 12, Color("#fbf8f0"))
+	for cp in [Vector3(-0.85, 0, -0.2), Vector3(0.95, 0, 0.35)]:
+		b.cylinder(_m("metal"), Transform3D(Basis(), dc + cp), 0.015, 0.015, 1.3, 4, Color("#9aa3a8"))
+		b.cylinder(_m("metal"), Transform3D(Basis(Vector3.RIGHT, 0.12), dc + cp + Vector3(0, 1.3, 0)), 0.32, 0.32, 0.01, 14, Color("#d4a63a"))
+	_chair(b, dc + Vector3(0, 0, -0.9), Color("#33303a"))
+	add_box("furniture", dc + Vector3(0, 0.7, 0), Vector3(2.2, 1.4, 1.6))
+	# Harp (east of the line) and a double bass on its stand (west): fly between them.
+	var hp := Vector3(1.2, GF, -1.6)
+	b.box_mm(wood, hp + Vector3(-0.08, 0, -0.25), hp + Vector3(0.08, 0.12, 0.35), Color("#c99a4a"))
+	b.tube(wood, PackedVector3Array([hp + Vector3(0, 0.1, 0.3), hp + Vector3(0, 1.75, 0.3)]), 0.04, 5, Color("#c99a4a"))
+	b.tube(wood, PackedVector3Array([hp + Vector3(0, 0.12, -0.2), hp + Vector3(0, 1.0, -0.35), hp + Vector3(0, 1.55, -0.1), hp + Vector3(0, 1.75, 0.3)]), 0.05, 5, Color("#c99a4a"))
+	for k in 7:
+		var z := -0.15 + k * 0.065
+		b.tube(_m("rope"), PackedVector3Array([hp + Vector3(0, 0.14, z), hp + Vector3(0, 1.2 + k * 0.07, z)]), 0.004, 3, Color("#f6e3b8"))
+	add_box("furniture", hp + Vector3(0, 0.9, 0.05), Vector3(0.25, 1.8, 0.75))
+	var bp := Vector3(-1.4, GF, 0.6)
+	b.sphere(wood, bp + Vector3(0, 0.55, 0), Vector3(0.32, 0.45, 0.16), 4, 10, Color("#8a4a2a"))
+	b.sphere(wood, bp + Vector3(0, 0.95, 0), Vector3(0.24, 0.3, 0.14), 4, 10, Color("#8a4a2a"))
+	b.tube(wood, PackedVector3Array([bp + Vector3(0, 1.1, 0), bp + Vector3(0, 1.85, 0)]), 0.03, 4, Color("#26232b"))
+	add_box("furniture", bp + Vector3(0, 0.9, 0), Vector3(0.7, 1.8, 0.4))
+	# Music stands, sheet music on the floor, guitars on the wall, a gramophone, the chandelier.
+	for ms in [Vector3(-0.2, GF, -3.4), Vector3(-2.6, GF, -1.0)]:
+		b.cylinder(_m("metal"), Transform3D(Basis(), ms), 0.012, 0.012, 1.1, 4, Color("#33303a"))
+		b.box(solid, Transform3D(Basis(Vector3.RIGHT, -0.4), ms + Vector3(0, 1.2, 0)), Vector3(0.45, 0.32, 0.02), Color("#fbf8f0"))
+	for k in 6:
+		var p := Vector3(_rng.randf_range(-1.8, 1.8), GF + 0.03, _rng.randf_range(-3.0, 3.0))
+		b.box(solid, Transform3D(Basis(Vector3.UP, _rng.randf() * TAU), p), Vector3(0.21, 0.005, 0.3), Color("#fbf8f0"))
+	var guitar_cols := [Color("#c8423b"), Color("#e0a13a"), Color("#2f6f8f")]
+	for gi in 3:
+		var g := Vector3(-hw + T + 0.08, 1.9, -3.4 + gi * 1.7)
+		b.sphere(wood, g + Vector3(0, -0.25, 0), Vector3(0.05, 0.28, 0.22), 3, 8, guitar_cols[gi])
+		b.box_mm(wood, g + Vector3(-0.03, 0.0, -0.04), g + Vector3(0.03, 0.55, 0.04), Color("#3a2c24"))
+	_furn(b, "wood", Vector3(3.6, GF, -4.4), Vector3(4.6, GF + 0.7, -3.5), Color("#a87a4f"))
+	b.cylinder(_m("metal"), Transform3D(Basis(Vector3.RIGHT, -0.6), Vector3(4.1, GF + 0.95, -3.85)), 0.28, 0.03, 0.4, 12, Color("#d4a63a"))
+	_chandelier(b, Vector3(0, 3.0, 0), COTTAGE_CEIL)
+	_plant(b, Vector3(-4.5, GF, -4.2), 1.1)
+	_picture(b, Vector3(hw - T - 0.01, 2.2, -1.2), Vector3.LEFT, Vector2(1.0, 0.7), Color("#e6c3da"))
+	_lights.append([Vector3(0, 3.0, 2.0), Color("#ffe2b8"), 0.9, 6.0])
+	_lights.append([Vector3(0, 3.0, -2.2), Color("#ffe2b8"), 0.8, 6.0])
+
 
 func _m(kind: String) -> Material:
 	return Mats.get_mat(kind)
